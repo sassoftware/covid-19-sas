@@ -144,7 +144,7 @@ synchronize variable names I_N & I for instance
 */
 /* 
 Ideas for more features:
-
+Include Mike B.'s calculations
 */
 
 TITLE;
