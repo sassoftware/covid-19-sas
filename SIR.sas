@@ -1,7 +1,5 @@
 /*SAS Studio program COVID_19*/
-/*%STPBegin;*/
 
-*libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
 %let DeathRt=0;
 %let Diagnosed_Rate=1.0; /*factor to adjust %admission to make sense multiplied by Total I*/
 %let LOS=7; /*default 7 length of stay for all scenarios*/
@@ -11,10 +9,10 @@
 %let ecmolos=28;
 %let DialysisPercent=0.09; /*default percent of admissions that need Dialysis*/
 %let DialysisLOS=10;
-;
-%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
-%LET S_DEFAULT =&Population;  /*prompt variable &Population*/
 
+%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
+
+%LET S_DEFAULT =&Population;  /*prompt variable &Population*/
 %LET KNOWN_INFECTIONS = &KnownCOVID; /*prompt variable */
 %LET KNOWN_CASES = &KnownAdmits; /*prompt variable */
 /*Currently Hospitalized COVID-19 Patients*/ 
@@ -28,7 +26,6 @@
 /*ICU %(total infections)*/ 
 %LET ICU_RATE = &ICUPercent*&Diagnosed_Rate; 
 /*Ventilated %(total infections)*/ 
-
 %LET VENT_RATE = &VentPercent*&Diagnosed_Rate; 
 /*Hospital Length of Stay*/ 
 %LET HOSP_LOS = &LOS; 
@@ -64,11 +61,10 @@
 %LET N_DAYS = /*&ModelDays*/365; 
 %LET BETA_DECAY = 0.0; 
 
-
 %PUT _ALL_; 
  
 /* DATA SET APPROACH */
-DATA DS_FINAL_MH;
+DATA DS_FINAL;
 	format Scenarioname $30.;
 	ScenarioName="&Scenario";
 	DO DAY = 0 TO &N_DAYS;
@@ -166,95 +162,27 @@ RUN;
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
  
-proc compare base=DS_FINAL_MH compare=SCENARIO_ONE; run;
+/* this will compare the DS_FINAL above to the SCENARIO_ONE output from BromEnhancedModel_V2.sas - show equal rows/columns
+proc compare base=DS_FINAL compare=SCENARIO_ONE; run;
+*/
 
+PROC SGPLOT DATA=DS_FINAL;
+	TITLE "New Admissions - DATA Step Approach";
+	SERIES X=DAY Y=HOSP;
+	SERIES X=DAY Y=ICU;
+	SERIES X=DAY Y=VENT;
+	XAXIS LABEL="Days from Today";
+	YAXIS LABEL="Daily Admissions";
+RUN;
+TITLE;
 
+CAS;
 
-/* PROC SGPLOT DATA=&Scenario; */
-/* 	TITLE "DailyCensus";  */
-/*	YAXIS type=LOG LOGSTYLE=LOGEXPAND LOGBASE=10;*/
-/* 	SERIES X=DAY Y=Hospital_Occupancy; */
-/* 	SERIES X=DAY Y=ICU_Occupancy; */
-/* 	SERIES X=DAY Y=Vent_Occupancy; */
-/*	SERIES X=DAY Y=ECMO_Occupancy;*/
-/*	SERIES X=DAY Y=DIAL_Occupancy; */
-/* 	XAXIS LABEL="Days from Today"; */
-/* 	YAXIS LABEL="Daily Admissions"; */
-/*	type=LOG LOGSTYLE=LOGEXPAND LOGBASE=10;*/
-/* RUN; */
-/* proc datasets lib= work kill;run;quit;*/
- 
- proc datasets noprint lib=work; 
-delete 
-Cumulative_1 
-DS_Final
-DS1
-_PRODSAVAIL
-SHELL
-NAMES
-;run;quit;
+CASLIB _ALL_ ASSIGN;
 
-proc SQL; select MEMNAME into : MEMNAMES separated by ' ' 
-from dictionary.tables where libname='WORK';quit;
-%put &MEMNAMES;
+PROC CASUTIL;
+	DROPTABLE INCASLIB="CASUSER" CASDATA="PROJECT_DS" QUIET;
+	LOAD DATA=WORK.DS_FINAL CASOUT="PROJECT_DS" OUTCASLIB="CASUSER" PROMOTE;
+QUIT;
 
-data names; set &MEMNAMES;run;
-%mend;
-%EasyRun(scenario=Scenario_one,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
-
-%EasyRun(scenario=Scenario_two,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
-
-%EasyRun(scenario=Scenario_three,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
-
-
-%EasyRun(scenario=Scenario_four,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.009,ICUPercent=0.002,VentPErcent=0.001);
-
-%EasyRun(scenario=Scenario_five,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.009,ICUPercent=0.002,VentPErcent=0.001);
-
-%EasyRun(scenario=Scenario_six,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.009,ICUPercent=0.002,VentPErcent=0.001);
-
-%EasyRun(scenario=Scenario_seven,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.025,ICUPercent=0.02,VentPErcent=0.01);
-
-%EasyRun(scenario=Scenario_eight,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.025,ICUPercent=0.02,VentPErcent=0.01);
-
-%EasyRun(scenario=Scenario_nine,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.025,ICUPercent=0.02,VentPErcent=0.01);
-
-%EasyRun(scenario=BASE_Scenario,InitRecovered=0,RecoveryDays=14,
-doublingtime=5,KnownAdmits=10,KnownCOVID=100,Population=4000000,
-SocialDistancing=0.0,MarketSharePercent=1.00,Admission_Rate=.1,ICUPercent=0.02,VentPErcent=0.01);
-
-%let DlabPush=Yes;
-%macro addtoDL(ExistingTabName, DesiredTabName, Libref);
-data work.rownumtab; set work.&ExistingTabName;
-rownum=_N_;run;
-data work.rownumtab_move; set work.rownumtab(keep=rownum);set work.rownumtab;run;
-
-proc sql noprint; drop table &Libref .&DesiredTabName;quit;
-DATA &Libref .&DesiredTabName (FASTLOAD=YES FASTEXPORT=YES SESSIONS=4);
-     SET WORK.rownumtab_move;RUN;
-	 proc sql noprint; drop table work.rownumtab, work.rownumtab_move;quit;
-%mend;
-libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
-%macro Y_N;
-%if &DlabPush=Yes %then %addtoDL(names,COVID_SIR_REsults_1,DL_RA);
-%else ;
-%mend;
-%Y_N;
+CAS CASAUTO TERMINATE;
