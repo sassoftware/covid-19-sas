@@ -1,7 +1,7 @@
 /*SAS Studio program COVID_19*/
 /*%STPBegin;*/
 
-libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
+*libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
 %let DeathRt=0;
 %let Diagnosed_Rate=1.0; /*factor to adjust %admission to make sense multiplied by Total I*/
 %let LOS=7; /*default 7 length of stay for all scenarios*/
@@ -110,29 +110,32 @@ DATA DS_FINAL;
 			VENT = /*I_N*/round(NewInfected * &VENT_RATE * &MARKET_SHARE,1); 
 			ECMO = /*I_N*/round(NewInfected * &ECMO * &MARKET_SHARE*&Hosp_rate,1); 
 			DIAL = /*I_N*/round(NewInfected * &DIAL * &MARKET_SHARE*&Hosp_rate,1); 
+		/* cumulative sum */
+			Cumulative_sum_Hosp + Hosp;
+			Cumulative_Sum_ICU + ICU;
+			Cumulative_Sum_Vent + VENT;
+			Cumulative_Sum_Ecmo + ECMO;
+			Cumulative_Sum_DIAL + DIAL;
+
+			Cumulative_sum_Market_Hosp + Market_Hosp;
+			Cumulative_Sum_Market_ICU + Market_ICU;
+			Cumulative_Sum_Market_Vent + Market_Vent;
+			Cumulative_Sum_Market_ECMO + MArket_ECMO;
+			Cumulative_Sum_Market_DIAL + Market_DIAL;		
 		OUTPUT;
 	END;
 	DROP LAG: BETA;
 RUN;
 
- 
-/*TITLE; */
-data work.cumulative_1;set work.ds_final;
-retain Cumulative_sum_Hosp Cumulative_Sum_ICU Cumulative_Sum_Vent Cumulative_Sum_ECMO Cumulative_Sum_DIAL
-Cumulative_sum_Market_Hosp Cumulative_Sum_Market_ICU Cumulative_Sum_Market_Vent Cumulative_Sum_Market_ECMO Cumulative_Sum_Market_DIAL
-;
-Cumulative_sum_Hosp + Hosp;
-Cumulative_Sum_ICU + ICU;
-Cumulative_Sum_Vent+VENT;
-Cumulative_Sum_Ecmo+ECMO;
-Cumulative_Sum_DIAL+DIAL;
 
-Cumulative_sum_Market_Hosp + Market_Hosp;
-Cumulative_Sum_Market_ICU + Market_ICU;
-Cumulative_Sum_Market_Vent + Market_Vent;
-Cumulative_Sum_Market_ECMO + MArket_ECMO;
-Cumulative_Sum_Market_DIAL + Market_DIAL;
-;run;
+%mend;
+%EasyRun(scenario=Scenario_one,InitRecovered=0,RecoveryDays=14,
+doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
+SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
+ 
+
+
+
 
 data work. &Scenario; set work.cumulative_1;
 format Scenarioname $30.;
