@@ -68,12 +68,14 @@
 %PUT _ALL_; 
  
 /* DATA SET APPROACH */
-DATA DS_FINAL;
+DATA DS_FINAL_MH;
+	format Scenarioname $30.;
+	ScenarioName="&Scenario";
 	DO DAY = 0 TO &N_DAYS;
 		IF DAY = 0 THEN DO;
-			S_N = &S;
-			I_N = &I;
-			R_N = &R;
+			S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
+ 			I_N = &I/&Diagnosed_Rate; 
+ 			R_N = &R + &InitRecovered; 
 			BETA=&BETA;
 			N = SUM(S_N, I_N, R_N);
 		END;
@@ -121,7 +123,38 @@ DATA DS_FINAL;
 			Cumulative_Sum_Market_ICU + Market_ICU;
 			Cumulative_Sum_Market_Vent + Market_Vent;
 			Cumulative_Sum_Market_ECMO + MArket_ECMO;
-			Cumulative_Sum_Market_DIAL + Market_DIAL;		
+			Cumulative_Sum_Market_DIAL + Market_DIAL;
+		/* more calcs */
+			PENN_HOSP = PENN_HOSP-lag(PENN_HOSP);  /* this may need checking */
+
+			CumAdmitLagged=round(lag&HOSP_LOS(Cumulative_sum_Hosp),1) ;
+			CumICULagged=round(lag&ICU_LOS(Cumulative_sum_ICU),1) ;
+			CumVentLagged=round(lag&VENT_LOS(Cumulative_sum_VENT),1) ;
+			CumECMOLagged=round(lag&ECMO_LOS(Cumulative_sum_ECMO),1) ;
+			CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
+
+			CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketICULag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketVENTLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketECMOLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketDIALLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+
+			array fixingdot _Numeric_;
+			do over fixingdot;
+				if fixingdot=. then fixingdot=0;
+			end;
+
+			Hospital_Occupancy= round(Cumulative_Sum_Hosp-CumAdmitLagged,1);
+			ICU_Occupancy= round(Cumulative_Sum_ICU-CumICULagged,1);
+			Vent_Occupancy= round(Cumulative_Sum_Vent-CumVentLagged,1);
+			ECMO_Occupancy= round(Cumulative_Sum_ECMO-CumECMOLagged,1);
+			DIAL_Occupancy= round(Cumulative_Sum_DIAL-CumDIALLagged,1);
+
+			Market_Hospital_Occupancy= round(Cumulative_sum_Market_Hosp-CumMarketAdmitLag,1);
+			MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
+			Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
+			Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
+			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);				
 		OUTPUT;
 	END;
 	DROP LAG: BETA;
@@ -133,46 +166,8 @@ RUN;
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
  
+proc compare base=DS_FINAL_MH compare=SCENARIO_ONE; run;
 
-
-
-
-data work. &Scenario; set work.cumulative_1;
-format Scenarioname $30.;
-ScenarioName="&Scenario";
-
-PENN_HOSP = PENN_HOSP-lag(PENN_HOSP);
-
-CumAdmitLagged=round(lag&HOSP_LOS(Cumulative_sum_Hosp),1) ;
-CumICULagged=round(lag&ICU_LOS(Cumulative_sum_ICU),1) ;
-CumVentLagged=round(lag&VENT_LOS(Cumulative_sum_VENT),1) ;
-CumECMOLagged=round(lag&ECMO_LOS(Cumulative_sum_ECMO),1) ;
-CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
-
-CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-CumMarketICULag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-CumMarketVENTLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-CumMarketECMOLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-CumMarketDIALLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-
-array fixingdot _Numeric_;
- do over fixingdot;
- 	if fixingdot=. then fixingdot=0;
-end;
-
- ;
-Hospital_Occupancy= round(Cumulative_Sum_Hosp-CumAdmitLagged,1);
-ICU_Occupancy= round(Cumulative_Sum_ICU-CumICULagged,1);
-Vent_Occupancy= round(Cumulative_Sum_Vent-CumVentLagged,1);
-ECMO_Occupancy= round(Cumulative_Sum_ECMO-CumECMOLagged,1);
-DIAL_Occupancy= round(Cumulative_Sum_DIAL-CumDIALLagged,1);
-
-Market_Hospital_Occupancy= round(Cumulative_sum_Market_Hosp-CumMarketAdmitLag,1);
-MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
-Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
-Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
-Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);
-;run;
 
 
 /* PROC SGPLOT DATA=&Scenario; */
