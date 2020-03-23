@@ -142,6 +142,10 @@ IDEA: Merge DS_FINAL and TMODEL_FINAL into FINAL.
 user variable model= to specify DS or TMODEL
 synchronize variable names I_N & I for instance
 */
+/* 
+Ideas for more features:
+
+*/
 
 TITLE;
 
