@@ -114,28 +114,28 @@ TITLE;
 
 /*PROC MODEL APPROACH*/
 
-DATA DINIT(Label="Initial Coditions of Simulation"); 
+DATA DINIT(Label="Initial Coditions of Simulation");
 	S = &S;
-	I = &I; 
+	I = &I;
 	R = &R;
 	R_NAUGHT=&R_NAUGHT;
-	DO TIME = 0 TO &N_DAYS; 
-		OUTPUT; 
-	END; 
+	DO TIME = 0 TO &N_DAYS;
+		OUTPUT;
+	END;
 RUN;
 
 *Solvig the ODEs with Proc Model;
 PROC MODEL DATA = DINIT;
-/* PARAMETER SETTINGS */ 
-	PARMS N &S. R_NAUGHT &R_NAUGHT. ; 
-	GAMMA = &GAMMA.;    	         
+/* PARAMETER SETTINGS */
+	PARMS N &S. R_NAUGHT &R_NAUGHT. ;
+	GAMMA = &GAMMA.;
 	BETA = R_NAUGHT*GAMMA/N;
-	/* DIFFERENTIAL EQUATIONS */ 
-	DERT.S = -BETA*S*I; 				
-	DERT.I = BETA*S*I-GAMMA*I;   
-	DERT.R = GAMMA*I;           
-/* SOLVE THE EQUATIONS */ 
-	SOLVE S I R / OUT = MODEL1; 
+	/* DIFFERENTIAL EQUATIONS */
+	DERT.S = -BETA*S*I;
+	DERT.I = BETA*S*I-GAMMA*I;
+	DERT.R = GAMMA*I;
+/* SOLVE THE EQUATIONS */
+	SOLVE S I R / OUT = MODEL1;
 RUN;
 QUIT;
 
