@@ -102,7 +102,6 @@ DATA DS_FINAL;
 			Market_VENT = /*I_N*/round(NewInfected * &VENT_RATE,1) /* &MARKET_SHARE*/; 
 			MArket_ECMO = /*I_N*/round(NewInfected * &ECMO *&Hosp_rate,1) /* &MARKET_SHARE*/; 
 			Market_DIAL = /*I_N*/round(NewInfected * &DIAL *&Hosp_rate,1)/* &MARKET_SHARE*/; 
-			PENN_HOSP = Round(I_N*&HOSP_RATE * &MARKET_SHARE,1);
 			HOSP = /*I_N*/round(NewInfected * &HOSP_RATE * &MARKET_SHARE,1); 
 			ICU = /*I_N*/round(NewInfected * &ICU_RATE * &MARKET_SHARE,1); 
 			VENT = /*I_N*/round(NewInfected * &VENT_RATE * &MARKET_SHARE,1); 
@@ -121,8 +120,6 @@ DATA DS_FINAL;
 			Cumulative_Sum_Market_ECMO + MArket_ECMO;
 			Cumulative_Sum_Market_DIAL + Market_DIAL;
 		/* more calcs */
-			PENN_HOSP = PENN_HOSP-lag(PENN_HOSP);  /* this may need checking */
-
 			CumAdmitLagged=round(lag&HOSP_LOS(Cumulative_sum_Hosp),1) ;
 			CumICULagged=round(lag&ICU_LOS(Cumulative_sum_ICU),1) ;
 			CumVentLagged=round(lag&VENT_LOS(Cumulative_sum_VENT),1) ;
