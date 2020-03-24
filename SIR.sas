@@ -1,5 +1,7 @@
 /*SAS Studio program COVID_19*/
 
+%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
+
 %let DeathRt=0;
 %let Diagnosed_Rate=1.0; /*factor to adjust %admission to make sense multiplied by Total I*/
 %let LOS=7; /*default 7 length of stay for all scenarios*/
@@ -10,8 +12,6 @@
 %let DialysisPercent=0.09; /*default percent of admissions that need Dialysis*/
 %let DialysisLOS=10;
 
-%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
-
 %LET S_DEFAULT =&Population;  /*prompt variable &Population*/
 %LET KNOWN_INFECTIONS = &KnownCOVID; /*prompt variable */
 %LET KNOWN_CASES = &KnownAdmits; /*prompt variable */
@@ -19,9 +19,9 @@
 %LET CURRENT_HOSP = &KNOWN_CASES; 
 /*Doubling time before social distancing (days)*/ 
 %LET DOUBLING_TIME = &DoublingTime; 
- /*Social distancing (% reduction in social contact)*/ 
- %LET RELATIVE_CONTACT_RATE = &SocialDistancing; 
- /*Hospitalization %(total infections)*/ 
+/*Social distancing (% reduction in social contact)*/ 
+%LET RELATIVE_CONTACT_RATE = &SocialDistancing; 
+/*Hospitalization %(total infections)*/ 
 %LET HOSP_RATE = &Admission_Rate*&Diagnosed_Rate; 
 /*ICU %(total infections)*/ 
 %LET ICU_RATE = &ICUPercent*&Diagnosed_Rate; 
@@ -60,18 +60,27 @@
 %LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1))); 
 %LET N_DAYS = /*&ModelDays*/365; 
 %LET BETA_DECAY = 0.0; 
+/*Average number of days from infection to hospitalization*/
+%LET DAYS_TO_HOSP = 0;
+/*Date of first COVID-19 Case*/
+%LET DAY_ZERO = 13MAR2020;
 
 %PUT _ALL_; 
- 
+
+DATA PARMS;
+	set sashelp.vmacro(where=(scope='EASYRUN'));
+	ScenarioName="&scenario.";
+RUN;
+
 /* DATA SET APPROACH */
-DATA DS_FINAL;
-	format Scenarioname $30.;
+DATA DS_STEP;
+	format Scenarioname $30. DATE ADMIT_DATE DATE9.;
 	ScenarioName="&Scenario";
 	DO DAY = 0 TO &N_DAYS;
 		IF DAY = 0 THEN DO;
 			S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
- 			I_N = &I/&Diagnosed_Rate; 
- 			R_N = &R + &InitRecovered; 
+			I_N = &I/&Diagnosed_Rate; 
+			R_N = &R + &InitRecovered; 
 			BETA=&BETA;
 			N = SUM(S_N, I_N, R_N);
 		END;
@@ -95,8 +104,10 @@ DATA DS_FINAL;
 		LAG_N = N;
 		LAG_BETA = BETA;
 		/* add Lagg HOSP/ICU/VENT/ECMO/DIAL*/ 
-			InfectedLag=lag(S_N);
-			NewInfected=round(InfectedLag-S_N,1);
+/*			InfectedLag=lag(S_N);*/
+/*			NewInfected=round(InfectedLag-S_N,1);*/
+			NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
+			IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 			Market_HOSP = /*I_N*/round(NewInfected * &HOSP_RATE,1) /* &MARKET_SHARE*/; 
 			Market_ICU = /*I_N*/round(NewInfected * &ICU_RATE,1) /* &MARKET_SHARE*/; 
 			Market_VENT = /*I_N*/round(NewInfected * &VENT_RATE,1) /* &MARKET_SHARE*/; 
@@ -127,10 +138,10 @@ DATA DS_FINAL;
 			CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
 
 			CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketICULag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketVENTLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketECMOLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketDIALLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketICULag=Round(lag&ICU_LOS(Cumulative_sum_Market_ICU));
+			CumMarketVENTLag=Round(lag&VENT_LOS(Cumulative_sum_Market_VENT));
+			CumMarketECMOLag=Round(lag&ECMO_LOS(Cumulative_sum_Market_ECMO));
+			CumMarketDIALLag=Round(lag&DIAL_LOS(Cumulative_sum_Market_DIAL));
 
 			array fixingdot _Numeric_;
 			do over fixingdot;
@@ -147,29 +158,45 @@ DATA DS_FINAL;
 			MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
 			Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
 			Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
-			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);				
+			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);	
+			DATE = "&DAY_ZERO"D + DAY;
+			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);			
 		OUTPUT;
 	END;
-	DROP LAG: BETA;
+	DROP LAG: BETA CUM:;
+
 RUN;
 
+%IF %SYSFUNC(exist(work.DS_FINAL)) %THEN %DO;
+	data DS_FINAL; set DS_FINAL(where=(ScenarioName ^= "&scenario.")); run;
+	data SCENARIOS; set SCENARIOS(where=(ScenarioName ^= "&scenario.")); run;
+%END;
+PROC APPEND base=DS_FINAL data=DS_STEP; run;
+PROC APPEND base=SCENARIOS data=PARMS; run;
 
 %mend;
+
 %EasyRun(scenario=Scenario_one,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
- 
+
+%EasyRun(scenario=Scenario_two,InitRecovered=0,RecoveryDays=14,
+doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
+
 /* this will compare the DS_FINAL above to the SCENARIO_ONE output from BromEnhancedModel_V2.sas - show equal rows/columns
 proc compare base=DS_FINAL compare=SCENARIO_ONE; run;
 */
 
 PROC SGPLOT DATA=DS_FINAL;
-	TITLE "New Admissions - DATA Step Approach";
-	SERIES X=DAY Y=HOSP;
-	SERIES X=DAY Y=ICU;
-	SERIES X=DAY Y=VENT;
-	XAXIS LABEL="Days from Today";
-	YAXIS LABEL="Daily Admissions";
+	TITLE "Daily Occupancy - Data Step Approach";
+	SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
+	SERIES X=DATE Y=ICU_OCCUPANCY;
+	SERIES X=DATE Y=VENT_OCCUPANCY;
+	SERIES X=DATE Y=ECMO_OCCUPANCY;
+	SERIES X=DATE Y=DIAL_OCCUPANCY;
+	XAXIS LABEL="Date";
+	YAXIS LABEL="Daily Occupancy";
 RUN;
 TITLE;
 
