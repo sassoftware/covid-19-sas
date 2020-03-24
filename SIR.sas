@@ -171,13 +171,14 @@ proc compare base=DS_FINAL compare=SCENARIO_ONE; run;
 */
 
 PROC SGPLOT DATA=DS_FINAL;
-	where ScenarioName='Scenario_one';
-	TITLE "New Admissions - DATA Step Approach";
-	SERIES X=DAY Y=HOSP;
-	SERIES X=DAY Y=ICU;
-	SERIES X=DAY Y=VENT;
-	XAXIS LABEL="Days from Today";
-	YAXIS LABEL="Daily Admissions";
+	TITLE "Daily Occupancy - Data Step Approach";
+	SERIES X=DAY Y=HOSPITAL_OCCUPANCY;
+	SERIES X=DAY Y=ICU_OCCUPANCY;
+	SERIES X=DAY Y=VENT_OCCUPANCY;
+	SERIES X=DAY Y=ECMO_OCCUPANCY;
+	SERIES X=DAY Y=DIAL_OCCUPANCY;
+	XAXIS LABEL="Date";
+	YAXIS LABEL="Daily Occupancy";
 RUN;
 TITLE;
 
