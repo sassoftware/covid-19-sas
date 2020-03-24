@@ -154,6 +154,9 @@ DATA DS_STEP;
 
 RUN;
 
+%IF %SYSFUNC(exist(work.DS_FINAL)) %THEN %DO;
+	data DS_FINAL; set DS_FINAL(where=(ScenarioName ^= "&scenario.")); run;
+%END;
 PROC APPEND base=DS_FINAL data=DS_STEP; run;
 
 %mend;
@@ -161,7 +164,7 @@ PROC APPEND base=DS_FINAL data=DS_STEP; run;
 %EasyRun(scenario=Scenario_one,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
- 
+
 %EasyRun(scenario=Scenario_two,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
