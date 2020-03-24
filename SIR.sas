@@ -104,8 +104,10 @@ DATA DS_STEP;
 		LAG_N = N;
 		LAG_BETA = BETA;
 		/* add Lagg HOSP/ICU/VENT/ECMO/DIAL*/ 
-			InfectedLag=lag(S_N);
-			NewInfected=round(InfectedLag-S_N,1);
+/*			InfectedLag=lag(S_N);*/
+/*			NewInfected=round(InfectedLag-S_N,1);*/
+			NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
+			IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 			Market_HOSP = /*I_N*/round(NewInfected * &HOSP_RATE,1) /* &MARKET_SHARE*/; 
 			Market_ICU = /*I_N*/round(NewInfected * &ICU_RATE,1) /* &MARKET_SHARE*/; 
 			Market_VENT = /*I_N*/round(NewInfected * &VENT_RATE,1) /* &MARKET_SHARE*/; 
@@ -161,7 +163,7 @@ DATA DS_STEP;
 			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);			
 		OUTPUT;
 	END;
-	DROP LAG: BETA;
+	DROP LAG: BETA CUM:;
 
 RUN;
 
