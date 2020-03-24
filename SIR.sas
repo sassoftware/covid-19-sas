@@ -1,5 +1,7 @@
 /*SAS Studio program COVID_19*/
 
+%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
+
 %let DeathRt=0;
 %let Diagnosed_Rate=1.0; /*factor to adjust %admission to make sense multiplied by Total I*/
 %let LOS=7; /*default 7 length of stay for all scenarios*/
@@ -9,8 +11,6 @@
 %let ecmolos=28;
 %let DialysisPercent=0.09; /*default percent of admissions that need Dialysis*/
 %let DialysisLOS=10;
-
-%macro EasyRun(Scenario,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent);
 
 %LET S_DEFAULT =&Population;  /*prompt variable &Population*/
 %LET KNOWN_INFECTIONS = &KnownCOVID; /*prompt variable */
@@ -62,6 +62,11 @@
 %LET BETA_DECAY = 0.0; 
 
 %PUT _ALL_; 
+
+DATA PARMS;
+	set sashelp.vmacro(where=(scope='EASYRUN'));
+	ScenarioName="&scenario.";
+RUN;
 
 /* DATA SET APPROACH */
 DATA DS_STEP;
@@ -156,8 +161,10 @@ RUN;
 
 %IF %SYSFUNC(exist(work.DS_FINAL)) %THEN %DO;
 	data DS_FINAL; set DS_FINAL(where=(ScenarioName ^= "&scenario.")); run;
+	data SCENARIOS; set SCENARIOS(where=(ScenarioName ^= "&scenario.")); run;
 %END;
 PROC APPEND base=DS_FINAL data=DS_STEP; run;
+PROC APPEND base=SCENARIOS data=PARMS; run;
 
 %mend;
 
