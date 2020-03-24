@@ -64,7 +64,7 @@
 %PUT _ALL_; 
 
 /* DATA SET APPROACH */
-DATA DS_FINAL;
+DATA DS_STEP;
 	format Scenarioname $30.;
 	ScenarioName="&Scenario";
 	DO DAY = 0 TO &N_DAYS;
@@ -151,7 +151,10 @@ DATA DS_FINAL;
 		OUTPUT;
 	END;
 	DROP LAG: BETA;
+
 RUN;
+
+PROC APPEND base=DS_FINAL data=DS_STEP; run;
 
 %mend;
 
@@ -159,11 +162,16 @@ RUN;
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
  
+%EasyRun(scenario=Scenario_two,InitRecovered=0,RecoveryDays=14,
+doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
+
 /* this will compare the DS_FINAL above to the SCENARIO_ONE output from BromEnhancedModel_V2.sas - show equal rows/columns
 proc compare base=DS_FINAL compare=SCENARIO_ONE; run;
 */
 
 PROC SGPLOT DATA=DS_FINAL;
+	where ScenarioName='Scenario_one';
 	TITLE "New Admissions - DATA Step Approach";
 	SERIES X=DAY Y=HOSP;
 	SERIES X=DAY Y=ICU;
