@@ -60,12 +60,16 @@
 %LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1))); 
 %LET N_DAYS = /*&ModelDays*/365; 
 %LET BETA_DECAY = 0.0; 
+/*Average number of days from infection to hospitalization*/
+%LET DAYS_TO_HOSP = 0;
+/*Date of first COVID-19 Case*/
+%LET DAY_ZERO = 13MAR2020;
 
 %PUT _ALL_; 
 
 /* DATA SET APPROACH */
 DATA DS_STEP;
-	format Scenarioname $30.;
+	format Scenarioname $30. DATE ADMIT_DATE DATE9.;
 	ScenarioName="&Scenario";
 	DO DAY = 0 TO &N_DAYS;
 		IF DAY = 0 THEN DO;
@@ -147,7 +151,9 @@ DATA DS_STEP;
 			MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
 			Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
 			Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
-			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);				
+			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);	
+			DATE = "&DAY_ZERO"D + DAY;
+			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);			
 		OUTPUT;
 	END;
 	DROP LAG: BETA;
@@ -175,11 +181,11 @@ proc compare base=DS_FINAL compare=SCENARIO_ONE; run;
 
 PROC SGPLOT DATA=DS_FINAL;
 	TITLE "Daily Occupancy - Data Step Approach";
-	SERIES X=DAY Y=HOSPITAL_OCCUPANCY;
-	SERIES X=DAY Y=ICU_OCCUPANCY;
-	SERIES X=DAY Y=VENT_OCCUPANCY;
-	SERIES X=DAY Y=ECMO_OCCUPANCY;
-	SERIES X=DAY Y=DIAL_OCCUPANCY;
+	SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
+	SERIES X=DATE Y=ICU_OCCUPANCY;
+	SERIES X=DATE Y=VENT_OCCUPANCY;
+	SERIES X=DATE Y=ECMO_OCCUPANCY;
+	SERIES X=DATE Y=DIAL_OCCUPANCY;
 	XAXIS LABEL="Date";
 	YAXIS LABEL="Daily Occupancy";
 RUN;
