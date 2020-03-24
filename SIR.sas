@@ -19,9 +19,9 @@
 %LET CURRENT_HOSP = &KNOWN_CASES; 
 /*Doubling time before social distancing (days)*/ 
 %LET DOUBLING_TIME = &DoublingTime; 
- /*Social distancing (% reduction in social contact)*/ 
- %LET RELATIVE_CONTACT_RATE = &SocialDistancing; 
- /*Hospitalization %(total infections)*/ 
+/*Social distancing (% reduction in social contact)*/ 
+%LET RELATIVE_CONTACT_RATE = &SocialDistancing; 
+/*Hospitalization %(total infections)*/ 
 %LET HOSP_RATE = &Admission_Rate*&Diagnosed_Rate; 
 /*ICU %(total infections)*/ 
 %LET ICU_RATE = &ICUPercent*&Diagnosed_Rate; 
@@ -62,7 +62,7 @@
 %LET BETA_DECAY = 0.0; 
 
 %PUT _ALL_; 
- 
+
 /* DATA SET APPROACH */
 DATA DS_FINAL;
 	format Scenarioname $30.;
@@ -70,8 +70,8 @@ DATA DS_FINAL;
 	DO DAY = 0 TO &N_DAYS;
 		IF DAY = 0 THEN DO;
 			S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
- 			I_N = &I/&Diagnosed_Rate; 
- 			R_N = &R + &InitRecovered; 
+			I_N = &I/&Diagnosed_Rate; 
+			R_N = &R + &InitRecovered; 
 			BETA=&BETA;
 			N = SUM(S_N, I_N, R_N);
 		END;
@@ -153,8 +153,8 @@ DATA DS_FINAL;
 	DROP LAG: BETA;
 RUN;
 
-
 %mend;
+
 %EasyRun(scenario=Scenario_one,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=37,KnownCOVID=150,Population=4390000,
 SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.02,VentPErcent=0.01);
