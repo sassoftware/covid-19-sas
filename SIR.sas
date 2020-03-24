@@ -127,10 +127,10 @@ DATA DS_FINAL;
 			CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
 
 			CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketICULag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketVENTLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketECMOLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketDIALLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+			CumMarketICULag=Round(lag&ICU_LOS(Cumulative_sum_Market_ICU));
+			CumMarketVENTLag=Round(lag&VENT_LOS(Cumulative_sum_Market_VENT));
+			CumMarketECMOLag=Round(lag&ECMO_LOS(Cumulative_sum_Market_ECMO));
+			CumMarketDIALLag=Round(lag&DIAL_LOS(Cumulative_sum_Market_DIAL));
 
 			array fixingdot _Numeric_;
 			do over fixingdot;
