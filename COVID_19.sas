@@ -2,15 +2,16 @@
 
 /* the storage location for the MODEL_FINAL table and the SCENARIOS table */
 libname store '/Local_Files/covid';
+/*libname store 'C:\COVID19';*/
 
-%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,plots=no);
+%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
 
 /* Translate CCF code macro (%EASYRUN) inputs to variables used in this code 
 	these variables come in from the macro call above
 	this section show the name mapping to how they are used in this code
 */
 /*%LET scenario=BASE_Scenario_one;*/
-/*%LET IncubationPeriod=0;*/ /* not yet used */
+/*%LET IncubationPeriod=0;*/ /* Used with this name */
 /*%LET InitRecovered=0;*/ /* R */
 /*%LET RecoveryDays=14;*/ /* RECOVERY_DAYS */
 /*%LET doublingtime=5;*/ /* DOUBLING_TIME */
@@ -46,6 +47,7 @@ libname store '/Local_Files/covid';
 %LET ICU_RATE = %SYSEVALF(&ICUPercent.*&DIAGNOSED_RATE);
 /*Ventilated %(total infections)*/
 %LET VENT_RATE = %SYSEVALF(&VentPErcent.*&DIAGNOSED_RATE);
+%Let Fatality_rate = &fatalityrate;
 /*Average number of days from infection to hospitalization*/
 %LET DAYS_TO_HOSP = 0;
 
@@ -101,7 +103,7 @@ DATA DINIT(Label="Initial Conditions of Simulation");
 	E_N = &E;
 	I_N = &I/&DIAGNOSED_RATE;
 	R_N = &R;
-	R0=&R_NAUGHT;
+	R0=&R_T;
 	DO TIME = 0 TO &N_DAYS; 
 		OUTPUT; 
 	END; 
@@ -109,7 +111,7 @@ RUN;
 
 /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
 %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
-	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from work.scenarios; quit;
+	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
 %END;
 %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
 /* store all the macro variables that set up this scenario in PARMS dataset */
@@ -150,7 +152,7 @@ RUN;
 	/*PROC TMODEL SEIR APPROACH*/
 		PROC TMODEL DATA = DINIT NOPRINT;
 			/* PARAMETER SETTINGS */ 
-			PARMS N &S. R0 &R_NAUGHT. ; 
+			PARMS N &S. R0 &R_T. ; 
 			GAMMA = &GAMMA.;
 			SIGMA = &SIGMA;
 			BETA = R0*GAMMA/N;
@@ -176,8 +178,8 @@ RUN;
 			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 			LENGTH METHOD $15.;
-			RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL
-				CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL;
+			RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+				CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 			LAG_S = S_N; 
 			LAG_E = E_N; 
 			LAG_I = I_N; 
@@ -188,28 +190,32 @@ RUN;
 			SCALE = LAG_N / N;
 		/*	NOTINFECTED = SUM(S_N,E_N);*/
 		/*	NEWINFECTED=ROUND(SUM(LAG(NOTINFECTED),-1*NOTINFECTED),1);*/
-			NEWINFECTED=ROUND(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)),1);
+			NEWINFECTED=SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N));
 			IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-			HOSP = ROUND(NEWINFECTED * &HOSP_RATE * &MARKET_SHARE);
-			ICU = ROUND(NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE);
-			VENT = ROUND(NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE);
-			ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE);
-			DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE);
-			MARKET_HOSP = ROUND(NEWINFECTED * &HOSP_RATE);
-			MARKET_ICU = ROUND(NEWINFECTED * &ICU_RATE * &HOSP_RATE);
-			MARKET_VENT = ROUND(NEWINFECTED * &VENT_RATE * &HOSP_RATE);
-			MARKET_ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &HOSP_RATE);
-			MARKET_DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &HOSP_RATE);
+			HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
+			ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
+			VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
+			ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
+			DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
+			Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
+			MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
+			MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
+			MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
+			MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
+			MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
+			Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
 			CUMULATIVE_SUM_HOSP + HOSP;
 			CUMULATIVE_SUM_ICU + ICU;
 			CUMULATIVE_SUM_VENT + VENT;
 			CUMULATIVE_SUM_ECMO + ECMO;
 			CUMULATIVE_SUM_DIAL + DIAL;
+			Cumulative_sum_fatality + Fatality;
 			CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
 			CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
 			CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
 			CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
 			CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
+			cumulative_Sum_Market_Fatality + Market_Fatality;
 			CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
 			CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
 			CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
@@ -229,11 +235,17 @@ RUN;
 			VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
 			ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
 			DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
+			Deceased_Today = Fatality;
+			Total_Deaths = Cumulative_sum_fatality;
+			MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
 			MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
 			MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
 			MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
 			MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
 			MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
+			Market_Deceased_Today = Market_Fatality;
+			Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+			Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 			DATE = "&DAY_ZERO"D + DAY;
 			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
 			METHOD = "SEIR - TMODEL";
@@ -243,7 +255,7 @@ RUN;
 	/*PROC TMODEL SIR APPROACH*/
 		PROC TMODEL DATA = DINIT NOPRINT;
 			/* PARAMETER SETTINGS */ 
-			PARMS N &S. R0 &R_NAUGHT. ; 
+			PARMS N &S. R0 &R_T. ; 
 			GAMMA = &GAMMA.;    	         
 			BETA = R0*GAMMA/N;
 			/* DIFFERENTIAL EQUATIONS */ 
@@ -263,8 +275,8 @@ RUN;
 			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 			LENGTH METHOD $15.;
-			RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL
-				CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL;
+			RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+				CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 			LAG_S = S_N; 
 			LAG_I = I_N; 
 			LAG_R = R_N; 
@@ -272,28 +284,32 @@ RUN;
 			SET TMODEL_SIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 			N = SUM(S_N, I_N, R_N);
 			SCALE = LAG_N / N;
-			NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
+			NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(S_N),-1*S_N));
 			IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-			HOSP = ROUND(NEWINFECTED * &HOSP_RATE * &MARKET_SHARE);
-			ICU = ROUND(NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE);
-			VENT = ROUND(NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE);
-			ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE);
-			DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE);
-			MARKET_HOSP = ROUND(NEWINFECTED * &HOSP_RATE);
-			MARKET_ICU = ROUND(NEWINFECTED * &ICU_RATE * &HOSP_RATE);
-			MARKET_VENT = ROUND(NEWINFECTED * &VENT_RATE * &HOSP_RATE);
-			MARKET_ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &HOSP_RATE);
-			MARKET_DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &HOSP_RATE);
+			HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
+			ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
+			VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
+			ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
+			DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
+			Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
+			MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
+			MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
+			MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
+			MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
+			MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
+			Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
 			CUMULATIVE_SUM_HOSP + HOSP;
 			CUMULATIVE_SUM_ICU + ICU;
 			CUMULATIVE_SUM_VENT + VENT;
 			CUMULATIVE_SUM_ECMO + ECMO;
 			CUMULATIVE_SUM_DIAL + DIAL;
+			Cumulative_sum_fatality + Fatality;
 			CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
 			CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
 			CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
 			CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
 			CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
+			cumulative_Sum_Market_Fatality + Market_Fatality;
 			CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
 			CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
 			CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
@@ -313,11 +329,17 @@ RUN;
 			VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
 			ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
 			DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
+			Deceased_Today = Fatality;
+			Total_Deaths = Cumulative_sum_fatality;
+			MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
 			MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
 			MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
 			MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
 			MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
 			MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
+			Market_Deceased_Today = Market_Fatality;
+			Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+			Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 			DATE = "&DAY_ZERO"D + DAY;
 			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
 			METHOD = "SIR - TMODEL";
@@ -360,28 +382,32 @@ RUN;
 				LAG_R = R_N;
 				LAG_N = N;
 				LAG_BETA = BETA;
-				NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
+				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(S_N),-1*S_N));
 				IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-				HOSP = ROUND(NEWINFECTED * &HOSP_RATE * &MARKET_SHARE);
-				ICU = ROUND(NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE);
-				VENT = ROUND(NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE);
-				ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE);
-				DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE);
-				MARKET_HOSP = ROUND(NEWINFECTED * &HOSP_RATE);
-				MARKET_ICU = ROUND(NEWINFECTED * &ICU_RATE * &HOSP_RATE);
-				MARKET_VENT = ROUND(NEWINFECTED * &VENT_RATE * &HOSP_RATE);
-				MARKET_ECMO = ROUND(NEWINFECTED * &ECMO_RATE * &HOSP_RATE);
-				MARKET_DIAL = ROUND(NEWINFECTED * &DIAL_RATE * &HOSP_RATE);
+				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
+				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
+				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
+				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
+				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
+				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
+				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
+				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
+				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
+				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
+				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
+				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
 				CUMULATIVE_SUM_HOSP + HOSP;
 				CUMULATIVE_SUM_ICU + ICU;
 				CUMULATIVE_SUM_VENT + VENT;
 				CUMULATIVE_SUM_ECMO + ECMO;
 				CUMULATIVE_SUM_DIAL + DIAL;
+				Cumulative_sum_fatality + Fatality;
 				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
 				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
 				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
 				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
 				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
+				cumulative_Sum_Market_Fatality + Market_Fatality;
 				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
 				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
 				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
@@ -401,11 +427,17 @@ RUN;
 				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
 				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
 				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
+				Deceased_Today = Fatality;
+				Total_Deaths = Cumulative_sum_fatality;
+				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
 				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
 				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
 				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
 				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
 				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
+				Market_Deceased_Today = Market_Fatality;
+				Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 				DATE = "&DAY_ZERO"D + DAY;
 				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
 				METHOD = "SIR - DATA Step";
@@ -453,6 +485,7 @@ RUN;
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
+			where ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Hospital Occupancy - All Approaches";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE;
 		/*	SERIES X=DATE Y=ICU_OCCUPANCY / GROUP=METHOD;*/
@@ -471,54 +504,102 @@ RUN;
 
 %EasyRun(scenario=BASE_Scenario_one,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125,FatalityRate = 0.01,plots=YES);
 
 %EasyRun(scenario=BASE_Scenario_two,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=BASE_Scenario_three,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=BASE_Scenario_one_Inc,IncubationPeriod=10,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=BASE_Scenario_two_Inc,IncubationPeriod=10,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=BASE_Scenario_three_Inc,IncubationPeriod=10,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.075,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_one_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_two_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_three_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.05,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_one_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.0,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_two_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.2,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
 %EasyRun(scenario=Scenario_three_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
 doublingtime=5,KnownAdmits=10,KnownCOVID=46,Population=4390484,
-SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125);
+SocialDistancing=0.4,MarketSharePercent=.29,Admission_Rate=.03,ICUPercent=0.25,FatalityRate = 0.01,VentPErcent=0.125,plots=YES);
 
+/*Ohio total running*/
+%let DeathRt=0;
+/* %let IncubationPeriod=10; */
+/*below rate is based on documentation that shows 86% of cases are unconfirmed*/
+%let Diagnosed_Rate=1.0; /*factor to adjust %admission to make sense multiplied by Total I*/
+%let LOS=7; /*default 7 length of stay for all scenarios*/
+%let ICULOS=9; /*default ICU LOS*/
+%let ICURoutineDays=3; /*how long a patient stays in Med/Surg bed after ICU*/
+%let VENTLOS=10; /*Default vent LOS*/
+%let ecmoPercent=.03; /*default percent of total admissions that need ECMO*/
+%let ecmolos=6;
+%let DialysisPercent=0.05; /*default percent of admissions that need Dialysis*/
+%let DialysisLOS=11;
+%let dayZero= '16MAR2020'd;
 
+%EasyRun(scenario=OHIO_BASE_Scenario_one,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=50,Population=11689442,
+SocialDistancing=0.0,MarketSharePercent=1.0,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
 
+%EasyRun(scenario=OHIO_BASE_Scenario_two,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.2,MarketSharePercent=1.0,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_BASE_Scenario_three,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.4,MarketSharePercent=1.0,Admission_Rate=.075,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_one_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.0,MarketSharePercent=1.0,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_two_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.2,MarketSharePercent=1.0,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_three_5Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.4,MarketSharePercent=1.0,Admission_Rate=.05,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_one_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.0,MarketSharePercent=1.0,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_two_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.2,MarketSharePercent=1.0,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
+
+%EasyRun(scenario=OHIO_Scenario_three_3Prcnt,IncubationPeriod=0,InitRecovered=0,RecoveryDays=14,
+doublingtime=3,KnownAdmits=17,KnownCOVID=247,Population=11689442,
+SocialDistancing=0.4,MarketSharePercent=1.0,Admission_Rate=.03,ICUPercent=0.25,VentPErcent=0.125,plots=YES);
 
 CAS;
 
