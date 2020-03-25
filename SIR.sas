@@ -65,114 +65,143 @@
 /*Date of first COVID-19 Case*/
 %LET DAY_ZERO = 13MAR2020;
 
-%PUT _ALL_; 
 
+/* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
+%IF %SYSFUNC(exist(work.scenarios)) %THEN %DO;
+	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from work.scenarios; quit;
+%END;
+%ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
+/* store all the macro variables that set up this scenario in PARMS dataset */
 DATA PARMS;
 	set sashelp.vmacro(where=(scope='EASYRUN'));
-	ScenarioName="&scenario.";
+	if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS') then delete;
+	ScenarioIndex = &ScenarioIndex_Base. + 1;
 RUN;
 
-/* DATA SET APPROACH */
-DATA DS_STEP;
-	format Scenarioname $30. DATE ADMIT_DATE DATE9.;
-	ScenarioName="&Scenario";
-	DO DAY = 0 TO &N_DAYS;
-		IF DAY = 0 THEN DO;
-			S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
-			I_N = &I/&Diagnosed_Rate; 
-			R_N = &R + &InitRecovered; 
-			BETA=&BETA;
-			N = SUM(S_N, I_N, R_N);
+/* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
+%IF %SYSFUNC(exist(work.scenarios)) %THEN %DO;
+	PROC SQL noprint;
+		/* has this scenario been run before - all the same parameters and value - no more and no less */
+		select count(*) into :ScenarioExist from
+			(select t1.ScenarioIndex, t2.ScenarioIndex
+				from 
+					(select *, count(*) as cnt 
+						from PARMS
+						where name not in ('SCENARIO','SCENARIOINDEX_BASE')
+						group by ScenarioIndex) t1
+					join
+					(select * from SCENARIOS
+						where name not in ('SCENARIO','SCENARIOINDEX_BASE')) t2
+					on t1.name=t2.name and t1.value=t2.value
+				group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+				having count(*) = t1.cnt)
+		; 
+	QUIT;
+%END; 
+%ELSE %DO; %LET ScenarioExist = 0; %END;
+
+/* If this is a new scenario then run it and append results to MODEL_FINAL dataset and scenario (PARMS) to the SCENARIO dataset */
+%IF &ScenarioExist = 0 %THEN %DO;
+	
+	/* DATA SET APPROACH - ModelType=DS */
+	DATA DS_STEP;
+		format ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
+		ModelType="DS";
+		ScenarioName="&Scenario";
+		DO DAY = 0 TO &N_DAYS;
+			IF DAY = 0 THEN DO;
+				S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
+				I_N = &I/&Diagnosed_Rate; 
+				R_N = &R + &InitRecovered; 
+				BETA=&BETA;
+				N = SUM(S_N, I_N, R_N);
+			END;
+			ELSE DO;
+				BETA = LAG_BETA * (1- &BETA_DECAY);
+				S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
+				I_N = (BETA * LAG_S * LAG_I - &GAMMA * LAG_I) + LAG_I;
+				R_N = &GAMMA * LAG_I + LAG_R;
+				N = SUM(S_N, I_N, R_N);
+				SCALE = LAG_N / N;
+				IF S_N < 0 THEN S_N = 0;
+				IF I_N < 0 THEN I_N = 0;
+				IF R_N < 0 THEN R_N = 0;
+				S_N = SCALE*S_N;
+				I_N = SCALE*I_N;
+				R_N = SCALE*R_N;
+			END;
+			LAG_S = S_N;
+			LAG_I = I_N;
+			LAG_R = R_N;
+			LAG_N = N;
+			LAG_BETA = BETA;
+			/* add Lagg HOSP/ICU/VENT/ECMO/DIAL*/ 
+	/*			InfectedLag=lag(S_N);*/
+	/*			NewInfected=round(InfectedLag-S_N,1);*/
+				NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
+				IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+				Market_HOSP = /*I_N*/round(NewInfected * &HOSP_RATE,1) /* &MARKET_SHARE*/; 
+				Market_ICU = /*I_N*/round(NewInfected * &ICU_RATE,1) /* &MARKET_SHARE*/; 
+				Market_VENT = /*I_N*/round(NewInfected * &VENT_RATE,1) /* &MARKET_SHARE*/; 
+				MArket_ECMO = /*I_N*/round(NewInfected * &ECMO *&Hosp_rate,1) /* &MARKET_SHARE*/; 
+				Market_DIAL = /*I_N*/round(NewInfected * &DIAL *&Hosp_rate,1)/* &MARKET_SHARE*/; 
+				HOSP = /*I_N*/round(NewInfected * &HOSP_RATE * &MARKET_SHARE,1); 
+				ICU = /*I_N*/round(NewInfected * &ICU_RATE * &MARKET_SHARE,1); 
+				VENT = /*I_N*/round(NewInfected * &VENT_RATE * &MARKET_SHARE,1); 
+				ECMO = /*I_N*/round(NewInfected * &ECMO * &MARKET_SHARE*&Hosp_rate,1); 
+				DIAL = /*I_N*/round(NewInfected * &DIAL * &MARKET_SHARE*&Hosp_rate,1); 
+			/* cumulative sum */
+				Cumulative_sum_Hosp + Hosp;
+				Cumulative_Sum_ICU + ICU;
+				Cumulative_Sum_Vent + VENT;
+				Cumulative_Sum_Ecmo + ECMO;
+				Cumulative_Sum_DIAL + DIAL;
+	
+				Cumulative_sum_Market_Hosp + Market_Hosp;
+				Cumulative_Sum_Market_ICU + Market_ICU;
+				Cumulative_Sum_Market_Vent + Market_Vent;
+				Cumulative_Sum_Market_ECMO + MArket_ECMO;
+				Cumulative_Sum_Market_DIAL + Market_DIAL;
+			/* more calcs */
+				CumAdmitLagged=round(lag&HOSP_LOS(Cumulative_sum_Hosp),1) ;
+				CumICULagged=round(lag&ICU_LOS(Cumulative_sum_ICU),1) ;
+				CumVentLagged=round(lag&VENT_LOS(Cumulative_sum_VENT),1) ;
+				CumECMOLagged=round(lag&ECMO_LOS(Cumulative_sum_ECMO),1) ;
+				CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
+	
+				CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
+				CumMarketICULag=Round(lag&ICU_LOS(Cumulative_sum_Market_ICU));
+				CumMarketVENTLag=Round(lag&VENT_LOS(Cumulative_sum_Market_VENT));
+				CumMarketECMOLag=Round(lag&ECMO_LOS(Cumulative_sum_Market_ECMO));
+				CumMarketDIALLag=Round(lag&DIAL_LOS(Cumulative_sum_Market_DIAL));
+	
+				array fixingdot _Numeric_;
+				do over fixingdot;
+					if fixingdot=. then fixingdot=0;
+				end;
+	
+				Hospital_Occupancy= round(Cumulative_Sum_Hosp-CumAdmitLagged,1);
+				ICU_Occupancy= round(Cumulative_Sum_ICU-CumICULagged,1);
+				Vent_Occupancy= round(Cumulative_Sum_Vent-CumVentLagged,1);
+				ECMO_Occupancy= round(Cumulative_Sum_ECMO-CumECMOLagged,1);
+				DIAL_Occupancy= round(Cumulative_Sum_DIAL-CumDIALLagged,1);
+	
+				Market_Hospital_Occupancy= round(Cumulative_sum_Market_Hosp-CumMarketAdmitLag,1);
+				MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
+				Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
+				Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
+				Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);	
+				DATE = "&DAY_ZERO"D + DAY;
+				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);			
+			OUTPUT;
 		END;
-		ELSE DO;
-			BETA = LAG_BETA * (1- &BETA_DECAY);
-			S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-			I_N = (BETA * LAG_S * LAG_I - &GAMMA * LAG_I) + LAG_I;
-			R_N = &GAMMA * LAG_I + LAG_R;
-			N = SUM(S_N, I_N, R_N);
-			SCALE = LAG_N / N;
-			IF S_N < 0 THEN S_N = 0;
-			IF I_N < 0 THEN I_N = 0;
-			IF R_N < 0 THEN R_N = 0;
-			S_N = SCALE*S_N;
-			I_N = SCALE*I_N;
-			R_N = SCALE*R_N;
-		END;
-		LAG_S = S_N;
-		LAG_I = I_N;
-		LAG_R = R_N;
-		LAG_N = N;
-		LAG_BETA = BETA;
-		/* add Lagg HOSP/ICU/VENT/ECMO/DIAL*/ 
-/*			InfectedLag=lag(S_N);*/
-/*			NewInfected=round(InfectedLag-S_N,1);*/
-			NEWINFECTED=ROUND(SUM(LAG(S_N),-1*S_N),1);
-			IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-			Market_HOSP = /*I_N*/round(NewInfected * &HOSP_RATE,1) /* &MARKET_SHARE*/; 
-			Market_ICU = /*I_N*/round(NewInfected * &ICU_RATE,1) /* &MARKET_SHARE*/; 
-			Market_VENT = /*I_N*/round(NewInfected * &VENT_RATE,1) /* &MARKET_SHARE*/; 
-			MArket_ECMO = /*I_N*/round(NewInfected * &ECMO *&Hosp_rate,1) /* &MARKET_SHARE*/; 
-			Market_DIAL = /*I_N*/round(NewInfected * &DIAL *&Hosp_rate,1)/* &MARKET_SHARE*/; 
-			HOSP = /*I_N*/round(NewInfected * &HOSP_RATE * &MARKET_SHARE,1); 
-			ICU = /*I_N*/round(NewInfected * &ICU_RATE * &MARKET_SHARE,1); 
-			VENT = /*I_N*/round(NewInfected * &VENT_RATE * &MARKET_SHARE,1); 
-			ECMO = /*I_N*/round(NewInfected * &ECMO * &MARKET_SHARE*&Hosp_rate,1); 
-			DIAL = /*I_N*/round(NewInfected * &DIAL * &MARKET_SHARE*&Hosp_rate,1); 
-		/* cumulative sum */
-			Cumulative_sum_Hosp + Hosp;
-			Cumulative_Sum_ICU + ICU;
-			Cumulative_Sum_Vent + VENT;
-			Cumulative_Sum_Ecmo + ECMO;
-			Cumulative_Sum_DIAL + DIAL;
+		DROP LAG: BETA CUM:;
+	RUN;
+	
+	PROC APPEND base=MODEL_FINAL data=DS_STEP; run;
+	PROC APPEND base=SCENARIOS data=PARMS; run;
 
-			Cumulative_sum_Market_Hosp + Market_Hosp;
-			Cumulative_Sum_Market_ICU + Market_ICU;
-			Cumulative_Sum_Market_Vent + Market_Vent;
-			Cumulative_Sum_Market_ECMO + MArket_ECMO;
-			Cumulative_Sum_Market_DIAL + Market_DIAL;
-		/* more calcs */
-			CumAdmitLagged=round(lag&HOSP_LOS(Cumulative_sum_Hosp),1) ;
-			CumICULagged=round(lag&ICU_LOS(Cumulative_sum_ICU),1) ;
-			CumVentLagged=round(lag&VENT_LOS(Cumulative_sum_VENT),1) ;
-			CumECMOLagged=round(lag&ECMO_LOS(Cumulative_sum_ECMO),1) ;
-			CumDIALLagged=round(lag&DIAL_LOS(Cumulative_sum_DIAL),1) ;
-
-			CumMarketAdmitLag=Round(lag&HOSP_LOS(Cumulative_sum_Market_Hosp));
-			CumMarketICULag=Round(lag&ICU_LOS(Cumulative_sum_Market_ICU));
-			CumMarketVENTLag=Round(lag&VENT_LOS(Cumulative_sum_Market_VENT));
-			CumMarketECMOLag=Round(lag&ECMO_LOS(Cumulative_sum_Market_ECMO));
-			CumMarketDIALLag=Round(lag&DIAL_LOS(Cumulative_sum_Market_DIAL));
-
-			array fixingdot _Numeric_;
-			do over fixingdot;
-				if fixingdot=. then fixingdot=0;
-			end;
-
-			Hospital_Occupancy= round(Cumulative_Sum_Hosp-CumAdmitLagged,1);
-			ICU_Occupancy= round(Cumulative_Sum_ICU-CumICULagged,1);
-			Vent_Occupancy= round(Cumulative_Sum_Vent-CumVentLagged,1);
-			ECMO_Occupancy= round(Cumulative_Sum_ECMO-CumECMOLagged,1);
-			DIAL_Occupancy= round(Cumulative_Sum_DIAL-CumDIALLagged,1);
-
-			Market_Hospital_Occupancy= round(Cumulative_sum_Market_Hosp-CumMarketAdmitLag,1);
-			MArket_ICU_Occupancy= round(Cumulative_Sum_Market_ICU-CumMarketICULag,1);
-			Market_Vent_Occupancy= round(Cumulative_Sum_Market_Vent-CumMarketVENTLag,1);
-			Market_ECMO_Occupancy= round(Cumulative_Sum_Market_ECMO-CumMarketECMOLag,1);
-			Market_DIAL_Occupancy= round(Cumulative_Sum_Market_DIAL-CumMarketDIALLag,1);	
-			DATE = "&DAY_ZERO"D + DAY;
-			ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);			
-		OUTPUT;
-	END;
-	DROP LAG: BETA CUM:;
-
-RUN;
-
-%IF %SYSFUNC(exist(work.DS_FINAL)) %THEN %DO;
-	data DS_FINAL; set DS_FINAL(where=(ScenarioName ^= "&scenario.")); run;
-	data SCENARIOS; set SCENARIOS(where=(ScenarioName ^= "&scenario.")); run;
 %END;
-PROC APPEND base=DS_FINAL data=DS_STEP; run;
-PROC APPEND base=SCENARIOS data=PARMS; run;
 
 %mend;
 
