@@ -28,6 +28,8 @@
 /*Hospital Market Share (%)*/
 %LET MARKET_SHARE = 0.29;
 %LET DEATH_RATE=0.00;
+/*Initial Number of Exposed (infected but not yet infectious)*/
+%LET E = 0;
 /*Currently Known Recovered*/
 %LET R = 0;
 %LET RECOVERY_DAYS = 14;
