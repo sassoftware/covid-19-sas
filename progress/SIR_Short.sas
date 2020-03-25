@@ -1,25 +1,41 @@
-/*Parameters that come from Macro call*/
-%LET S_DEFAULT = 4390484;
-%LET KNOWN_INFECTIONS = 46;
-%LET KNOWN_CASES = 10;
+/* Translate CCF code macro (%EASYRUN) inputs to variables used in this code */
+%LET scenario=BASE_Scenario_one;
+%LET IncubationPeriod=0; /* not yet used */
+%LET InitRecovered=0; /* R */
+%LET RecoveryDays=14; /* RECOVERY_DAYS */
+%LET doublingtime=5; /* DOUBLING_TIME */
+%LET KnownAdmits=10; /* KNOWN_CASES */
+%LET KnownCOVID=46; /* KNOWN_INFECTIONS */
+%LET Population=4390484; /* S_DEFAULT */
+%LET SocialDistancing=0.0; /* RELATIVE_CONTACT_RATE */
+%LET MarketSharePercent=0.29; /* MARKET_SHARE */
+%LET Admission_Rate=0.075; /* same name below */
+%LET ICUPercent=0.25; /* used in ICU_RATE */
+%LET VentPErcent=0.125; /* used in VENT_RATE */
+
+
+/* Dynamic Variables across Scenario Runs */
+%LET S_DEFAULT = &Population.;
+%LET KNOWN_INFECTIONS = &KnownCOVID.;
+%LET KNOWN_CASES = &KnownAdmits.;
 /*Doubling time before social distancing (days)*/
-%LET DOUBLING_TIME = 5;
+%LET DOUBLING_TIME = &doublingtime.;
 /*Initial Number of Exposed (infected but not yet infectious)*/
 %LET E = 0;
 /*Initial Number of Recovered*/
-%LET R = 0;
-%LET RECOVERY_DAYS = 14;
+%LET R = &InitRecovered.;
+%LET RECOVERY_DAYS = &RecoveryDays.;
 /*Social distancing (% reduction in social contact)*/
-%LET RELATIVE_CONTACT_RATE = 0.00;
+%LET RELATIVE_CONTACT_RATE = &SocialDistancing.;
 /*Hospital Market Share (%)*/
-%LET MARKET_SHARE = 0.29;
-%LET ADMISSION_RATE=0.075;
+%LET MARKET_SHARE = &MarketSharePercent.;
+%LET ADMISSION_RATE= &Admission_Rate.;
 /*factor to adjust %admission to make sense multiplied by Total I*/
 %LET DIAGNOSED_RATE=1.0; 
 /*ICU %(total infections)*/
-%LET ICU_RATE = %SYSEVALF(0.25*&DIAGNOSED_RATE);
+%LET ICU_RATE = %SYSEVALF(&ICUPercent.*&DIAGNOSED_RATE);
 /*Ventilated %(total infections)*/
-%LET VENT_RATE = %SYSEVALF(0.125*&DIAGNOSED_RATE);
+%LET VENT_RATE = %SYSEVALF(&VentPErcent.*&DIAGNOSED_RATE);
 /*Average number of days from infection to hospitalization*/
 %LET DAYS_TO_HOSP = 0;
 
