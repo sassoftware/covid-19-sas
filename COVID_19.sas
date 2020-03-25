@@ -1,5 +1,8 @@
 /*SAS program COVID_19*/
 
+/* the storage location for the MODEL_FINAL table and the SCENARIOS table */
+libname store '/Local_Files/covid';
+
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,plots=no);
 
 /* Translate CCF code macro (%EASYRUN) inputs to variables used in this code 
@@ -105,7 +108,7 @@ DATA DINIT(Label="Initial Conditions of Simulation");
 RUN;
 
 /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
-%IF %SYSFUNC(exist(work.scenarios)) %THEN %DO;
+%IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
 	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from work.scenarios; quit;
 %END;
 %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
@@ -117,7 +120,7 @@ DATA PARMS;
 RUN;
 
 /* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
-%IF %SYSFUNC(exist(work.scenarios)) %THEN %DO;
+%IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
 	PROC SQL noprint;
 		/* has this scenario been run before - all the same parameters and value - no more and no less */
 		select count(*) into :ScenarioExist from
@@ -128,7 +131,7 @@ RUN;
 						where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX')
 						group by ScenarioIndex) t1
 					join
-					(select * from SCENARIOS
+					(select * from store.SCENARIOS
 						where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX')) t2
 					on t1.name=t2.name and t1.value=t2.value
 				group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
@@ -411,13 +414,13 @@ RUN;
 			DROP LAG: BETA CUM: ;
 		RUN;
 	
-	PROC APPEND base=MODEL_FINAL data=TMODEL_SEIR; run;
-	PROC APPEND base=MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
-	PROC APPEND base=MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-	PROC APPEND base=SCENARIOS data=PARMS; run;
+	PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
+	PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
+	PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
+	PROC APPEND base=store.SCENARIOS data=PARMS; run;
 
 	%IF &PLOTS. = YES %THEN %DO;
-		PROC SGPLOT DATA=MODEL_FINAL;
+		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='TMODEL - SIER' and ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
@@ -428,7 +431,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
-		PROC SGPLOT DATA=MODEL_FINAL;
+		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
@@ -439,7 +442,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
-		PROC SGPLOT DATA=MODEL_FINAL;
+		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
 			SERIES X=DATE Y=ICU_OCCUPANCY;
@@ -449,7 +452,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
-		PROC SGPLOT DATA=MODEL_FINAL;
+		PROC SGPLOT DATA=store.MODEL_FINAL;
 			TITLE "Daily Hospital Occupancy - All Approaches";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE;
 		/*	SERIES X=DATE Y=ICU_OCCUPANCY / GROUP=METHOD;*/
@@ -523,9 +526,9 @@ CASLIB _ALL_ ASSIGN;
 
 PROC CASUTIL;
 	DROPTABLE INCASLIB="CASUSER" CASDATA="PROJECT_DS" QUIET;
-	LOAD DATA=WORK.MODEL_FINAL CASOUT="PROJECT_DS" OUTCASLIB="CASUSER" PROMOTE;
+	LOAD DATA=store.MODEL_FINAL CASOUT="PROJECT_DS" OUTCASLIB="CASUSER" PROMOTE;
 	DROPTABLE INCASLIB="CASUSER" CASDATA="PROJECT_SCENARIOS" QUIET;
-	LOAD DATA=WORK.SCENARIOS CASOUT="PROJECT_SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
+	LOAD DATA=store.SCENARIOS CASOUT="PROJECT_SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
 QUIT;
 
 CAS CASAUTO TERMINATE;
