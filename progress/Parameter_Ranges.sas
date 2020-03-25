@@ -1,8 +1,10 @@
 %LET S_DEFAULT = 4390000;
 %LET KNOWN_INFECTIONS = 150;
+%LET KNOWN_CASES = 37;
 /*Doubling time before social distancing (days)*/
 %LET DOUBLING_TIME = 5;
-%LET KNOWN_CASES = 37;
+/*Initial Number of Exposed (infected but not yet infectious)*/
+%LET E = 0;
 /*Initial Recovered*/
 %LET R = 0;
 %LET RECOVERY_DAYS = 14;
