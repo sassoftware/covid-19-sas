@@ -87,27 +87,31 @@ RUN;
 				from 
 					(select *, count(*) as cnt 
 						from PARMS
-						where name not in ('SCENARIO','SCENARIOINDEX_BASE')
+						where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX')
 						group by ScenarioIndex) t1
 					join
 					(select * from SCENARIOS
-						where name not in ('SCENARIO','SCENARIOINDEX_BASE')) t2
+						where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX')) t2
 					on t1.name=t2.name and t1.value=t2.value
 				group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
 				having count(*) = t1.cnt)
 		; 
 	QUIT;
 %END; 
-%ELSE %DO; %LET ScenarioExist = 0; %END;
+%ELSE %DO; 
+	%LET ScenarioExist = 0;
+%END;
 
 /* If this is a new scenario then run it and append results to MODEL_FINAL dataset and scenario (PARMS) to the SCENARIO dataset */
 %IF &ScenarioExist = 0 %THEN %DO;
+	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
 	
 	/* DATA SET APPROACH - ModelType=DS */
 	DATA DS_STEP;
 		format ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
 		ModelType="DS";
 		ScenarioName="&Scenario";
+		ScenarioIndex=&ScenarioIndex.;
 		DO DAY = 0 TO &N_DAYS;
 			IF DAY = 0 THEN DO;
 				S_N = &S - (&I/&Diagnosed_Rate) - &InitRecovered; 
