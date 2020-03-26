@@ -1,8 +1,15 @@
 /*SAS program COVID_19*/
 
+/* directory path for files: COVID_19.sas (this file), libname store, post_process.datastep (future development) */
+%let homedir = /Local_Files/covid;
+
 /* the storage location for the MODEL_FINAL table and the SCENARIOS table */
-libname store '/Local_Files/covid';
-/*libname store 'C:\COVID19';*/
+libname store "&homedir.";
+
+/* dependecy notes:
+	in addition to setting the homedir and libname store above, note that
+	(future development) this code with %include &homedir./post_process.datastep
+*/
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
 
@@ -23,6 +30,7 @@ libname store '/Local_Files/covid';
 /*%LET Admission_Rate=0.075;*/ /* same name below */
 /*%LET ICUPercent=0.25;*/ /* used in ICU_RATE */
 /*%LET VentPErcent=0.125;*/ /* used in VENT_RATE */
+/*%LET FatalityRate=;*/ /* Fatality_rate */
 
 
 /* Dynamic Variables across Scenario Runs */
@@ -453,7 +461,7 @@ RUN;
 
 	%IF &PLOTS. = YES %THEN %DO;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
-			where ModelType='TMODEL - SIER' and ScenarioIndex=&ScenarioIndex.;
+			where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
 			SERIES X=DATE Y=ICU_OCCUPANCY;
@@ -476,6 +484,7 @@ RUN;
 		RUN;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
+			TITLE "Daily Occupancy - Data Step SIR Approach";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY;
 			SERIES X=DATE Y=ICU_OCCUPANCY;
 			SERIES X=DATE Y=VENT_OCCUPANCY;
@@ -488,10 +497,7 @@ RUN;
 			where ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Hospital Occupancy - All Approaches";
 			SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE;
-		/*	SERIES X=DATE Y=ICU_OCCUPANCY / GROUP=METHOD;*/
-		/*	SERIES X=DATE Y=VENT_OCCUPANCY / GROUP=METHOD;*/
-		/*	SERIES X=DATE Y=ECMO_OCCUPANCY / GROUP=METHOD;*/
-		/*	SERIES X=DATE Y=DIAL_OCCUPANCY / GROUP=METHOD;*/
+
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
