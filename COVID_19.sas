@@ -11,6 +11,10 @@ libname store "&homedir.";
 	(future development) this code with %include &homedir./post_process.datastep
 */
 
+/* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
+%LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
+%LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
+
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
 
 /* Translate CCF code macro (%EASYRUN) inputs to variables used in this code 
@@ -157,8 +161,10 @@ RUN;
 %IF &ScenarioExist = 0 %THEN %DO;
 	PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
 
+	%IF &HAVE_SASETS = YES %THEN %DO;
 	/*PROC TMODEL SEIR APPROACH*/
-		PROC TMODEL DATA = DINIT NOPRINT;
+		%IF HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
+		%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 			/* PARAMETER SETTINGS */ 
 			PARMS N &S. R0 &R_T. ; 
 			GAMMA = &GAMMA.;
@@ -261,7 +267,8 @@ RUN;
 		RUN;
 
 	/*PROC TMODEL SIR APPROACH*/
-		PROC TMODEL DATA = DINIT NOPRINT;
+		%IF HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
+		%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 			/* PARAMETER SETTINGS */ 
 			PARMS N &S. R0 &R_T. ; 
 			GAMMA = &GAMMA.;    	         
@@ -353,6 +360,7 @@ RUN;
 			METHOD = "SIR - TMODEL";
 			DROP LAG: CUM:;
 		RUN;
+	%END;
 
 	/* DATA STEP APPROACH */
 		DATA DS_SIR;
@@ -460,6 +468,7 @@ RUN;
 	PROC APPEND base=store.SCENARIOS data=PARMS; run;
 
 	%IF &PLOTS. = YES %THEN %DO;
+		%IF &HAVE_SASETS = YES %THEN %DO;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
@@ -482,6 +491,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
+		%END;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Occupancy - Data Step SIR Approach";
@@ -493,6 +503,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
+		%IF &HAVE_SASETS = YES %THEN %DO;
 		PROC SGPLOT DATA=store.MODEL_FINAL;
 			where ScenarioIndex=&ScenarioIndex.;
 			TITLE "Daily Hospital Occupancy - All Approaches";
@@ -501,6 +512,7 @@ RUN;
 			XAXIS LABEL="Date";
 			YAXIS LABEL="Daily Occupancy";
 		RUN;
+		%END;
 		TITLE;	
 	%END;
 
