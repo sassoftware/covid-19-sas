@@ -37,6 +37,22 @@ data arrepi (keep=t s i r);
 	end;
 run;
 
+/* thoughts on noise
+	if t=1 then do;
+		s_arr(1) = 1000;
+
+		i_arr(1) = 1;
+		r_arr(1) = 0;
+	end;
+	else do;
+		poicase = ranpoi(0, beta*s_arr(t-1)*i_arr(t-1));
+		s_arr(t) = s_arr(t-1)-poicase;
+		
+		i_arr(t) = i_arr(t-1)+poicase-gamma*i_arr(t-1);
+		r_arr(t) = r_arr(t-1)+gamma*i_arr(t-1);
+	end;
+*/
+
 /* CCF DS */
 			DO DAY = 0 TO &N_DAYS;
 				IF DAY = 0 THEN DO;
