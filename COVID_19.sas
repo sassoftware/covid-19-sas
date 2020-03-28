@@ -673,6 +673,7 @@ RUN;
 
 %mend;
 
+/*Test runs of EasyRun macro*/
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
 IncubationPeriod=0,
