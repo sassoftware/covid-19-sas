@@ -23,6 +23,6 @@ This code takes a set of input parameters and uses them in infectious disease mo
 - All of the parameters that lead to the results in STORE.MODEL_FINAL save in STORE.SCENARIOS.  The variable SCENARIOINDEX links these two files.
 
 # Disclaimer
-These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and revaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You will likely need to evaluate each parameter for your population of interest.
+These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and reevaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You will likely need to evaluate each parameter for your population of interest.
 
 SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
