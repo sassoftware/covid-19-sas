@@ -1,4 +1,10 @@
-/*SAS program COVID_19*/
+/* SAS Program COVID_19 
+Cleveland Clinic and SAS Collaboarion
+
+These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and revaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You will likely need to evaluate each parameter for your population of interest.
+
+SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
+*/
 
 /* directory path for files: COVID_19.sas (this file), libname store, post_process.datastep (future development) */
 %let homedir = /Local_Files/covid;
