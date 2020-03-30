@@ -121,21 +121,6 @@ libname store "&homedir.";
 	/*doubling time after distancing*/
 	%LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
 
-
-	/*DATA FOR PROC TMODEL APPROACHES*/
-	DATA DINIT(Label="Initial Conditions of Simulation"); 
-			DO TIME = 0 TO &N_DAYS; 
-			S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
-			E_N = &E;
-			I_N = &I/&DIAGNOSED_RATE;
-			R_N = &R;
-			R0  = &R_T;
-			IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
-			IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
-			OUTPUT; 
-		END; 
-	RUN;
-
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
     %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
         PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
@@ -174,9 +159,6 @@ libname store "&homedir.";
         PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
         PROC APPEND base=store.SCENARIOS data=PARMS; run;
     %END;
-    %ELSE %DO;
-        PROC SQL; drop table DINIT; QUIT;
-    %END;
     PROC SQL; drop table PARMS; QUIT;
     /* If this is a new scenario then run it */
     %IF &ScenarioExist = 0 %THEN %DO;
@@ -184,13 +166,29 @@ libname store "&homedir.";
 
 	/*PROC TMODEL SEIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
+			/*DATA FOR PROC TMODEL APPROACHES*/
+				DATA DINIT(Label="Initial Conditions of Simulation"); 
+						DO TIME = 0 TO &N_DAYS; 
+						S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
+						E_N = &E;
+						I_N = &I/&DIAGNOSED_RATE;
+						R_N = &R;
+						R0  = &R_T;
+						*IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
+						*IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
+						OUTPUT; 
+					END; 
+				RUN;
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &S. R0 &R_T. ; 
+				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.; 
 				GAMMA = &GAMMA.;
 				SIGMA = &SIGMA;
-				BETA = R0*GAMMA/N;
+				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
+				change_1 = ((TIME >= (&ISO_Change_Date - "&DAY_ZERO"D)) & (TIME < (&ISO_Change_Date_Two - "&DAY_ZERO"D)));   
+				change_2 = (TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
@@ -301,17 +299,34 @@ libname store "&homedir.";
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
-			PROC SQL; drop table TMODEL_SEIR; QUIT;
+			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
+			/*DATA FOR PROC TMODEL APPROACHES*/
+				DATA DINIT(Label="Initial Conditions of Simulation"); 
+						DO TIME = 0 TO &N_DAYS; 
+						S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
+						E_N = &E;
+						I_N = &I/&DIAGNOSED_RATE;
+						R_N = &R;
+						R0  = &R_T;
+						*IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
+						*IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
+						OUTPUT; 
+					END; 
+				RUN;
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &S. R0 &R_T. ; 
-				GAMMA = &GAMMA.;    	         
-				BETA = R0*GAMMA/N;
+				*PARMS N &S. R0 &R_T.; 
+				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.;
+				GAMMA = &GAMMA.;
+				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
+				change_1 = ((TIME >= (&ISO_Change_Date - "&DAY_ZERO"D)) & (TIME < (&ISO_Change_Date_Two - "&DAY_ZERO"D)));   
+				change_2 = (TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				DERT.S_N = -BETA*S_N*I_N; 				
 				DERT.I_N = BETA*S_N*I_N-GAMMA*I_N;   
@@ -418,7 +433,7 @@ libname store "&homedir.";
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
-			PROC SQL; drop table TMODEL_SIR; QUIT;
+			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
@@ -672,8 +687,6 @@ libname store "&homedir.";
 		%END;
 		PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
 		PROC SQL; drop table DS_SEIR; QUIT;
-        PROC SQL; drop table DINIT; QUIT;
-
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;

@@ -8,17 +8,21 @@
 						I_N = &I/&DIAGNOSED_RATE;
 						R_N = &R;
 						R0  = &R_T;
-						IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
-						IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
+						*IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
+						*IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
 						OUTPUT; 
 					END; 
 				RUN;
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &S. R0 &R_T. ; 
-				GAMMA = &GAMMA.;    	         
-				BETA = R0*GAMMA/N;
+				*PARMS N &S. R0 &R_T.; 
+				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.;
+				GAMMA = &GAMMA.;
+				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
+				change_1 = ((TIME >= (&ISO_Change_Date - "&DAY_ZERO"D)) & (TIME < (&ISO_Change_Date_Two - "&DAY_ZERO"D)));   
+				change_2 = (TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				DERT.S_N = -BETA*S_N*I_N; 				
 				DERT.I_N = BETA*S_N*I_N-GAMMA*I_N;   
