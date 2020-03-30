@@ -61,5 +61,6 @@ ccfall.close()
 
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')
 copyfile('./public/run_scenarios.csv', '../run_scenarios.csv')
+copyfile('./public/run_scenarios.csv', './ccf/run_scenarios.csv')
 
 
