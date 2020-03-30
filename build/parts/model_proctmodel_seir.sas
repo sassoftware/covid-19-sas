@@ -1,5 +1,18 @@
 	/*PROC TMODEL SEIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
+			/*DATA FOR PROC TMODEL APPROACHES*/
+				DATA DINIT(Label="Initial Conditions of Simulation"); 
+						DO TIME = 0 TO &N_DAYS; 
+						S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
+						E_N = &E;
+						I_N = &I/&DIAGNOSED_RATE;
+						R_N = &R;
+						R0  = &R_T;
+						IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
+						IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
+						OUTPUT; 
+					END; 
+				RUN;
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
@@ -117,5 +130,5 @@
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
-			PROC SQL; drop table TMODEL_SEIR; QUIT;
+			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 		%END;

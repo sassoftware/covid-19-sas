@@ -17,8 +17,6 @@ P_IMPORT: model_datastep_sir.sas
 
 P_IMPORT: model_datastep_seir.sas
 
-        PROC SQL; drop table DINIT; QUIT;
-
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;
