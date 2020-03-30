@@ -25,10 +25,9 @@ Note: CAS_post can be expanded to do per run append to both physical and CAS tab
 # Current TODO for branch=Central-Post-Processing:
 - [x] Move DINIT table from parameters.sas to model_proctmodel_*.sas files
 - [x] Add time change points for social distancing to TMODEL/Model approaches
-- [ ] Split model_datastep_*.sas approaches into two data steps: one for the modeling, one for the post-fitting
-    - [ ] consolidate the post-fitting datastep from all model approaches into postprocess.sas
+- [x] Consolidate the post-fitting datastep from all model approaches into postprocess.sas.  The steps still show up in each model approach in the public code but it is managed in a central location: postprocess.sas.
 - [ ] introduce stochastic approach to model_datastep_*.sas approaches and use to create bounds for each output parameters - use in postprosessing
     - [ ] introduce stochastic approach to model_proctmodel_*.sas approaches and use to create bounds for output parameters - use in postprocessing
-- [ ] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS
+- [ ] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS.  Using data_dictionary.sas to create labels for each columns of the two output datasets.
 
 
