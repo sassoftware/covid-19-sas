@@ -22,8 +22,7 @@ The build.py file in the folder will build code for different user bases.  The p
 Note: CCF only version needed - limited models, some pre/post steps
 Note: CAS_post can be expanded to do per run append to both physical and CAS tables rather than replace at end
 
-
-# Current TODO for branch=Central-Post_Processing:
+# Current TODO for branch=Central-Post-Processing:
 - [x] Move DINIT table from parameters.sas to model_proctmodel_*.sas files
 - [ ] Add time change points for social distancing to TMODEL/Model approaches
 - [ ] Split model_datastep_*.sas approaches into two data steps: one for the modeling, one for the post-fitting
