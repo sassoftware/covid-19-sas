@@ -36,7 +36,4 @@
         PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
         PROC APPEND base=store.SCENARIOS data=PARMS; run;
     %END;
-    %ELSE %DO;
-        PROC SQL; drop table DINIT; QUIT;
-    %END;
     PROC SQL; drop table PARMS; QUIT;

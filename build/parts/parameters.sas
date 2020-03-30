@@ -97,18 +97,3 @@
 	%LET R_NAUGHT = %SYSEVALF(&R_T / (1-&RELATIVE_CONTACT_RATE));
 	/*doubling time after distancing*/
 	%LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
-
-
-	/*DATA FOR PROC TMODEL APPROACHES*/
-	DATA DINIT(Label="Initial Conditions of Simulation"); 
-			DO TIME = 0 TO &N_DAYS; 
-			S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
-			E_N = &E;
-			I_N = &I/&DIAGNOSED_RATE;
-			R_N = &R;
-			R0  = &R_T;
-			IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
-			IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
-			OUTPUT; 
-		END; 
-	RUN;
