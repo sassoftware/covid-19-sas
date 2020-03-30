@@ -18,6 +18,54 @@ libname store "&homedir.";
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
 
+/* the following is specific to CCF coding and included prior to the %EasyRun Macro */
+    libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
+    libname DL_COV teradata server=tdprod1 database=DL_COVID;
+    libname CovData '/sas/data/ccf_preprod/finance/sas/EA_COVID_19/CovidData';
+    proc datasets lib=work kill;run;quit;
+
+    proc sql; 
+    connect to teradata(Server=tdprod1);
+    create table CovData.PullRealCovid as select * from connection to teradata 
+
+    (
+    Select COVID_RESULT_V.*, DEP_STATE from DL_COVID.COVID_RESULT_V
+    LEFT JOIN (SELECT DISTINCT COVID_FACT_V.patient_identifier,COVID_FACT_V.DEP_STATE from DL_COVID.COVID_FACT_V) dep_st
+    on dep_st.patient_identifier = COVID_RESULT_V.patient_identifier
+    WHERE COVIDYN = 'YES' and DEP_STATE='OH'and discharge_Cat in ('Inpatient','Discharged To Home');
+    )
+
+    ;quit;
+    PROC SQL;
+      CREATE TABLE CovData.PullRealAdmitCovid AS 
+      SELECT /* AdmitDate */
+                (datepart(t1.HSP_ADMIT_DTTM)) FORMAT=Date9. AS AdmitDate, 
+              /* COUNT_DISTINCT_of_patient_identi */
+                (COUNT(DISTINCT(t1.patient_identifier))) AS TrueDailyAdmits, 
+              /* SumICUNum_1 */
+                (SUM(input(t1.ICU, 3.))) AS SumICUNum_1, 
+              /* SumICUNum */
+                (SUM(case when t1.ICU='YES' then 1
+                else case when t1.ICU='1' then 1 else 0
+                end end)) AS SumICUNum
+          FROM CovData.PULLREALCOVID t1
+          GROUP BY (CALCULATED AdmitDate);
+    QUIT;
+    PROC SQL;
+      CREATE TABLE CovData.RealCovid_DischargeDt AS 
+      SELECT /* COUNT_of_patient_identifier */
+                (COUNT(t1.patient_identifier)) AS TrueDailyDischarges, 
+              /* DischargDate */
+                (datepart(t1.HSP_DISCH_DTTM)) FORMAT=Date9. AS DischargDate, 
+              /* SUMICUDISCHARGE */
+                (SUM(Case when t1.DISCHARGEICUYN ='YES' then 1
+                else case when t1.DISCHARGEICUYN ='1' then 1
+                else 0
+                end end)) AS SUMICUDISCHARGE
+          FROM CovData.PULLREALCOVID t1
+          WHERE (CALCULATED DischargDate) NOT = .
+          GROUP BY (CALCULATED DischargDate);
+    QUIT;
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
 
 
@@ -182,127 +230,6 @@ libname store "&homedir.";
     %IF &ScenarioExist = 0 %THEN %DO;
 
 
-	/*PROC TMODEL SEIR APPROACH*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
-			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* PARAMETER SETTINGS */ 
-				PARMS N &S. R0 &R_T. ; 
-				GAMMA = &GAMMA.;
-				SIGMA = &SIGMA;
-				BETA = R0*GAMMA/N;
-				/* DIFFERENTIAL EQUATIONS */ 
-				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
-				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N-SIGMA*E_N;
-				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = SIGMA*E_N-GAMMA*I_N;
-				/* d. Recovered and death humans through "promotion" inflow from c.*/
-				DERT.R_N = GAMMA*I_N;           
-				/* SOLVE THE EQUATIONS */ 
-				SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR; 
-			RUN;
-			QUIT;
-
-			DATA TMODEL_SEIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
-				ModelType="TMODEL - SEIR";
-				ScenarioName="&Scenario";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
-					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
-				LAG_S = S_N; 
-				LAG_E = E_N; 
-				LAG_I = I_N; 
-				LAG_R = R_N; 
-				LAG_N = N; 
-				SET TMODEL_SEIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-				N = SUM(S_N, E_N, I_N, R_N);
-				SCALE = LAG_N / N;
-				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-				IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
-				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
-				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
-				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
-				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
-				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
-				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
-				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
-				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
-				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
-				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
-				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
-				CUMULATIVE_SUM_HOSP + HOSP;
-				CUMULATIVE_SUM_ICU + ICU;
-				CUMULATIVE_SUM_VENT + VENT;
-				CUMULATIVE_SUM_ECMO + ECMO;
-				CUMULATIVE_SUM_DIAL + DIAL;
-				Cumulative_sum_fatality + Fatality;
-				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-				cumulative_Sum_Market_Fatality + Market_Fatality;
-				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
-				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
-				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
-				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;
-				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;
-				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));
-				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));
-				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));
-				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));
-				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));
-				ARRAY FIXINGDOT _NUMERIC_;
-				DO OVER FIXINGDOT;
-					IF FIXINGDOT=. THEN FIXINGDOT=0;
-				END;
-				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-				Deceased_Today = Fatality;
-				Total_Deaths = Cumulative_sum_fatality;
-				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-				Market_Deceased_Today = Market_Fatality;
-				Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-				DATE = "&DAY_ZERO"D + DAY;
-				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				DROP LAG: CUM: ;
-			RUN;
-			%IF &PLOTS. = YES %THEN %DO;
-				PROC SGPLOT DATA=TMODEL_SEIR;
-					where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
-					TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
-					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-					TITLE3 "Adjusted R0 after &ISOChangeDate: %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-					TITLE4 "Adjusted R0 after &ISOChangeDateTwo: %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					XAXIS LABEL="Date";
-					YAXIS LABEL="Daily Occupancy";
-				RUN;
-				TITLE; TITLE2; TITLE3; TITLE4;
-			%END;
-			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
-			PROC SQL; drop table TMODEL_SEIR; QUIT;
-		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
@@ -421,257 +348,7 @@ libname store "&homedir.";
 			PROC SQL; drop table TMODEL_SIR; QUIT;
 		%END;
 
-	/* DATA STEP APPROACH FOR SIR */
-		DATA DS_SIR;
-			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
-			ModelType="DS - SIR";
-			ScenarioName="&Scenario";
-			ScenarioIndex=&ScenarioIndex.;
-			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-			DO DAY = 0 TO &N_DAYS;
-				IF DAY = 0 THEN DO;
-					S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
 
-					I_N = &I/&DIAGNOSED_RATE;
-					R_N = &R;
-					BETA=&BETA;
-					N = SUM(S_N, I_N, R_N);
-				END;
-				ELSE DO;
-					BETA = LAG_BETA * (1- &BETA_DECAY);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					I_N = (BETA * LAG_S * LAG_I - &GAMMA * LAG_I) + LAG_I;
-					R_N = &GAMMA * LAG_I + LAG_R;
-					N = SUM(S_N, I_N, R_N);
-					SCALE = LAG_N / N;
-					IF S_N < 0 THEN S_N = 0;
-					IF I_N < 0 THEN I_N = 0;
-					IF R_N < 0 THEN R_N = 0;
-					S_N = SCALE*S_N;
-					I_N = SCALE*I_N;
-					R_N = SCALE*R_N;
-				END;
-				E_N = &E;
-				LAG_S = S_N;
-				LAG_E = E_N;
-				LAG_I = I_N;
-				LAG_R = R_N;
-				LAG_N = N;
-
-				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
-				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
-	
-				LAG_BETA = BETA;
-				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-				IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
-				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
-				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
-				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
-				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
-				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
-				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
-				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
-				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
-				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
-				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
-				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
-				CUMULATIVE_SUM_HOSP + HOSP;
-				CUMULATIVE_SUM_ICU + ICU;
-				CUMULATIVE_SUM_VENT + VENT;
-				CUMULATIVE_SUM_ECMO + ECMO;
-				CUMULATIVE_SUM_DIAL + DIAL;
-				Cumulative_sum_fatality + Fatality;
-				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-				cumulative_Sum_Market_Fatality + Market_Fatality;
-				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
-				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
-				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
-				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;
-				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;
-				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));
-				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));
-				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));
-				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));
-				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));
-				ARRAY FIXINGDOT _NUMERIC_;
-				DO OVER FIXINGDOT;
-					IF FIXINGDOT=. THEN FIXINGDOT=0;
-				END;
-				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-				Deceased_Today = Fatality;
-				Total_Deaths = Cumulative_sum_fatality;
-				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-				Market_Deceased_Today = Market_Fatality;
-				Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-				Market_MedSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-				DATE = "&DAY_ZERO"D + DAY;
-				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				OUTPUT;
-			END;
-			DROP LAG: /*BETA*/ CUM: ;
-		RUN;
-		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=DS_SIR;
-				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - Data Step SIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-				TITLE3 "Adjusted R0 after &ISOChangeDate: %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-				TITLE4 "Adjusted R0 after &ISOChangeDateTwo: %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				XAXIS LABEL="Date";
-				YAXIS LABEL="Daily Occupancy";
-			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
-		%END;
-		PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-		PROC SQL; drop table DS_SIR; QUIT;
-
-	/* DATA STEP APPROACH FOR SEIR */
-		DATA DS_SEIR;
-			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
-			ModelType="DS - SEIR";
-			ScenarioName="&Scenario";
-			ScenarioIndex=&ScenarioIndex.;
-			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-			DO DAY = 0 TO &N_DAYS;
-				IF DAY = 0 THEN DO;
-					S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
-					E_N = &E;
-					I_N = &I/&DIAGNOSED_RATE;
-					R_N = &R;
-					BETA=&BETA;
-					N = SUM(S_N, E_N, I_N, R_N);
-				END;
-				ELSE DO;
-					BETA = LAG_BETA * (1- &BETA_DECAY);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					E_N = (BETA * LAG_S * LAG_I) - &SIGMA * LAG_E + LAG_E;
-					I_N = (&SIGMA * LAG_E - &GAMMA * LAG_I) + LAG_I;
-					R_N = &GAMMA * LAG_I + LAG_R;
-					N = SUM(S_N, E_N, I_N, R_N);
-					SCALE = LAG_N / N;
-					IF S_N < 0 THEN S_N = 0;
-					IF E_N < 0 THEN E_N = 0;
-					IF I_N < 0 THEN I_N = 0;
-					IF R_N < 0 THEN R_N = 0;
-					S_N = SCALE*S_N;
-					E_N = SCALE*E_N;
-					I_N = SCALE*I_N;
-					R_N = SCALE*R_N;
-				END;
-				LAG_S = S_N;
-				LAG_E = E_N;
-				LAG_I = I_N;
-				LAG_R = R_N;
-				LAG_N = N;
-
-				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
-				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
-	
-				LAG_BETA = BETA;
-				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-				IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
-				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;
-				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;
-				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;
-				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;
-				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;
-				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;
-				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;
-				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;
-				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;
-				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;
-				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;
-				CUMULATIVE_SUM_HOSP + HOSP;
-				CUMULATIVE_SUM_ICU + ICU;
-				CUMULATIVE_SUM_VENT + VENT;
-				CUMULATIVE_SUM_ECMO + ECMO;
-				CUMULATIVE_SUM_DIAL + DIAL;
-				Cumulative_sum_fatality + Fatality;
-				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-				cumulative_Sum_Market_Fatality + Market_Fatality;
-				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;
-				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;
-				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;
-				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;
-				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;
-				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));
-				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));
-				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));
-				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));
-				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));
-				ARRAY FIXINGDOT _NUMERIC_;
-				DO OVER FIXINGDOT;
-					IF FIXINGDOT=. THEN FIXINGDOT=0;
-				END;
-				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-				Deceased_Today = Fatality;
-				Total_Deaths = Cumulative_sum_fatality;
-				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-				Market_Deceased_Today = Market_Fatality;
-				Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-				DATE = "&DAY_ZERO"D + DAY;
-				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				OUTPUT;
-			END;
-			DROP LAG: BETA CUM: ;
-		RUN;
-		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=DS_SEIR;
-				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - Data Step SEIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-				TITLE3 "Adjusted R0 after &ISOChangeDate: %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-				TITLE4 "Adjusted R0 after &ISOChangeDateTwo: %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				XAXIS LABEL="Date";
-				YAXIS LABEL="Daily Occupancy";
-			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
-		%END;
-		PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
-		PROC SQL; drop table DS_SEIR; QUIT;
         PROC SQL; drop table DINIT; QUIT;
 
         %IF &PLOTS. = YES %THEN %DO;
