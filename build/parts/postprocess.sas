@@ -1,5 +1,4 @@
 /* Common Post-Processing Across each Model Type and Approach */
-%MACRO POSTPROCESS;
 NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;
@@ -58,4 +57,3 @@ Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 DATE = "&DAY_ZERO"D + DAY;
 ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-%MEND;
