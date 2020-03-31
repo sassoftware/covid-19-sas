@@ -11,9 +11,9 @@ X_IMPORT: scenario_setup.sas
 
 P_IMPORT: model_proctmodel_seir.sas
 
-X_IMPORT: model_proctmodel_sir.sas
+P_IMPORT: model_proctmodel_sir.sas
 
-P_IMPORT: model_datastep_sir.sas
+X_IMPORT: model_datastep_sir.sas
 
 P_IMPORT: model_datastep_seir.sas
 
