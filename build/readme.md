@@ -7,7 +7,7 @@ The build.py file in the folder will build code for different user bases.  The p
     - IMPORT: parameters.sas
     - IMPORT: scenario_setup.sas
     - IMPORT: model * .sas
-        - IMPORT: postprocess.sas (future step)
+        - IMPORT: postprocess.sas
 - driver.sas - call macro %EasyRun
     - IMPORT: header.sas
     - IMPORT: orchestrate.sas

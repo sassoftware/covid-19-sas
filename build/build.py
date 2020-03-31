@@ -3,6 +3,8 @@
 # P_IMPORT: will import for public only
 # C_IMPORT: will import for ccf
 # X_IMPORT: will import for all
+# If X then P then only P - not C
+# If X then C then only C - not P
 
 from shutil import copyfile
 
@@ -17,27 +19,30 @@ def subpart(file,type):
             if piece.startswith('X_IMPORT: '):
                 if '\n' in piece:
                     file = piece[10:len(piece)-1]
-                    covid.write('\n')
-                    ccf.write('\n')
-                    ccfall.write('\n')
+                    #covid.write('\n')
+                    #ccf.write('\n')
+                    #ccfall.write('\n')
                 else:
                     file = piece[10:]
                 print(file)
-                subpart(file,'X')
+                if type=='P': subpart(file,'P')
+                elif type=='C': subpart(file,'C')
+                else: subpart(file,'X')
             elif piece.startswith('P_IMPORT: '):
                 if '\n' in piece:
                     file = piece[10:len(piece)-1]
-                    covid.write('\n')
-                    ccfall.write('\n')
+                    #covid.write('\n')
+                    #ccfall.write('\n')
                 else:
                     file = piece[10:]
                 print(file)
-                subpart(file,'P')
+                if type=='P': subpart(file,'P')
+                elif type=='X': subpart(file,'P')
             elif piece.startswith('C_IMPORT: '):
                 if '\n' in piece:
                     file = piece[10:len(piece)-1]
-                    ccf.write('\n')
-                    ccfall.write('\n')
+                    #ccf.write('\n')
+                    #ccfall.write('\n')
                 else:
                     file = piece[10:]
                 print(file)
@@ -62,5 +67,3 @@ ccfall.close()
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')
 copyfile('./public/run_scenarios.csv', '../run_scenarios.csv')
 copyfile('./public/run_scenarios.csv', './ccf/run_scenarios.csv')
-
-

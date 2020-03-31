@@ -1,4 +1,3 @@
-
 /* SAS Program COVID_19 
 Cleveland Clinic and SAS Collaboarion
 
@@ -16,8 +15,6 @@ libname store "&homedir.";
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
 %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
-
-
 /* the following is specific to CCF coding and included prior to the %EasyRun Macro */
     libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
     libname DL_COV teradata server=tdprod1 database=DL_COVID;
@@ -67,7 +64,6 @@ libname store "&homedir.";
           GROUP BY (CALCULATED DischargDate);
     QUIT;
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
-
 
 	/* Translate CCF code macro (%EASYRUN) inputs to variables used in this code 
 		these variables come in from the macro call above
@@ -168,7 +164,6 @@ libname store "&homedir.";
 	%LET R_NAUGHT = %SYSEVALF(&R_T / (1-&RELATIVE_CONTACT_RATE));
 	/*doubling time after distancing*/
 	%LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
-
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
     %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
         PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
@@ -210,7 +205,6 @@ libname store "&homedir.";
     PROC SQL; drop table PARMS; QUIT;
     /* If this is a new scenario then run it */
     %IF &ScenarioExist = 0 %THEN %DO;
-
 
 	/*PROC TMODEL SEIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
@@ -269,65 +263,6 @@ libname store "&homedir.";
 				SET TMODEL_SEIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
-/*				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));*/
-/*				IF NEWINFECTED < 0 THEN NEWINFECTED=0;*/
-/*				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;*/
-/*				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;*/
-/*				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;*/
-/*				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;*/
-/*				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;*/
-/*				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;*/
-/*				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;*/
-/*				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;*/
-/*				CUMULATIVE_SUM_HOSP + HOSP;*/
-/*				CUMULATIVE_SUM_ICU + ICU;*/
-/*				CUMULATIVE_SUM_VENT + VENT;*/
-/*				CUMULATIVE_SUM_ECMO + ECMO;*/
-/*				CUMULATIVE_SUM_DIAL + DIAL;*/
-/*				Cumulative_sum_fatality + Fatality;*/
-/*				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;*/
-/*				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;*/
-/*				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;*/
-/*				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;*/
-/*				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;*/
-/*				cumulative_Sum_Market_Fatality + Market_Fatality;*/
-/*				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;*/
-/*				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;*/
-/*				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;*/
-/*				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;*/
-/*				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;*/
-/*				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));*/
-/*				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));*/
-/*				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));*/
-/*				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));*/
-/*				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));*/
-/*				ARRAY FIXINGDOT _NUMERIC_;*/
-/*				DO OVER FIXINGDOT;*/
-/*					IF FIXINGDOT=. THEN FIXINGDOT=0;*/
-/*				END;*/
-/*				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);*/
-/*				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);*/
-/*				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);*/
-/*				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);*/
-/*				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);*/
-/*				Deceased_Today = Fatality;*/
-/*				Total_Deaths = Cumulative_sum_fatality;*/
-/*				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;*/
-/*				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);*/
-/*				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);*/
-/*				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);*/
-/*				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);*/
-/*				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	*/
-/*				Market_Deceased_Today = Market_Fatality;*/
-/*				Market_Total_Deaths = cumulative_Sum_Market_Fatality;*/
-/*				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;*/
-/*				DATE = "&DAY_ZERO"D + DAY;*/
-/*				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);*/
-
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -410,7 +345,6 @@ libname store "&homedir.";
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 		%END;
 
-
 	/*PROC TMODEL SIR APPROACH*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
@@ -464,65 +398,6 @@ libname store "&homedir.";
 				SET TMODEL_SIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
-/*				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));*/
-/*				IF NEWINFECTED < 0 THEN NEWINFECTED=0;*/
-/*				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;*/
-/*				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;*/
-/*				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;*/
-/*				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;*/
-/*				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;*/
-/*				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;*/
-/*				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;*/
-/*				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;*/
-/*				CUMULATIVE_SUM_HOSP + HOSP;*/
-/*				CUMULATIVE_SUM_ICU + ICU;*/
-/*				CUMULATIVE_SUM_VENT + VENT;*/
-/*				CUMULATIVE_SUM_ECMO + ECMO;*/
-/*				CUMULATIVE_SUM_DIAL + DIAL;*/
-/*				Cumulative_sum_fatality + Fatality;*/
-/*				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;*/
-/*				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;*/
-/*				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;*/
-/*				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;*/
-/*				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;*/
-/*				cumulative_Sum_Market_Fatality + Market_Fatality;*/
-/*				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;*/
-/*				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;*/
-/*				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;*/
-/*				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;*/
-/*				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;*/
-/*				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));*/
-/*				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));*/
-/*				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));*/
-/*				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));*/
-/*				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));*/
-/*				ARRAY FIXINGDOT _NUMERIC_;*/
-/*				DO OVER FIXINGDOT;*/
-/*					IF FIXINGDOT=. THEN FIXINGDOT=0;*/
-/*				END;*/
-/*				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);*/
-/*				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);*/
-/*				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);*/
-/*				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);*/
-/*				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);*/
-/*				Deceased_Today = Fatality;*/
-/*				Total_Deaths = Cumulative_sum_fatality;*/
-/*				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;*/
-/*				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);*/
-/*				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);*/
-/*				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);*/
-/*				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);*/
-/*				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	*/
-/*				Market_Deceased_Today = Market_Fatality;*/
-/*				Market_Total_Deaths = cumulative_Sum_Market_Fatality;*/
-/*				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;*/
-/*				DATE = "&DAY_ZERO"D + DAY;*/
-/*				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);*/
-
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -605,7 +480,6 @@ libname store "&homedir.";
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 		%END;
 
-
 	/* DATA STEP APPROACH FOR SIR */
 		DATA DS_SIR;
 			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
@@ -644,70 +518,9 @@ libname store "&homedir.";
 				LAG_I = I_N;
 				LAG_R = R_N;
 				LAG_N = N;
-
 				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
 				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
-	
 				LAG_BETA = BETA;
-/*				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));*/
-/*				IF NEWINFECTED < 0 THEN NEWINFECTED=0;*/
-/*				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;*/
-/*				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;*/
-/*				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;*/
-/*				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;*/
-/*				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;*/
-/*				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;*/
-/*				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;*/
-/*				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;*/
-/*				CUMULATIVE_SUM_HOSP + HOSP;*/
-/*				CUMULATIVE_SUM_ICU + ICU;*/
-/*				CUMULATIVE_SUM_VENT + VENT;*/
-/*				CUMULATIVE_SUM_ECMO + ECMO;*/
-/*				CUMULATIVE_SUM_DIAL + DIAL;*/
-/*				Cumulative_sum_fatality + Fatality;*/
-/*				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;*/
-/*				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;*/
-/*				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;*/
-/*				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;*/
-/*				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;*/
-/*				cumulative_Sum_Market_Fatality + Market_Fatality;*/
-/*				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;*/
-/*				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;*/
-/*				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;*/
-/*				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;*/
-/*				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;*/
-/*				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));*/
-/*				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));*/
-/*				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));*/
-/*				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));*/
-/*				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));*/
-/*				ARRAY FIXINGDOT _NUMERIC_;*/
-/*				DO OVER FIXINGDOT;*/
-/*					IF FIXINGDOT=. THEN FIXINGDOT=0;*/
-/*				END;*/
-/*				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);*/
-/*				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);*/
-/*				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);*/
-/*				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);*/
-/*				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);*/
-/*				Deceased_Today = Fatality;*/
-/*				Total_Deaths = Cumulative_sum_fatality;*/
-/*				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;*/
-/*				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);*/
-/*				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);*/
-/*				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);*/
-/*				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);*/
-/*				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	*/
-/*				Market_Deceased_Today = Market_Fatality;*/
-/*				Market_Total_Deaths = cumulative_Sum_Market_Fatality;*/
-/*				Market_MedSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;*/
-/*				DATE = "&DAY_ZERO"D + DAY;*/
-/*				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);*/
-
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -769,7 +582,7 @@ libname store "&homedir.";
 					ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
 				/* END: Common Post-Processing Across each Model Type and Approach */				OUTPUT;
 			END;
-			DROP LAG: /*BETA*/ CUM: ;
+			DROP LAG: BETA CUM: ;
 		RUN;
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=DS_SIR;
@@ -790,7 +603,6 @@ libname store "&homedir.";
 		%END;
 		PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
 		PROC SQL; drop table DS_SIR; QUIT;
-
 
 	/* DATA STEP APPROACH FOR SEIR */
 		DATA DS_SEIR;
@@ -832,70 +644,9 @@ libname store "&homedir.";
 				LAG_I = I_N;
 				LAG_R = R_N;
 				LAG_N = N;
-
 				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
 				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
-	
 				LAG_BETA = BETA;
-/*				NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));*/
-/*				IF NEWINFECTED < 0 THEN NEWINFECTED=0;*/
-/*				HOSP = NEWINFECTED * &HOSP_RATE * &MARKET_SHARE;*/
-/*				ICU = NEWINFECTED * &ICU_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				VENT = NEWINFECTED * &VENT_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				ECMO = NEWINFECTED * &ECMO_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				DIAL = NEWINFECTED * &DIAL_RATE * &MARKET_SHARE * &HOSP_RATE;*/
-/*				Fatality = NEWINFECTED * &Fatality_Rate * &MARKET_SHARE*&Hosp_rate;*/
-/*				MARKET_HOSP = NEWINFECTED * &HOSP_RATE;*/
-/*				MARKET_ICU = NEWINFECTED * &ICU_RATE * &HOSP_RATE;*/
-/*				MARKET_VENT = NEWINFECTED * &VENT_RATE * &HOSP_RATE;*/
-/*				MARKET_ECMO = NEWINFECTED * &ECMO_RATE * &HOSP_RATE;*/
-/*				MARKET_DIAL = NEWINFECTED * &DIAL_RATE * &HOSP_RATE;*/
-/*				Market_Fatality = NEWINFECTED * &Fatality_Rate *&Hosp_rate;*/
-/*				CUMULATIVE_SUM_HOSP + HOSP;*/
-/*				CUMULATIVE_SUM_ICU + ICU;*/
-/*				CUMULATIVE_SUM_VENT + VENT;*/
-/*				CUMULATIVE_SUM_ECMO + ECMO;*/
-/*				CUMULATIVE_SUM_DIAL + DIAL;*/
-/*				Cumulative_sum_fatality + Fatality;*/
-/*				CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;*/
-/*				CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;*/
-/*				CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;*/
-/*				CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;*/
-/*				CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;*/
-/*				cumulative_Sum_Market_Fatality + Market_Fatality;*/
-/*				CUMADMITLAGGED=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_HOSP),1) ;*/
-/*				CUMICULAGGED=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_ICU),1) ;*/
-/*				CUMVENTLAGGED=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_VENT),1) ;*/
-/*				CUMECMOLAGGED=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_ECMO),1) ;*/
-/*				CUMDIALLAGGED=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_DIAL),1) ;*/
-/*				CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS(CUMULATIVE_SUM_MARKET_HOSP));*/
-/*				CUMMARKETICULAG=ROUND(LAG&ICU_LOS(CUMULATIVE_SUM_MARKET_ICU));*/
-/*				CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS(CUMULATIVE_SUM_MARKET_VENT));*/
-/*				CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS(CUMULATIVE_SUM_MARKET_ECMO));*/
-/*				CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS(CUMULATIVE_SUM_MARKET_DIAL));*/
-/*				ARRAY FIXINGDOT _NUMERIC_;*/
-/*				DO OVER FIXINGDOT;*/
-/*					IF FIXINGDOT=. THEN FIXINGDOT=0;*/
-/*				END;*/
-/*				HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);*/
-/*				ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);*/
-/*				VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);*/
-/*				ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);*/
-/*				DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);*/
-/*				Deceased_Today = Fatality;*/
-/*				Total_Deaths = Cumulative_sum_fatality;*/
-/*				MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;*/
-/*				MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);*/
-/*				MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);*/
-/*				MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);*/
-/*				MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);*/
-/*				MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	*/
-/*				Market_Deceased_Today = Market_Fatality;*/
-/*				Market_Total_Deaths = cumulative_Sum_Market_Fatality;*/
-/*				Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;*/
-/*				DATE = "&DAY_ZERO"D + DAY;*/
-/*				ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);*/
-
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1001,6 +752,9 @@ libname store "&homedir.";
 
     %END;
 
+    /* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
+        optional for efficiency: check to see if this has already be done, if not do it
+    */
 %mend;
 /*Test runs of EasyRun macro*/
 %EasyRun(
