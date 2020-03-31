@@ -231,6 +231,8 @@ libname store "&homedir.";
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
 				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.; 
+				BOUNDS 1 <= R0 <= 13;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0;
 				GAMMA = &GAMMA.;
 				SIGMA = &SIGMA;
 				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
@@ -368,6 +370,8 @@ libname store "&homedir.";
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
 				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.;
+				BOUNDS 1 <= R0 <= 13;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0;
 				GAMMA = &GAMMA.;
 				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
 				change_1 = ((TIME >= (&ISO_Change_Date - "&DAY_ZERO"D)) & (TIME < (&ISO_Change_Date_Two - "&DAY_ZERO"D)));   
