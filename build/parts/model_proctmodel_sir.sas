@@ -2,21 +2,18 @@
 		%IF &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
-						DO TIME = 0 TO &N_DAYS; 
+					DO TIME = 0 TO &N_DAYS; 
 						S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
 						E_N = &E;
 						I_N = &I/&DIAGNOSED_RATE;
 						R_N = &R;
 						R0  = &R_T;
-						*IF TIME >= (&ISO_Change_Date - "&DAY_ZERO"D) then R0  = &R_T_Change;
-						*IF TIME >= (&ISO_Change_Date_Two - "&DAY_ZERO"D) then R0  = &R_T_Change_Two;
 						OUTPUT; 
 					END; 
 				RUN;
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				*PARMS N &S. R0 &R_T.; 
 				PARMS N &S. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.;
 				GAMMA = &GAMMA.;
 				change_0 = (TIME < (&ISO_Change_Date - "&DAY_ZERO"D));
@@ -59,8 +56,8 @@ X_IMPORT: postprocess.sas
 					where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
 					TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
 					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-					TITLE3 "Adjusted R0 after &ISOChangeDate: %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-					TITLE4 "Adjusted R0 after &ISOChangeDateTwo: %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
+					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
+					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
 					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);

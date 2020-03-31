@@ -4,11 +4,21 @@
     %END;
     %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
     /* store all the macro variables that set up this scenario in PARMS dataset */
-    DATA PARMS;
-        set sashelp.vmacro(where=(scope='EASYRUN'));
-        if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS') then delete;
-        ScenarioIndex = &ScenarioIndex_Base. + 1;
-    RUN;
+        DATA PARMS;
+            set sashelp.vmacro(where=(scope='EASYRUN'));
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            ScenarioIndex = &ScenarioIndex_Base. + 1;
+            STAGE='INPUT';
+        RUN;
+
+X_IMPORT: parameters.sas
+
+        DATA PARMS;
+            set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            ScenarioIndex = &ScenarioIndex_Base. + 1;
+            if i then STAGE='MODEL';
+        RUN;
     /* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
     %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
         PROC SQL noprint;
@@ -23,7 +33,7 @@
                         join
                         (select * from store.SCENARIOS
                             where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')) t2
-                        on t1.name=t2.name and t1.value=t2.value
+                        on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                     group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
                     having count(*) = t1.cnt)
             ; 
