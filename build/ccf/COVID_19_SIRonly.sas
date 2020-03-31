@@ -434,6 +434,15 @@ PROC DATASETS LIB=STORE NOPRINT;
 			ScenarionNameUnique = "Unique Scenario Name"
 			Scenarioname = "Scenario Name"
 			;
+		MODIFY SCENARIOS;
+		LABEL
+			scope = "Source Macro for variable"
+			name = "Name of the macro variable"
+			offset = "Offset for long character macro variables (>200 characters)"
+			value = "The value of macro variable name"
+			ScenarioIndex = "Unique Scenario ID"
+			Stage = "INPUT for input variables - MODEL for all variables"
+			;
 RUN;
 QUIT;
 
