@@ -21,6 +21,7 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.2,
+FatalityRate=,
 plots=YES	
 );
 	
@@ -42,6 +43,7 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.4,
+FatalityRate=,
 plots=YES	
 );
 	
@@ -63,6 +65,7 @@ ISOChangeDate='31MAY2020'd,
 SocialDistancingChange=0.25,
 ISOChangeDateTwo='06AUG2020'd,
 SocialDistancingChangeTwo=0.5,
+FatalityRate=,
 plots=YES	
 );
 
