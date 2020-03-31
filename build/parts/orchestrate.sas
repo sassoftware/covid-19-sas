@@ -1,6 +1,28 @@
 C_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
+    /* desriptions for the input fields of this macro:
+        Scenario
+        IncubationPeriod
+        InitRecovered
+        RecoveryDays
+        doublingtime
+        Population
+        KnownAdmits
+        KnownCOVID
+        SocialDistancing
+        ISOChangeDate
+        SocialDistancingChange
+        ISOChangeDateTwo
+        SocialDistancingChangeTwo
+        MarketSharePercent
+        Admission_Rate
+        ICUPercent
+        VentPErcent
+        FatalityRate
+        plots=no
+    */
+
 
 X_IMPORT: scenario_setup.sas
 

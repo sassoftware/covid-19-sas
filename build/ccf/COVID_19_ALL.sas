@@ -64,6 +64,28 @@ libname store "&homedir.";
           GROUP BY (CALCULATED DischargDate);
     QUIT;
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
+    /* desriptions for the input fields of this macro:
+        Scenario
+        IncubationPeriod
+        InitRecovered
+        RecoveryDays
+        doublingtime
+        Population
+        KnownAdmits
+        KnownCOVID
+        SocialDistancing
+        ISOChangeDate
+        SocialDistancingChange
+        ISOChangeDateTwo
+        SocialDistancingChangeTwo
+        MarketSharePercent
+        Admission_Rate
+        ICUPercent
+        VentPErcent
+        FatalityRate
+        plots=no
+    */
+
 
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
     %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
@@ -768,45 +790,46 @@ PROC DATASETS LIB=STORE NOPRINT;
 			ADMIT_DATE = "Date of Admission"
 			DATE = "Date of Infection"
 			DAY = "Day of Pandemic"
-			DIAL = "New Dialysis Patients"
-			DIAL_OCCUPANCY = "Current Dialysis Patients"
-			Deceased_Today = "New Deceased Patients"
-			ECMO = "New ECMO Patients"
-			ECMO_OCCUPANCY = "Current ECMO Patients"
-			E_N = "Exposed Population"
-			Fatality = "New Deceased Patients"
 			HOSP = "New Hospitalized Patients"
-			HOSPITAL_OCCUPANCY = "Current Hospitalized Patients"
-			ICU = "New ICU Patients"
-			ICU_OCCUPANCY = "Current ICU Patients"
-			I_N = "Infected Population"
-			MARKET_DIAL = "Region New Dialysis Patients"
-			MARKET_DIAL_OCCUPANCY = "Region Current Dialysis Patients"
-			MARKET_ECMO = "Region New ECMO Patients"
-			MARKET_ECMO_OCCUPANCY = "Region Current ECMO Patients"
-			MARKET_HOSP = "Region New Hospitalized Patients"
-			MARKET_HOSPITAL_OCCUPANCY = "Region Current Hospitalized Patients"
-			MARKET_ICU = "Region New ICU Patients"
-			MARKET_ICU_OCCUPANCY = "Region Current ICU Patients"
-			MARKET_VENT = "Region New Ventilator Patients"
-			MARKET_VENT_OCCUPANCY = "Region Current Ventilator Patients"
-			Market_Deceased_Today = "Region New Deceased Patients"
-			Market_Fatality = "Region New Deceased Patients"
-			Market_MEdSurg_Occupancy = "Region Medical and Surgical Occupancy (non-ICU)"
-			Market_Total_Deaths = "Region Cumulative Deaths"
-			MedSurgOccupancy = "Current Medical and Surgical Occupancy (non-ICU)"
-			ModelType = "Model Type Used to Generate Scenario"
+			HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
+			MARKET_HOSP = "New Region Hospitalized Patients"
+			MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
+			ICU = "New Hospital ICU Patients"
+			ICU_OCCUPANCY = "Current Hospital ICU Census"
+			MARKET_ICU = "New Region ICU Patients"
+			MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
+			MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
+			Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
+			VENT = "New Hospital Ventilator Patients"
+			VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
+			MARKET_VENT = "New Region Ventilator Patients"
+			MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
+			DIAL = "New Hospital Dialysis Patients"
+			DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
+			MARKET_DIAL = "New Region Dialysis Patients"
+			MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
+			ECMO = "New Hospital ECMO Patients"
+			ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
+			MARKET_ECMO = "New Region ECMO Patients"
+			MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
+			Deceased_Today = "New Hospital Mortality"
+			Fatality = "New Hospital Mortality"
+			Total_Deaths = "Cumulative Hospital Mortality"
+			Market_Deceased_Today = "New Region Mortality"
+			Market_Fatality = "New Region Mortality"
+			Market_Total_Deaths = "Cumulative Region Mortality"
 			N = "Region Population"
+			S_N = "Current Susceptible Population"
+			E_N = "Current Exposed Population"
+			I_N = "Current Infected Population"
+			R_N = "Current Recovered Population"
 			NEWINFECTED = "New Infected Population"
-			R_N = "Recovered Population"
-			SCALE = "Ratio of Previous "
-			S_N = "Susceptible Population"
+			ModelType = "Model Type Used to Generate Scenario"
+			SCALE = "Ratio of Previous Day Population to Current Day Population"
 			ScenarioIndex = "Unique Scenario ID"
 			ScenarionNameUnique = "Unique Scenario Name"
 			Scenarioname = "Scenario Name"
-			Total_Deaths = "Cumulative Deaths"
-			VENT = "New Ventilator Patients"
-			VENT_OCCUPANCY = "Current Ventilator Patients";
+			;
 RUN;
 QUIT;
 
