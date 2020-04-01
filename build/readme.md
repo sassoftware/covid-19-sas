@@ -2,7 +2,7 @@
 The build.py file in the folder will build code for different user bases.  The public version is created in the /public folder and the CCF version is created in the /ccf folder.  The public version is also copied to the main repository folder.
 
 ## /build folder
-The build.py file uses python to construct .SAS files for different users bases.  The build tree looks like:
+The build.py file uses python to construct .SAS files for different users bases.  The parts used for building are included in the /parts folder.  The build tree looks like:
 - orchestrate.sas - build macro %EasyRun
     - IMPORT: ccf_pre.sas
     - IMPORT: scenario_setup.sas
@@ -17,14 +17,15 @@ The build.py file uses python to construct .SAS files for different users bases.
     - IMPORT: CAS_post.sas
 
 ### Import Types
+The build process has logic for the following types of imports.  
 - X_IMPORT: import for the CCF and Public versions of the code
 - P_IMPORT: import for the public version of the code
 - C_IMPORT: import for the CCF version of the code
 - T_IMPORT: import for the test version of the code - used to try new features before making available to users (public or ccf)
-
-## Notes on development
-Note: CCF only version needed - limited models, some pre/post steps
-Note: CAS_post can be expanded to do per run append to both physical and CAS tables rather than replace at end
+The logic setup recursively calls parts while honoring a hierarchy of inclusion: 
+- Once a C_IMPORT part is called, all further import types are only written to C_IMPORT destinations
+- Once a P_IMPORT part is called, all further import types are only written to P_IMPORT and X_IMPORT destinations
+- Once a T_IMPORT part is called, all further import type sare only written to T_IMPORT destinations
 
 # branch=Central-Post-Processing (done and pulled):
 - [x] Move DINIT table from parameters.sas to model_proctmodel_*.sas files
