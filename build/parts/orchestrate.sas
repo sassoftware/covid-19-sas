@@ -37,6 +37,8 @@ X_IMPORT: model_datastep_sir.sas
 
 P_IMPORT: model_datastep_seir.sas
 
+T_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
+
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;
