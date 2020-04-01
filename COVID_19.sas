@@ -18,25 +18,25 @@ libname store "&homedir.";
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
     /* desriptions for the input fields of this macro:
-        Scenario
-        IncubationPeriod
-        InitRecovered
-        RecoveryDays
-        doublingtime
-        Population
-        KnownAdmits
-        KnownCOVID
-        SocialDistancing
-        ISOChangeDate
-        SocialDistancingChange
-        ISOChangeDateTwo
-        SocialDistancingChangeTwo
-        MarketSharePercent
-        Admission_Rate
-        ICUPercent
-        VentPErcent
-        FatalityRate
-        plots=no
+        Scenario - Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID
+        IncubationPeriod - Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right
+        InitRecovered - Initial number of Recovered patients, assumed to have immunity to future infection
+        RecoveryDays - Number of days a patient is considered infectious (the amount of time it takes to recover or die)
+        doublingtime - Baseline Doubling Time without social distancing
+        Population - Number of people in region of interest, assumed to be well mixed and independent of other populations
+        KnownAdmits - Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections
+        KnownCOVID - Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations
+        SocialDistancing - Baseline Social distancing (% reduction in social contact compared to normal activity)
+        ISOChangeDate - Date of first change from baseline in social distancing parameter
+        SocialDistancingChange - Second value of social distancing (% reduction in social contact compared to normal activity)
+        ISOChangeDateTwo - Date of second change in social distancing parameter
+        SocialDistancingChangeTwo - Third value of social distancing (% reduction in social contact compared to normal activity)
+        MarketSharePercent - Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest
+        Admission_Rate - Percentage of Infected patients in the region who will be hospitalized
+        ICUPercent - Percentage of hospitalized patients who will require ICU
+        VentPErcent - Percentage of hospitalized patients who will require Ventilators
+        FatalityRate - Percentage of hospitalized patients who will die
+        plots - YES/NO display plots in output
     */
 
 
@@ -74,34 +74,43 @@ libname store "&homedir.";
 
 
 			/* Dynamic Variables across Scenario Runs */
+			/*Number of people in region of interest, assumed to be well mixed and independent of other populations*/
 			%LET S_DEFAULT = &Population.;
+			/*Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations*/
 			%LET KNOWN_INFECTIONS = &KnownCOVID.;
+			/*Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections*/
 			%LET KNOWN_CASES = &KnownAdmits.;
 			/*Doubling time before social distancing (days)*/
 			%LET DOUBLING_TIME = &doublingtime.;
 			/*Initial Number of Exposed (infected but not yet infectious)*/
 			%LET E = 0;
-			/*Initial Number of Recovered*/
+			/*Initial number of Recovered patients, assumed to have immunity to future infection*/
 			%LET R = &InitRecovered.;
+			/*Number of days a patient is considered infectious (the amount of time it takes to recover or die)*/
 			%LET RECOVERY_DAYS = &RecoveryDays.;
 			/*Baseline Social distancing (% reduction in social contact)*/
 			%LET RELATIVE_CONTACT_RATE = &SocialDistancing.;
-			/*Hospital Market Share (%)*/
+			/*Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest*/
 			%LET MARKET_SHARE = &MarketSharePercent.;
+			/*Percentage of Infected patients in the region who will be hospitalized*/
 			%LET ADMISSION_RATE= &Admission_Rate.;
 			/*factor to adjust %admission to make sense multiplied by Total I*/
 			%LET DIAGNOSED_RATE=1.0; 
-			/*ICU %(total infections)*/
+			/*Percentage of hospitalized patients who will require ICU*/
 			%LET ICU_RATE = %SYSEVALF(&ICUPercent.*&DIAGNOSED_RATE);
-			/*Ventilated %(total infections)*/
+			/*Percentage of hospitalized patients who will require Ventilators*/
 			%LET VENT_RATE = %SYSEVALF(&VentPErcent.*&DIAGNOSED_RATE);
+			/*Percentage of hospitalized patients who will die*/
 			%Let Fatality_rate = &fatalityrate;
-			/*Average number of days from infection to hospitalization*/
-			%LET DAYS_TO_HOSP = 0;
-			/*Isolation Changes*/
+			/*Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right*/
+			%LET DAYS_TO_HOSP = &IncubationPeriod.;
+			/*Date of first change from baseline in social distancing parameter*/
 			%Let ISO_Change_Date = &ISOChangeDate.;
+			/*Second value of social distancing (% reduction in social contact compared to normal activity)*/
 			%LET RELATIVE_CONTACT_RATE_Change = &SocialDistancingChange.;
+			/*Date of second change in social distancing parameter*/
 			%Let ISO_Change_Date_Two = &ISOChangeDateTwo.;
+			/*Third value of social distancing (% reduction in social contact compared to normal activity)*/
 			%LET RELATIVE_CONTACT_RATE_Change_Two = &SocialDistancingChangeTwo.;
 
 
@@ -110,11 +119,11 @@ libname store "&homedir.";
 			%LET CURRENT_HOSP = &KNOWN_CASES;
 			/*Hospitalization %(total infections)*/
 			%LET HOSP_RATE = %SYSEVALF(&ADMISSION_RATE*&DIAGNOSED_RATE);
-			/*Hospital Length of Stay*/
+			/*Average Hospital Length of Stay*/
 			%LET HOSP_LOS = 7;
-			/*ICU Length of Stay*/
+			/*Average ICU Length of Stay*/
 			%LET ICU_LOS = 9;
-			/*Vent Length of Stay*/
+			/*Average Vent Length of Stay*/
 			%LET VENT_LOS = 10;
 			/*default percent of total admissions that need ECMO*/
 			%LET ECMO_RATE=0.03; 
@@ -122,12 +131,12 @@ libname store "&homedir.";
 			/*default percent of admissions that need Dialysis*/
 			%LET DIAL_RATE=0.05;
 			%LET DIAL_LOS=11;
-			%LET DEATH_RATE=0.00;
 			/*rate of latent individuals Exposed transported to the infectious stage each time period*/
 			%LET SIGMA = 0.90;
 			/*Days to project*/
 			%LET N_DAYS = 365;
-			%LET BETA_DECAY = 0.0;
+			/*Factor (%) used for daily reduction of Beta*/
+			%LET BETA_DECAY = 0.00;
 			/*Date of first COVID-19 Case*/
 			%LET DAY_ZERO = 13MAR2020;
 
@@ -137,8 +146,10 @@ libname store "&homedir.";
 			%LET S = &S_DEFAULT;
 			/*Currently Known Regional Infections (only used to compute detection rate - does not change projections*/
 			%LET INITIAL_INFECTIONS = &KNOWN_INFECTIONS;
+			/*Extrapolated number of Infections in the Region at Day 0*/
 			%LET TOTAL_INFECTIONS = %SYSEVALF(&CURRENT_HOSP / &MARKET_SHARE / &HOSP_RATE);
 			%LET DETECTION_PROB = %SYSEVALF(&INITIAL_INFECTIONS / &TOTAL_INFECTIONS);
+			/*Number of Infections in the Region at Day 0 - Equal to TOTAL_INFECTIONS*/
 			%LET I = %SYSEVALF(&INITIAL_INFECTIONS / &DETECTION_PROB);
 			%LET INTRINSIC_GROWTH_RATE = %SYSEVALF(2 ** (1 / &DOUBLING_TIME) - 1);
 			%LET GAMMA = %SYSEVALF(1/&RECOVERY_DAYS);
@@ -152,6 +163,7 @@ libname store "&homedir.";
 			%LET R_NAUGHT = %SYSEVALF(&R_T / (1-&RELATIVE_CONTACT_RATE));
 			/*doubling time after distancing*/
 			%LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
+
         DATA PARMS;
             set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
@@ -799,6 +811,7 @@ QUIT;
 /*RUN;*/
 
 %mend;
+
 /*Test runs of EasyRun macro*/
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
