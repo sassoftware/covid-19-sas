@@ -4,10 +4,12 @@ The build.py file in the folder will build code for different user bases.  The p
 ## /build folder
 - orchestrate.sas - build macro %EasyRun
     - IMPORT: ccf_pre
-    - IMPORT: parameters.sas
     - IMPORT: scenario_setup.sas
+        - IMPORT: parameters.sas
     - IMPORT: model * .sas
         - IMPORT: postprocess.sas
+        - IMPORT: sim_model * .sas (in development)
+    - IMPORT: data_dictionary.sas
 - driver.sas - call macro %EasyRun
     - IMPORT: header.sas
     - IMPORT: orchestrate.sas

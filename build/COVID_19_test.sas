@@ -17,7 +17,7 @@ libname store "&homedir.";
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
-    /* desriptions for the input fields of this macro:
+    /* descriptions for the input fields of this macro:
         Scenario - Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID
         IncubationPeriod - Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right
         InitRecovered - Initial number of Recovered patients, assumed to have immunity to future infection
@@ -41,10 +41,10 @@ libname store "&homedir.";
 
 
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
-    %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
-        PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
-    %END;
-    %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
+        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
+        %END;
+        %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
     /* store all the macro variables that set up this scenario in PARMS dataset */
         DATA PARMS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
@@ -171,33 +171,33 @@ libname store "&homedir.";
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
-    %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
-        PROC SQL noprint;
-            /* has this scenario been run before - all the same parameters and value - no more and no less */
-            select count(*) into :ScenarioExist from
-                (select t1.ScenarioIndex, t2.ScenarioIndex
-                    from 
-                        (select *, count(*) as cnt 
-                            from PARMS
-                            where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')
-                            group by ScenarioIndex) t1
-                        join
-                        (select * from store.SCENARIOS
-                            where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')) t2
-                        on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
-                    group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
-                    having count(*) = t1.cnt)
-            ; 
-        QUIT;
-    %END; 
-    %ELSE %DO; 
-        %LET ScenarioExist = 0;
-    %END;
-    %IF &ScenarioExist = 0 %THEN %DO;
-        PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
-        PROC APPEND base=store.SCENARIOS data=PARMS; run;
-    %END;
-    PROC SQL; drop table PARMS; QUIT;
+        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
+            PROC SQL noprint;
+                /* has this scenario been run before - all the same parameters and value - no more and no less */
+                select count(*) into :ScenarioExist from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex
+                        from 
+                            (select *, count(*) as cnt 
+                                from PARMS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')
+                                group by ScenarioIndex) t1
+                            join
+                            (select * from store.SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')) t2
+                            on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        having count(*) = t1.cnt)
+                ; 
+            QUIT;
+        %END; 
+        %ELSE %DO; 
+            %LET ScenarioExist = 0;
+        %END;
+        %IF &ScenarioExist = 0 %THEN %DO;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
+            PROC APPEND base=store.SCENARIOS data=PARMS; run;
+        %END;
+        PROC SQL; drop table PARMS; QUIT;
     /* If this is a new scenario then run it */
     %IF &ScenarioExist = 0 %THEN %DO;
 
@@ -317,7 +317,8 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = "&DAY_ZERO"D + DAY;
 					ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				/* END: Common Post-Processing Across each Model Type and Approach */				DROP LAG: CUM: ;
+				/* END: Common Post-Processing Across each Model Type and Approach */
+				DROP LAG: CUM: ;
 			RUN;
 			%IF &PLOTS. = YES %THEN %DO;
 				PROC SGPLOT DATA=TMODEL_SEIR;
@@ -451,7 +452,8 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = "&DAY_ZERO"D + DAY;
 					ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				/* END: Common Post-Processing Across each Model Type and Approach */				DROP LAG: CUM:;
+				/* END: Common Post-Processing Across each Model Type and Approach */
+				DROP LAG: CUM:;
 			RUN;
 			%IF &PLOTS. = YES %THEN %DO;
 				PROC SGPLOT DATA=TMODEL_SIR;
@@ -574,7 +576,8 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = "&DAY_ZERO"D + DAY;
 					ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				/* END: Common Post-Processing Across each Model Type and Approach */				OUTPUT;
+				/* END: Common Post-Processing Across each Model Type and Approach */
+				OUTPUT;
 			END;
 			DROP LAG: BETA CUM: ;
 		RUN;
@@ -751,7 +754,8 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = "&DAY_ZERO"D + DAY;
 					ADMIT_DATE = SUM(DATE, &DAYS_TO_HOSP.);
-				/* END: Common Post-Processing Across each Model Type and Approach */				OUTPUT;
+				/* END: Common Post-Processing Across each Model Type and Approach */
+				OUTPUT;
 			END;
 			DROP LAG: BETA CUM: ;
 		RUN;
@@ -787,10 +791,82 @@ libname store "&homedir.";
                     TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
                     TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
                     TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-L_FINAL;*/
+                    SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                    XAXIS LABEL="Date";
+                    YAXIS LABEL="Daily Occupancy";
+                RUN;
+                TITLE; TITLE2; TITLE3; TITLE4;
+            %END;	
+        %END;
+
+    %END;
+
+    /* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
+        optional for efficiency: check to see if this has already be done, if not do it
+    */
+PROC DATASETS LIB=STORE NOPRINT;
+	MODIFY MODEL_FINAL;
+		LABEL
+			ADMIT_DATE = "Date of Admission"
+			DATE = "Date of Infection"
+			DAY = "Day of Pandemic"
+			HOSP = "New Hospitalized Patients"
+			HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
+			MARKET_HOSP = "New Region Hospitalized Patients"
+			MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
+			ICU = "New Hospital ICU Patients"
+			ICU_OCCUPANCY = "Current Hospital ICU Census"
+			MARKET_ICU = "New Region ICU Patients"
+			MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
+			MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
+			Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
+			VENT = "New Hospital Ventilator Patients"
+			VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
+			MARKET_VENT = "New Region Ventilator Patients"
+			MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
+			DIAL = "New Hospital Dialysis Patients"
+			DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
+			MARKET_DIAL = "New Region Dialysis Patients"
+			MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
+			ECMO = "New Hospital ECMO Patients"
+			ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
+			MARKET_ECMO = "New Region ECMO Patients"
+			MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
+			Deceased_Today = "New Hospital Mortality"
+			Fatality = "New Hospital Mortality"
+			Total_Deaths = "Cumulative Hospital Mortality"
+			Market_Deceased_Today = "New Region Mortality"
+			Market_Fatality = "New Region Mortality"
+			Market_Total_Deaths = "Cumulative Region Mortality"
+			N = "Region Population"
+			S_N = "Current Susceptible Population"
+			E_N = "Current Exposed Population"
+			I_N = "Current Infected Population"
+			R_N = "Current Recovered Population"
+			NEWINFECTED = "New Infected Population"
+			ModelType = "Model Type Used to Generate Scenario"
+			SCALE = "Ratio of Previous Day Population to Current Day Population"
+			ScenarioIndex = "Unique Scenario ID"
+			ScenarionNameUnique = "Unique Scenario Name"
+			Scenarioname = "Scenario Name"
+			;
+		MODIFY SCENARIOS;
+		LABEL
+			scope = "Source Macro for variable"
+			name = "Name of the macro variable"
+			offset = "Offset for long character macro variables (>200 characters)"
+			value = "The value of macro variable name"
+			ScenarioIndex = "Unique Scenario ID"
+			Stage = "INPUT for input variables - MODEL for all variables"
+			;
+RUN;
+QUIT;
+
+/*PROC CONTENTS DATA=STORE.MODEL_FINAL;*/
 /*RUN;*/
 
 %mend;
+
 /*Test runs of EasyRun macro*/
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
