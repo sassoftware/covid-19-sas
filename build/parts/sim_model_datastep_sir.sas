@@ -1,5 +1,5 @@
-	/* DATA STEP APPROACH FOR SIR */
-		DATA DS_SIR;
+	/* DATA STEP APPROACH FOR SIR - SIMULATION APPROACH TO BOUNDS*/
+		DATA DS_SIR_SIM;
 			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
 			ModelType="DS - SIR";
 			ScenarioName="&Scenario";
@@ -39,28 +39,14 @@
 				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
 				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
 				LAG_BETA = BETA;
-X_IMPORT: postprocess.sas
+/* post process here */
 				OUTPUT;
 			END;
 			DROP LAG: BETA CUM: ;
 		RUN;
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=DS_SIR;
-				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - Data Step SIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				XAXIS LABEL="Date";
-				YAXIS LABEL="Daily Occupancy";
-			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+
 		%END;
-		PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-		PROC SQL; drop table DS_SIR; QUIT;
-T_IMPORT: sim_model_datastep_sir.sas
+		PROC APPEND base=store.MODEL_FINAL_SIM data=DS_SIR_SIM NOWARN FORCE; run;
+		PROC SQL; drop table DS_SIR_SIM; QUIT;
+		

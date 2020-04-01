@@ -3,8 +3,10 @@
 # P_IMPORT: will import for public only
 # C_IMPORT: will import for ccf
 # X_IMPORT: will import for all
-# If X then P then only P - not C
-# If X then C then only C - not P
+#   If X then P then only P - not C
+#   If X then C then only C - not P
+# T_IMPORT: will for for test versions
+#   If X then T then only T - not P or C
 
 from shutil import copyfile
 
@@ -12,6 +14,7 @@ from shutil import copyfile
 covid=open('./public/COVID_19.sas', 'w')
 ccf=open('./ccf/COVID_19_SIRonly.sas','w') 
 ccfall=open('./ccf/COVID_19_ALL.sas','w')
+test=open('./COVID_19_test.sas','w')
 
 def subpart(file,type):
     with open('./parts/'+file) as part:
@@ -47,16 +50,27 @@ def subpart(file,type):
                     file = piece[10:]
                 print(file)
                 subpart(file,'C')
+            elif piece.startswith('T_IMPORT: '):
+                if '\n' in piece:
+                    file = piece[10:len(piece)-1]
+                else:
+                    file = piece[10:]
+                print(file)
+                subpart(file,'T')
             elif type=='X':
                 covid.write(piece)
                 ccf.write(piece)
                 ccfall.write(piece)
+                test.write(piece)
             elif type=='C':
                 ccf.write(piece)
                 ccfall.write(piece)
             elif type=='P':
                 covid.write(piece)
                 ccfall.write(piece)
+                test.write(piece)
+            elif type=='T':
+                test.write(piece)
 
 subpart('driver.sas','X')
 
