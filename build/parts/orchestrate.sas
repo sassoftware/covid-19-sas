@@ -1,7 +1,7 @@
 C_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
-    /* desriptions for the input fields of this macro:
+    /* descriptions for the input fields of this macro:
         Scenario - Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID
         IncubationPeriod - Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right
         InitRecovered - Initial number of Recovered patients, assumed to have immunity to future infection
