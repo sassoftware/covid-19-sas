@@ -19,34 +19,43 @@
 
 
 			/* Dynamic Variables across Scenario Runs */
+			/*Number of people in region of interest, assumed to be well mixed and independent of other populations*/
 			%LET S_DEFAULT = &Population.;
+			/*Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations*/
 			%LET KNOWN_INFECTIONS = &KnownCOVID.;
+			/*Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections*/
 			%LET KNOWN_CASES = &KnownAdmits.;
 			/*Doubling time before social distancing (days)*/
 			%LET DOUBLING_TIME = &doublingtime.;
 			/*Initial Number of Exposed (infected but not yet infectious)*/
 			%LET E = 0;
-			/*Initial Number of Recovered*/
+			/*Initial number of Recovered patients, assumed to have immunity to future infection*/
 			%LET R = &InitRecovered.;
+			/*Number of days a patient is considered infectious (the amount of time it takes to recover or die)*/
 			%LET RECOVERY_DAYS = &RecoveryDays.;
 			/*Baseline Social distancing (% reduction in social contact)*/
 			%LET RELATIVE_CONTACT_RATE = &SocialDistancing.;
-			/*Hospital Market Share (%)*/
+			/*Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest*/
 			%LET MARKET_SHARE = &MarketSharePercent.;
+			/*Percentage of Infected patients in the region who will be hospitalized*/
 			%LET ADMISSION_RATE= &Admission_Rate.;
 			/*factor to adjust %admission to make sense multiplied by Total I*/
 			%LET DIAGNOSED_RATE=1.0; 
-			/*ICU %(total infections)*/
+			/*Percentage of hospitalized patients who will require ICU*/
 			%LET ICU_RATE = %SYSEVALF(&ICUPercent.*&DIAGNOSED_RATE);
-			/*Ventilated %(total infections)*/
+			/*Percentage of hospitalized patients who will require Ventilators*/
 			%LET VENT_RATE = %SYSEVALF(&VentPErcent.*&DIAGNOSED_RATE);
+			/*Percentage of hospitalized patients who will die*/
 			%Let Fatality_rate = &fatalityrate;
-			/*Average number of days from infection to hospitalization*/
-			%LET DAYS_TO_HOSP = 0;
-			/*Isolation Changes*/
+			/*Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right*/
+			%LET DAYS_TO_HOSP = &IncubationPeriod.;
+			/*Date of first change from baseline in social distancing parameter*/
 			%Let ISO_Change_Date = &ISOChangeDate.;
+			/*Second value of social distancing (% reduction in social contact compared to normal activity)*/
 			%LET RELATIVE_CONTACT_RATE_Change = &SocialDistancingChange.;
+			/*Date of second change in social distancing parameter*/
 			%Let ISO_Change_Date_Two = &ISOChangeDateTwo.;
+			/*Third value of social distancing (% reduction in social contact compared to normal activity)*/
 			%LET RELATIVE_CONTACT_RATE_Change_Two = &SocialDistancingChangeTwo.;
 
 
@@ -55,11 +64,11 @@
 			%LET CURRENT_HOSP = &KNOWN_CASES;
 			/*Hospitalization %(total infections)*/
 			%LET HOSP_RATE = %SYSEVALF(&ADMISSION_RATE*&DIAGNOSED_RATE);
-			/*Hospital Length of Stay*/
+			/*Average Hospital Length of Stay*/
 			%LET HOSP_LOS = 7;
-			/*ICU Length of Stay*/
+			/*Average ICU Length of Stay*/
 			%LET ICU_LOS = 9;
-			/*Vent Length of Stay*/
+			/*Average Vent Length of Stay*/
 			%LET VENT_LOS = 10;
 			/*default percent of total admissions that need ECMO*/
 			%LET ECMO_RATE=0.03; 
@@ -67,12 +76,12 @@
 			/*default percent of admissions that need Dialysis*/
 			%LET DIAL_RATE=0.05;
 			%LET DIAL_LOS=11;
-			%LET DEATH_RATE=0.00;
 			/*rate of latent individuals Exposed transported to the infectious stage each time period*/
 			%LET SIGMA = 0.90;
 			/*Days to project*/
 			%LET N_DAYS = 365;
-			%LET BETA_DECAY = 0.0;
+			/*Factor (%) used for daily reduction of Beta*/
+			%LET BETA_DECAY = 0.00;
 			/*Date of first COVID-19 Case*/
 			%LET DAY_ZERO = 13MAR2020;
 
@@ -82,8 +91,10 @@
 			%LET S = &S_DEFAULT;
 			/*Currently Known Regional Infections (only used to compute detection rate - does not change projections*/
 			%LET INITIAL_INFECTIONS = &KNOWN_INFECTIONS;
+			/*Extrapolated number of Infections in the Region at Day 0*/
 			%LET TOTAL_INFECTIONS = %SYSEVALF(&CURRENT_HOSP / &MARKET_SHARE / &HOSP_RATE);
 			%LET DETECTION_PROB = %SYSEVALF(&INITIAL_INFECTIONS / &TOTAL_INFECTIONS);
+			/*Number of Infections in the Region at Day 0 - Equal to TOTAL_INFECTIONS*/
 			%LET I = %SYSEVALF(&INITIAL_INFECTIONS / &DETECTION_PROB);
 			%LET INTRINSIC_GROWTH_RATE = %SYSEVALF(2 ** (1 / &DOUBLING_TIME) - 1);
 			%LET GAMMA = %SYSEVALF(1/&RECOVERY_DAYS);
