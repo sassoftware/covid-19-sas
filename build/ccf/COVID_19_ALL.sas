@@ -775,6 +775,7 @@ libname store "&homedir.";
 		PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
 		PROC SQL; drop table DS_SEIR; QUIT;
 
+
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;

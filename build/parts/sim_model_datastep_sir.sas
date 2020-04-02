@@ -1,7 +1,7 @@
 	/* DATA STEP APPROACH FOR SIR - SIMULATION APPROACH TO BOUNDS*/
 		DATA DS_SIR_SIM;
 			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
-			ModelType="DS - SIR";
+			ModelType="DS - SIR - SIM";
 			ScenarioName="&Scenario";
 			ScenarioIndex=&ScenarioIndex.;
 			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
@@ -39,7 +39,7 @@
 				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
 				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
 				LAG_BETA = BETA;
-/* post process here */
+X_IMPORT: postprocess.sas
 				OUTPUT;
 			END;
 			DROP LAG: BETA CUM: ;

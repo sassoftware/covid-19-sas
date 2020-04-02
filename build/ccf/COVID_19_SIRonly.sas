@@ -376,6 +376,7 @@ libname store "&homedir.";
 		PROC SQL; drop table DS_SIR; QUIT;
 
 
+
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;

@@ -39,6 +39,32 @@ This code takes a set of input parameters and uses them in infectious disease mo
     - ScenarioNameUnique
     - ModelType
 
+# Notes on Model Types
+This code computes SIR and SEIR models with different methods and different parameterizations, as described in the following. 
+
+The output file, MODEL_FINAL, uses the column ModelType to differentiate output from each of the following setups:
+- ModelType = 'DS - SIR'
+    - Fits a SIR model with Data Step
+    - Initial values of &SocialDistancing contribute to BETA and then &ISOChangeDate used to step Beta down using &SocialDistancingChange at the specified date.  Similarly, &ISOChangeDateTwo and &SocialDistancingChangeTwo are and additional step down.
+    - An internal parameter, &BETA_DECAY, is used to adjust BETA each day.  It is currently set to 0.
+- ModelType = 'DS - SEIR'
+    - Fits an SEIR model with Data Step
+    - Initial values of &SocialDistancing contribute to BETA and then &ISOChangeDate used to step Beta down using &SocialDistancingChange at the specified date.  Similarly, &ISOChangeDateTwo and &SocialDistancingChangeTwo are and additional step down.
+    - An internal parameter, &BETA_DECAY, is used to adjust BETA each day.  It is currently set to 0.
+- ModelType = 'TMODEL - SEIR'
+    - Fits an SEIR model with PROC (T)MODEL 
+    - The BETA parameter incorporates different R0 parameters for each phase as defined by: before &ISOChangeDate, starting on &ISOChangeDateTwo, the period between these two
+- ModelType = 'TMODEL - SIR'
+    - Fits an SEIR model with PROC (T)MODEL 
+    - The BETA parameter incorporates different R0 parameters for each phase as defined by: before &ISOChangeDate, starting on &ISOChangeDateTwo, the period between these two
+- ModelType = 'TMODEL - SEIR - OHIO FIT'
+    - This is a prototype for using a data feed of daily case counts from a geographical region.  In this prototypes case it is a region of the state of Ohio in the United States.
+    - Fits and SEIR model with PROC (T)MODEL 
+    - Uses input data to fit cumulative cases by day
+    - The fitted model is used to solve the specification of the SEIR model.  This does not yet incorporate a change in BETA due to changes in Social Distancing.
+
+In the next few days, the model specification will be arranged into parts: the core model, specification of R0 over the time period, using a data feed as demonstrated in the prototype ModelType = 'TMODEL - SEIR - OHIO FIT.'
+
 # Disclaimer
 These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and reevaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You need to evaluate each parameter for your population of interest.
 
