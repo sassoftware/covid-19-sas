@@ -1,5 +1,5 @@
 # covid
-Covid tool development
+COVID-19 tool development
 
 An open collaboration between the Cleveland Clinic and SAS Institute.
 
@@ -29,7 +29,7 @@ This code takes a set of input parameters and uses them in infectious disease mo
 
 # Input & Output Definitions
 - INPUT:
-    - The description of the input parameters for the %EasyCall Macro follow the macro definition in COVID_19.sas around line 20
+    - The description of the input parameters for the %EasyRun Macro follow the macro definition in COVID_19.sas around line 20
 - OUTPUT:
     - The model dataset in STORE.MODEL_FINAL has descriptive labels for each column.  The labels can be found in the COVID_19.sas file around line 740 also.
     - The scenario parameters are stored in STORE.SCENARIOS which has labels for each column.  The labels can be found in the COVID_19.sas file around line 788 also.
