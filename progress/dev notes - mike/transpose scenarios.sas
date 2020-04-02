@@ -33,3 +33,15 @@ DATA PARMS_TRANSP;
      ICUPercent = &ICUPercent;
      VentPercent = &VentPercent;
 RUN;
+
+
+
+
+
+
+        data input; set RUN_SCENARIOS; stop; run;
+        DATA _NULL_;
+            set sashelp.vmacro(where=(scope='EASYRUN'));
+            call symput('mname',trim(name));
+            call execute(cats('data input; set input; ',"&mname.=",&&mname.,'; run;'));
+        RUN;

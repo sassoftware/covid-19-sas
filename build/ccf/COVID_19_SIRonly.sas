@@ -381,7 +381,10 @@ libname store "&homedir.";
 			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
 				%IF %sysfunc(exist(STORE.OHIO_SUMMARY)) %THEN %DO;
-					PROC SQL NOPRINT; SELECT MAX(DATE) into :LATEST_CASE FROM STORE.OHIO_SUMMARY; QUIT;
+					PROC SQL NOPRINT; 
+						SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.OHIO_SUMMARY;
+						SELECT MAX(DATE) into :LATEST_CASE FROM STORE.OHIO_SUMMARY; 
+					QUIT;
 				%END;
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
@@ -392,7 +395,7 @@ libname store "&homedir.";
 						PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;
 							GETNAMES=YES;
 							DATAROW=2;
-							GUESSINGROWS=2000;
+							GUESSINGROWS=20000000;
 						RUN; 
 						/* check to make sure column 1 is county and not VAR1 - sometime the URL is pulled quickly and this gets mislabeled*/
 							%let dsid=%sysfunc(open(WORK.OHIO_SUMMARY));
@@ -429,6 +432,10 @@ libname store "&homedir.";
 								BY DATE;
 								CUMULATIVE_CASE_COUNT + NEW_CASE_COUNT;
 							RUN;
+
+							PROC SQL NOPRINT;
+								drop table ALLDATES;
+							QUIT; 
 					%END;
 
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
@@ -596,7 +603,6 @@ libname store "&homedir.";
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT;
 					drop table DINIT;
-					drop table ALLDATES; 
 					drop table EPIPRED;
 					drop table SEIRMOD;
 				QUIT;
