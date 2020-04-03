@@ -1,28 +1,69 @@
 C_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
-    /* descriptions for the input fields of this macro:
-        Scenario - Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID
-        IncubationPeriod - Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right
-        InitRecovered - Initial number of Recovered patients, assumed to have immunity to future infection
-        RecoveryDays - Number of days a patient is considered infectious (the amount of time it takes to recover or die)
-        doublingtime - Baseline Doubling Time without social distancing
-        Population - Number of people in region of interest, assumed to be well mixed and independent of other populations
-        KnownAdmits - Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections
-        KnownCOVID - Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations
-        SocialDistancing - Baseline Social distancing (% reduction in social contact compared to normal activity)
-        ISOChangeDate - Date of first change from baseline in social distancing parameter
-        SocialDistancingChange - Second value of social distancing (% reduction in social contact compared to normal activity)
-        ISOChangeDateTwo - Date of second change in social distancing parameter
-        SocialDistancingChangeTwo - Third value of social distancing (% reduction in social contact compared to normal activity)
-        MarketSharePercent - Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest
-        Admission_Rate - Percentage of Infected patients in the region who will be hospitalized
-        ICUPercent - Percentage of hospitalized patients who will require ICU
-        VentPErcent - Percentage of hospitalized patients who will require Ventilators
-        FatalityRate - Percentage of hospitalized patients who will die
-        plots - YES/NO display plots in output
-    */
-
+    DATA INPUTS;
+        FORMAT
+            Scenario                   $200.     
+            IncubationPeriod           BEST12.    
+            InitRecovered              BEST12.  
+            RecoveryDays               BEST12.    
+            doublingtime               BEST12.    
+            Population                 BEST12.    
+            KnownAdmits                BEST12.    
+            KnownCOVID                 BEST12.    
+            SocialDistancing           BEST12.    
+            ISOChangeDate              DATE9.    
+            SocialDistancingChange     BEST12.    
+            ISOChangeDateTwo           DATE9.    
+            SocialDistancingChangeTwo  BEST12.    
+            MarketSharePercent         BEST12.    
+            Admission_Rate             BEST12.    
+            ICUPercent                 BEST12.    
+            VentPErcent                BEST12.    
+            FatalityRate               BEST12.   
+            plots                      $3.    
+        ;
+        LABEL
+            Scenario                    =   "Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID"
+            IncubationPeriod            =   "Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right"
+            InitRecovered               =   "Initial number of Recovered patients, assumed to have immunity to future infection"
+            RecoveryDays                =   "Number of days a patient is considered infectious (the amount of time it takes to recover or die)"
+            doublingtime                =   "Baseline Doubling Time without social distancing"
+            Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
+            KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
+            KnownCOVID                  =   "Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations"
+            SocialDistancing            =   "Baseline Social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDate               =   "Date of first change from baseline in social distancing parameter"
+            SocialDistancingChange      =   "Second value of social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDateTwo            =   "Date of second change in social distancing parameter"
+            SocialDistancingChangeTwo   =   "Third value of social distancing (% reduction in social contact compared to normal activity)"
+            MarketSharePercent          =   "Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest"
+            Admission_Rate              =   "Percentage of Infected patients in the region who will be hospitalized"
+            ICUPercent                  =   "Percentage of hospitalized patients who will require ICU"
+            VentPErcent                 =   "Percentage of hospitalized patients who will require Ventilators"
+            FatalityRate                =   "Percentage of hospitalized patients who will die"
+            plots                       =   "YES/NO display plots in output"
+        ;
+        Scenario                    =   "&Scenario.";
+        IncubationPeriod            =   &IncubationPeriod.;
+        InitRecovered               =   &InitRecovered.;
+        RecoveryDays                =   &RecoveryDays.;
+        doublingtime                =   &doublingtime.;
+        Population                  =   &Population.;
+        KnownAdmits                 =   &KnownAdmits.;
+        KnownCOVID                  =   &KnownCOVID.;
+        SocialDistancing            =   &SocialDistancing.;
+        ISOChangeDate               =   &ISOChangeDate.;
+        SocialDistancingChange      =   &SocialDistancingChange.;
+        ISOChangeDateTwo            =   &ISOChangeDateTwo.;
+        SocialDistancingChangeTwo   =   &SocialDistancingChangeTwo.;
+        MarketSharePercent          =   &MarketSharePercent.;
+        Admission_Rate              =   &Admission_Rate.;
+        ICUPercent                  =   &ICUPercent.;
+        VentPErcent                 =   &VentPErcent.;
+        FatalityRate                =   &FatalityRate.;
+        plots                       =   "&plots.";
+    RUN;
 
 X_IMPORT: scenario_setup.sas
 

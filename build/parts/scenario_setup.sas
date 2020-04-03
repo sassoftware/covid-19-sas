@@ -10,6 +10,11 @@
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             STAGE='INPUT';
         RUN;
+        DATA INPUTS; 
+            set INPUTS;
+            ScenarioIndex = &ScenarioIndex_Base. + 1;
+            label ScenarioIndex="Unique Scenario ID";
+        RUN;
 
 X_IMPORT: parameters.sas
 
@@ -45,5 +50,9 @@ X_IMPORT: parameters.sas
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
             PROC APPEND base=store.SCENARIOS data=PARMS; run;
+            PROC APPEND base=store.INPUTS data=INPUTS; run;
         %END;
-        PROC SQL; drop table PARMS; QUIT;
+        PROC SQL; 
+            drop table PARMS;
+            drop table INPUTS;
+        QUIT;

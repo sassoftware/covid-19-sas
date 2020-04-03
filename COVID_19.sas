@@ -17,28 +17,69 @@ libname store "&homedir.";
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
-    /* descriptions for the input fields of this macro:
-        Scenario - Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID
-        IncubationPeriod - Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right
-        InitRecovered - Initial number of Recovered patients, assumed to have immunity to future infection
-        RecoveryDays - Number of days a patient is considered infectious (the amount of time it takes to recover or die)
-        doublingtime - Baseline Doubling Time without social distancing
-        Population - Number of people in region of interest, assumed to be well mixed and independent of other populations
-        KnownAdmits - Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections
-        KnownCOVID - Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations
-        SocialDistancing - Baseline Social distancing (% reduction in social contact compared to normal activity)
-        ISOChangeDate - Date of first change from baseline in social distancing parameter
-        SocialDistancingChange - Second value of social distancing (% reduction in social contact compared to normal activity)
-        ISOChangeDateTwo - Date of second change in social distancing parameter
-        SocialDistancingChangeTwo - Third value of social distancing (% reduction in social contact compared to normal activity)
-        MarketSharePercent - Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest
-        Admission_Rate - Percentage of Infected patients in the region who will be hospitalized
-        ICUPercent - Percentage of hospitalized patients who will require ICU
-        VentPErcent - Percentage of hospitalized patients who will require Ventilators
-        FatalityRate - Percentage of hospitalized patients who will die
-        plots - YES/NO display plots in output
-    */
-
+    DATA INPUTS;
+        FORMAT
+            Scenario                   $200.     
+            IncubationPeriod           BEST12.    
+            InitRecovered              BEST12.  
+            RecoveryDays               BEST12.    
+            doublingtime               BEST12.    
+            Population                 BEST12.    
+            KnownAdmits                BEST12.    
+            KnownCOVID                 BEST12.    
+            SocialDistancing           BEST12.    
+            ISOChangeDate              DATE9.    
+            SocialDistancingChange     BEST12.    
+            ISOChangeDateTwo           DATE9.    
+            SocialDistancingChangeTwo  BEST12.    
+            MarketSharePercent         BEST12.    
+            Admission_Rate             BEST12.    
+            ICUPercent                 BEST12.    
+            VentPErcent                BEST12.    
+            FatalityRate               BEST12.   
+            plots                      $3.    
+        ;
+        LABEL
+            Scenario                    =   "Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID"
+            IncubationPeriod            =   "Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right"
+            InitRecovered               =   "Initial number of Recovered patients, assumed to have immunity to future infection"
+            RecoveryDays                =   "Number of days a patient is considered infectious (the amount of time it takes to recover or die)"
+            doublingtime                =   "Baseline Doubling Time without social distancing"
+            Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
+            KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
+            KnownCOVID                  =   "Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations"
+            SocialDistancing            =   "Baseline Social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDate               =   "Date of first change from baseline in social distancing parameter"
+            SocialDistancingChange      =   "Second value of social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDateTwo            =   "Date of second change in social distancing parameter"
+            SocialDistancingChangeTwo   =   "Third value of social distancing (% reduction in social contact compared to normal activity)"
+            MarketSharePercent          =   "Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest"
+            Admission_Rate              =   "Percentage of Infected patients in the region who will be hospitalized"
+            ICUPercent                  =   "Percentage of hospitalized patients who will require ICU"
+            VentPErcent                 =   "Percentage of hospitalized patients who will require Ventilators"
+            FatalityRate                =   "Percentage of hospitalized patients who will die"
+            plots                       =   "YES/NO display plots in output"
+        ;
+        Scenario                    =   "&Scenario.";
+        IncubationPeriod            =   &IncubationPeriod.;
+        InitRecovered               =   &InitRecovered.;
+        RecoveryDays                =   &RecoveryDays.;
+        doublingtime                =   &doublingtime.;
+        Population                  =   &Population.;
+        KnownAdmits                 =   &KnownAdmits.;
+        KnownCOVID                  =   &KnownCOVID.;
+        SocialDistancing            =   &SocialDistancing.;
+        ISOChangeDate               =   &ISOChangeDate.;
+        SocialDistancingChange      =   &SocialDistancingChange.;
+        ISOChangeDateTwo            =   &ISOChangeDateTwo.;
+        SocialDistancingChangeTwo   =   &SocialDistancingChangeTwo.;
+        MarketSharePercent          =   &MarketSharePercent.;
+        Admission_Rate              =   &Admission_Rate.;
+        ICUPercent                  =   &ICUPercent.;
+        VentPErcent                 =   &VentPErcent.;
+        FatalityRate                =   &FatalityRate.;
+        plots                       =   "&plots.";
+    RUN;
 
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
         %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
@@ -51,6 +92,11 @@ libname store "&homedir.";
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             STAGE='INPUT';
+        RUN;
+        DATA INPUTS; 
+            set INPUTS;
+            ScenarioIndex = &ScenarioIndex_Base. + 1;
+            label ScenarioIndex="Unique Scenario ID";
         RUN;
 
 			/* Translate CCF code macro (%EASYRUN) inputs to variables used in this code 
@@ -196,8 +242,12 @@ libname store "&homedir.";
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
             PROC APPEND base=store.SCENARIOS data=PARMS; run;
+            PROC APPEND base=store.INPUTS data=INPUTS; run;
         %END;
-        PROC SQL; drop table PARMS; QUIT;
+        PROC SQL; 
+            drop table PARMS;
+            drop table INPUTS;
+        QUIT;
     /* If this is a new scenario then run it */
     %IF &ScenarioExist = 0 %THEN %DO;
 
@@ -1067,7 +1117,7 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.2,
-FatalityRate=,
+FatalityRate=0,
 plots=YES	
 );
 	
@@ -1089,7 +1139,7 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.4,
-FatalityRate=,
+FatalityRate=0,
 plots=YES	
 );
 	
@@ -1111,7 +1161,7 @@ ISOChangeDate='31MAY2020'd,
 SocialDistancingChange=0.25,
 ISOChangeDateTwo='06AUG2020'd,
 SocialDistancingChangeTwo=0.5,
-FatalityRate=,
+FatalityRate=0,
 plots=YES	
 );
 

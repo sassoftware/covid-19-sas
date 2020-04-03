@@ -1,4 +1,4 @@
 ﻿scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,KnownAdmits,KnownCOVID,Population,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,FatalityRate,plots
-Scenario_DrS_00_20_run_1,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd,0,'06APR2020'd,0.2,,YES 
-Scenario_DrS_00_40_run_1,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd,0,'06APR2020'd,0.4,,YES 
-Scenario_DrS_00_40_run_12,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAY2020'd,0.25,'06AUG2020'd,0.5,,YES 
+Scenario_DrS_00_20_run_1,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd,0,'06APR2020'd,0.2,0,YES 
+Scenario_DrS_00_40_run_1,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd,0,'06APR2020'd,0.4,0,YES 
+Scenario_DrS_00_40_run_12,0,0,14,5,10,46,4390484,0,0.29,0.075,0.45,0.35,'31MAY2020'd,0.25,'06AUG2020'd,0.5,0,YES 
