@@ -120,6 +120,7 @@ plots=YES
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
 
+T_IMPORT: test_cleanup.sas
 
 
 

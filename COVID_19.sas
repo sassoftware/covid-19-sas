@@ -791,7 +791,7 @@ libname store "&homedir.";
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF &LATEST_CASE < %eval(%sysfunc(today())-1) %THEN %DO;
+					%IF &LATEST_CASE < %eval(%sysfunc(today())-2) %THEN %DO;
 						FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 						OPTION VALIDVARNAME=V7;
 						PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;

@@ -659,10 +659,11 @@ libname store "&homedir.";
 			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
+		CALL STREAMINIT(2019);
+		DO SIM = 1 to 100;
 			DO DAY = 0 TO &N_DAYS;
 				IF DAY = 0 THEN DO;
 					S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
-
 					I_N = &I/&DIAGNOSED_RATE;
 					R_N = &R;
 					BETA=&BETA;
@@ -670,8 +671,9 @@ libname store "&homedir.";
 				END;
 				ELSE DO;
 					BETA = LAG_BETA * (1- &BETA_DECAY);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					I_N = (BETA * LAG_S * LAG_I - &GAMMA * LAG_I) + LAG_I;
+					poisson = rand('POISson', BETA * LAG_S * LAG_I);
+					S_N = (-poisson) + LAG_S;
+					I_N = (poisson - &GAMMA * LAG_I) + LAG_I;
 					R_N = &GAMMA * LAG_I + LAG_R;
 					N = SUM(S_N, I_N, R_N);
 					SCALE = LAG_N / N;
@@ -753,10 +755,26 @@ libname store "&homedir.";
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				OUTPUT;
 			END;
-			DROP LAG: BETA CUM: ;
+		END;
+			DROP LAG: BETA CUM: poisson;
 		RUN;
 		%IF &PLOTS. = YES %THEN %DO;
-
+			PROC SGPLOT DATA=DS_SIR_SIM;
+				where ModelType='DS - SIR - SIM' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - Data Step SEIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
+				SERIES X=DATE Y=I_N / LINEATTRS=(THICKNESS=2) GROUPBY=SIM;
+				*SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				*SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				*SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				*SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				*SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 		PROC APPEND base=store.MODEL_FINAL_SIM data=DS_SIR_SIM NOWARN FORCE; run;
 		PROC SQL; drop table DS_SIR_SIM; QUIT;
@@ -901,7 +919,7 @@ libname store "&homedir.";
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF &LATEST_CASE < %eval(%sysfunc(today())-1) %THEN %DO;
+					%IF &LATEST_CASE < %eval(%sysfunc(today())-2) %THEN %DO;
 						FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 						OPTION VALIDVARNAME=V7;
 						PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;
@@ -1326,7 +1344,15 @@ plots=YES
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
 
-
+/*
+proc sql;
+    drop table store.MODEL_FINAL;
+    drop table store.SCENARIOS;
+    drop table store.INPUTS;
+    *drop table store.MODEL_FINAL_SIM;
+    *drop table store.ohio_summary;
+quit;
+*/
 
 
 /* uncomment the following section to load/replace the files in CAS - Viya based Visual Analytics, Visual Statistics, ... */
