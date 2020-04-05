@@ -9,27 +9,26 @@ This code takes a set of input parameters and uses them in infectious disease mo
 
 # Getting Started
 - **PREPARE**
-    - Download COVID_19.sas to your SAS environment
-        - Also download the run_scenario.csv file for an example submission file to run many scenarios in batch
+    - Download `COVID_19.sas` to your SAS environment
+        - Also, download the `run_scenario.csv` file for an example submission file to run many scenarios in batch
 - **SETUP**
     - Edit `line 10` to a local directory you want to save datasets with model output and scenario information to
     - If you do not have SAS/ETS then edit `line 16` to 'NO'
         - This option causes the SIR/SEIR models to run with a SAS Data Step version only
-        - If you are unsure then you can run 'PROC PRODUCT_STATUS; run;' in SAS and view the log for this information
+        - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
     - If you have the latest analytical release of SAS, 15.1, then set `line 17` to YES
-        - This option swaps out PROC MODEL for PROC TMODEL
-        - If you are unsure then you can run 'PROC PRODUCT_STATUS; run;' in SAS and view the log for this information
+        - This option swaps out `PROC MODEL` for `PROC TMODEL`
+        - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
 - **RUN**
-    - Make calls to the macro %EasyRun.  Examples scenarios are at the end of the file.
-        - The last parameter for the macro calls is plots=YES.  This triggers basic SGPLOT output to visually review.
-    - Submit many scenarios in batch by using an input file.  An example file, run_scenarios.csv is provided. Each row of this file will feed individual calls to the %EasyRun macro.
+    - Make calls to the macro `%EasyRun`.  Examples scenarios are at the end of the file.
+    - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv` is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
 - **REVIEW**
-    - All model output for each call to %EasyRun saves in the dataset STORE.MODEL_FINAL
-    - All of the parameters that lead to the results in STORE.MODEL_FINAL save in STORE.SCENARIOS and all inputs to the macro also save to STORE.INPUTS.  The variable SCENARIOINDEX links these files.
+    - All model output for each call to `%EasyRun` saves in the dataset `STORE.MODEL_FINAL`
+    - All of the parameters that lead to the results in `STORE.MODEL_FINAL` save in `STORE.SCENARIOS` and all inputs to the macro also save to `STORE.INPUTS`.  The variable `SCENARIOINDEX` links these files.
 
 # Input Definitions & Notes
 **INPUT:**
-- The description of the input parameters for the %EasyRun Macro follow the macro definition in COVID_19.sas and are detailed in the table below
+- The description of the input parameters for the `%EasyRun` Macro follow the macro definition in `COVID_19.sas` and are detailed in the table below
 
 | Input Parameter | Description | Example Input | Type of Parameter |
 | --- | --- | --- | --- |
@@ -68,14 +67,12 @@ This code takes a set of input parameters and uses them in infectious disease mo
 
 # Output Files Notes
 **OUTPUT:**
-- The model output save to in STORE.MODEL_FINAL which has descriptive labels for each column.
-- The scenario parameters (input and calculated) are stored in STORE.SCENARIOS which has labels for each column and links to STORE.MODEL_FINAL on the column ScenarioIndex.
-- The inputs to the %EasyRun macro are stored in STORE.INPUTS for easy review and inclusion in reporting by linking to STORE.MODEL_FINAL on the column ScenarioIndex.
+- The model output saves to in `STORE.MODEL_FINAL` which has descriptive labels for each column.
+- The scenario parameters (input and calculated) are stored in `STORE.SCENARIOS` which has labels for each column and links to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
+- The inputs to the `%EasyRun` macro are stored in `STORE.INPUTS` for easy review and inclusion in reporting by linking to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
 
 **IMPORTANT NOTE:** 
-- STORE.MODEL_FINAL stores each scenario and each model type with 1 row per day. Make sure you are viewing the results for a single scenario and single model type by filtering on the variables: 
-    - ScenarioNameUnique
-    - ModelType
+- `STORE.MODEL_FINAL` stores each scenario and each model type with 1 row per day. Make sure you are viewing the results for a single scenario and single model type by filtering on the variables `ScenarioNameUnique` and `ModelType`
 
 # Notes on Model Types
 This code computes SIR and SEIR models with different methods and different parameterizations, as described in the following. 
@@ -104,9 +101,9 @@ The output file, MODEL_FINAL, uses the column ModelType to differentiate output 
 In the next few days, the model specification will be arranged into parts: the core model, specification of R0 over the time period, using a data feed as demonstrated in the prototype ModelType = 'TMODEL - SEIR - OHIO FIT.'
 
 # Notes
-- The current locked version of the project is in COVID_19.sas.
-- Progress towards the next locked version is in the /progress folder
-- the COVID_19.sas file is built from modular parts in /build/parts into the /build/public folder by /build/build.py and then copied here
+- The current locked version of the project is in `COVID_19.sas`.
+- Progress towards the next locked version is in the `/progress` folder
+- the `COVID_19.sas` file is built from modular parts in `/build/parts` into the `/build/public` folder by `/build/build.py` and then copied here
 
 # Disclaimer
 These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and reevaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You need to evaluate each parameter for your population of interest.
