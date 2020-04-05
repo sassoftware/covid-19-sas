@@ -1,5 +1,5 @@
 	/* DATA STEP APPROACH FOR SIR */
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variablez used from above:
 X_IMPORT: parameters.sas
 		*/
 		DATA DS_SIR;
@@ -20,9 +20,9 @@ X_IMPORT: parameters.sas
 				END;
 				ELSE DO;
 					BETA = LAG_BETA * (1- &BETA_DECAY.);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					I_N = (BETA * LAG_S * LAG_I - &GAMMA. * LAG_I) + LAG_I;
-					R_N = &GAMMA. * LAG_I + LAG_R;
+					S_N = LAG_S -BETA * LAG_S * LAG_I;
+					I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
+					R_N = LAG_R + &GAMMA. * LAG_I;
 					N = SUM(S_N, I_N, R_N);
 					SCALE = LAG_N / N;
 					IF S_N < 0 THEN S_N = 0;

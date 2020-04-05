@@ -28,19 +28,20 @@ The logic setup recursively calls parts while honoring a hierarchy of inclusion:
 - Once a T_IMPORT part is called, all further import type sare only written to T_IMPORT destinations
 
 # branch=Central-Post-Processing (done and pulled):
-- [x] Move DINIT table from parameters.sas to model_proctmodel_*.sas files
-- [x] Add time change points for social distancing to TMODEL/Model approaches
-- [x] Consolidate the post-fitting datastep from all model approaches into postprocess.sas.  The steps still show up in each model approach in the public code but it is managed in a central location: postprocess.sas.
-- [x] flag columns in SCENARIOS that are input parameters of %EasyRun - introduced column STAGE with values INPUT (variables coming into macro) and MODEL (variables available at time Models execute)
+- [X] Move DINIT table from parameters.sas to model_proctmodel_*.sas files
+- [X] Add time change points for social distancing to TMODEL/Model approaches
+- [X] Consolidate the post-fitting datastep from all model approaches into postprocess.sas.  The steps still show up in each model approach in the public code but it is managed in a central location: postprocess.sas.
+- [X] flag columns in SCENARIOS that are input parameters of %EasyRun - introduced column STAGE with values INPUT (variables coming into macro) and MODEL (variables available at time Models execute)
 
 # branch=Macro-Maze (done and pulled)
 
 # Being addressed currently
-- [x] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS.  Using data_dictionary.sas to create labels for each columns of the two output datasets.
-- [x] Add macro input variable descriptions as comment below the macro call
+- [X] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS.  Using data_dictionary.sas to create labels for each columns of the two output datasets.
+- [X] Add macro input variable descriptions as comment below the macro call
 - [ ] Add beta decay parameter to TMODEL/Model approaches - It is in the DS approaches but set to 0 currently
-- [ ] introduce stochastic approach to model_datastep_*.sas approaches and use to create bounds for each output parameters - use in postprosessing
-    - [ ] introduce stochastic approach to model_proctmodel_*.sas approaches and use to create bounds for output parameters - use in postprocessing
+- [ ] introduce stochastic approach to model_proctmodel_*.sas approaches and use to create bounds for output parameters - use in postprocessing
+- [ ] Fix macro variable formating
+    - [ ] underscore or camelCase
 
 
 

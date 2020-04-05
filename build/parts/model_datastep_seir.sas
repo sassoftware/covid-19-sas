@@ -1,5 +1,5 @@
 	/* DATA STEP APPROACH FOR SEIR */
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		DATA DS_SEIR;
@@ -21,10 +21,10 @@ X_IMPORT: parameters.sas
 				END;
 				ELSE DO;
 					BETA = LAG_BETA * (1 - &BETA_DECAY.);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					E_N = (BETA * LAG_S * LAG_I) - &SIGMA. * LAG_E + LAG_E;
-					I_N = (&SIGMA. * LAG_E - &GAMMA. * LAG_I) + LAG_I;
-					R_N = &GAMMA. * LAG_I + LAG_R;
+					S_N = LAG_S -BETA * LAG_S * LAG_I;
+					E_N = LAG_E + BETA * LAG_S * LAG_I - &SIGMA. * LAG_E;
+					I_N = LAG_I + &SIGMA. * LAG_E - &GAMMA. * LAG_I;
+					R_N = LAG_R + &GAMMA. * LAG_I;
 					N = SUM(S_N, E_N, I_N, R_N);
 					SCALE = LAG_N / N;
 					IF S_N < 0 THEN S_N = 0;

@@ -1,5 +1,5 @@
 	/* DATA STEP APPROACH FOR SIR - SIMULATION APPROACH TO BOUNDS*/
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		DATA DS_SIR_SIM;
@@ -23,9 +23,9 @@ X_IMPORT: parameters.sas
 				ELSE DO;
 					BETA = LAG_BETA * (1- &BETA_DECAY.);
 					poisson = rand('POISson', BETA * LAG_S * LAG_I);
-					S_N = (-poisson) + LAG_S;
-					I_N = (poisson - &GAMMA. * LAG_I) + LAG_I;
-					R_N = &GAMMA. * LAG_I + LAG_R;
+					S_N = LAG_S - poisson;
+					I_N = LAG_I + poisson - &GAMMA. * LAG_I;
+					R_N = LAG_R + &GAMMA. * LAG_I;
 					N = SUM(S_N, I_N, R_N);
 					SCALE = LAG_N / N;
 					IF S_N < 0 THEN S_N = 0;

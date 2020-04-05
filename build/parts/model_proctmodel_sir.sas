@@ -1,5 +1,5 @@
 	/*PROC TMODEL SIR APPROACH*/
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
@@ -27,7 +27,7 @@ X_IMPORT: parameters.sas
 				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				DERT.S_N = -BETA*S_N*I_N; 				
-				DERT.I_N = BETA*S_N*I_N-GAMMA*I_N;   
+				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;   
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N I_N R_N / OUT = TMODEL_SIR; 

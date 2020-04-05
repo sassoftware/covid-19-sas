@@ -2,7 +2,13 @@ X_IMPORT: header.sas
 
 X_IMPORT: orchestrate.sas
 
-/*Test runs of EasyRun macro*/
+/* Test runs of EasyRun macro 
+	IMPORTANT NOTES: 
+		These example runs have all the positional macro variables.  
+		There are even more keyword parameters available.
+			These need to be set for your population.
+			They can be reviewed within the %EasyRun macro at the very top.
+*/
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
 IncubationPeriod=0,
@@ -72,6 +78,16 @@ plots=YES
 /* Scenarios can be run in batch by specifying them in a sas dataset.
     In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
     An example run_scenarios.csv file is provided with this code.
+
+	IMPORTANT NOTES: 
+		The example run_scenarios.csv file has columns for all the positional macro variables.  
+		There are even more keyword parameters available.
+			These need to be set for your population.
+			They can be reviewed within the %EasyRun macro at the very top.
+		THEN:
+			you can set fixed values for the keyword parameters in the %EasyRun definition call
+			OR
+			you can add columns for the keyword parameters to this input file
 
 	You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
 */

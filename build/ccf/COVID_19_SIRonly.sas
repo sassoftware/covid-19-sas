@@ -124,19 +124,19 @@ libname store "&homedir.";
             VentPErcent                 =   "Percentage of hospitalized patients who will require Ventilators"
             FatalityRate                =   "Percentage of hospitalized patients who will die"
             plots                       =   "YES/NO display plots in output"
-            N_DAYS                      =   "T"
-            DiagnosedRate               =   "T"
-            E                           =   "T"
-            SIGMA                       =   "T"
-            DAY_ZERO                    =   "T"
-            BETA_DECAY                  =   "T"
-            ECMO_RATE                   =   "T"
-            DIAL_RATE                   =   "T"
-            HOSP_LOS                    =   "T"
-            ICU_LOS                     =   "T"
-            VENT_LOS                    =   "T"
-            ECMO_LOS                    =   "T"
-            DIAL_LOS                    =   "T"
+            N_DAYS                      =   "Number of days to project"
+            DiagnosedRate               =   "Factor to adjust admission_rate contributing to via MarketSharePercent I (see calculation for I)"
+            E                           =   "Initial Number of Exposed (infected but not yet infectious)"
+            SIGMA                       =   "Rate of latent individuals Exposed and transported to the infectious stage during each time period"
+            DAY_ZERO                    =   "Date of the first COVID-19 case"
+            BETA_DECAY                  =   "Factor (%) used for daily reduction of Beta"
+            ECMO_RATE                   =   "Default percent of total admissions that need ECMO"
+            DIAL_RATE                   =   "Default percent of admissions that need Dialysis"
+            HOSP_LOS                    =   "Average Hospital Length of Stay"
+            ICU_LOS                     =   "Average ICU Length of Stay"
+            VENT_LOS                    =   "Average Vent Length of Stay"
+            ECMO_LOS                    =   "Average ECMO Length of Stay"
+            DIAL_LOS                    =   "Average DIAL Length of Stay"
         ;
         Scenario                    =   "&Scenario.";
         IncubationPeriod            =   &IncubationPeriod.;
@@ -190,19 +190,27 @@ libname store "&homedir.";
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
-	* calculated parameters used in model post-processing;
-		%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
-		%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
-		%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
-	* calculated parameters used in models;
-		%LET I = %SYSEVALF(&KnownCOVID. / (&KnownCOVID. / (&KnownAdmits. / &MarketSharePercent. / (&Admission_Rate. * &DiagnosedRate.))));
-		%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
-		%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancing.));
-		%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChange.));
-		%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChangeTwo.));
-		%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
-		%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
-		%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+        /* Calculate Parameters form Macro Inputs Here - these are repeated as comments at the start of each model phase below */
+			* calculated parameters used in model post-processing;
+				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
+				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
+				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
+			* calculated parameters used in models;
+				%LET I = %SYSEVALF(&KnownCOVID. / 
+									(&KnownCOVID. / 
+										(&KnownAdmits. / 
+											&MarketSharePercent. / 
+												(&Admission_Rate. * &DiagnosedRate.))));
+				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancing.));
+				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange.));
+				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
+				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
+				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 
         DATA PARMS;
             set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
@@ -219,11 +227,11 @@ libname store "&homedir.";
                         from 
                             (select *, count(*) as cnt 
                                 from PARMS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
                         having count(*) = t1.cnt)
@@ -242,26 +250,37 @@ libname store "&homedir.";
             drop table PARMS;
             drop table INPUTS;
         QUIT;
+    /* Prepare to create request plots from input parameter plots= */
+        %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
+        %ELSE %DO; %LET plots = NO; %END;
+
     /* If this is a new scenario then run it */
     %IF &ScenarioExist = 0 %THEN %DO;
 
 
 
 	/* DATA STEP APPROACH FOR SIR */
-		/* these are the calculations for variable used from above:
-	* calculated parameters used in model post-processing;
-		%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
-		%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
-		%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
-	* calculated parameters used in models;
-		%LET I = %SYSEVALF(&KnownCOVID. / (&KnownCOVID. / (&KnownAdmits. / &MarketSharePercent. / (&Admission_Rate. * &DiagnosedRate.))));
-		%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
-		%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancing.));
-		%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChange.));
-		%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChangeTwo.));
-		%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
-		%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
-		%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+		/* these are the calculations for variablez used from above:
+			* calculated parameters used in model post-processing;
+				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
+				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
+				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
+			* calculated parameters used in models;
+				%LET I = %SYSEVALF(&KnownCOVID. / 
+									(&KnownCOVID. / 
+										(&KnownAdmits. / 
+											&MarketSharePercent. / 
+												(&Admission_Rate. * &DiagnosedRate.))));
+				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancing.));
+				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange.));
+				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
+				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
+				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
 		DATA DS_SIR;
 			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
@@ -281,9 +300,9 @@ libname store "&homedir.";
 				END;
 				ELSE DO;
 					BETA = LAG_BETA * (1- &BETA_DECAY.);
-					S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
-					I_N = (BETA * LAG_S * LAG_I - &GAMMA. * LAG_I) + LAG_I;
-					R_N = &GAMMA. * LAG_I + LAG_R;
+					S_N = LAG_S -BETA * LAG_S * LAG_I;
+					I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
+					R_N = LAG_R + &GAMMA. * LAG_I;
 					N = SUM(S_N, I_N, R_N);
 					SCALE = LAG_N / N;
 					IF S_N < 0 THEN S_N = 0;
@@ -387,20 +406,27 @@ libname store "&homedir.";
 
 
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
-		/* these are the calculations for variable used from above:
-	* calculated parameters used in model post-processing;
-		%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
-		%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
-		%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
-	* calculated parameters used in models;
-		%LET I = %SYSEVALF(&KnownCOVID. / (&KnownCOVID. / (&KnownAdmits. / &MarketSharePercent. / (&Admission_Rate. * &DiagnosedRate.))));
-		%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
-		%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancing.));
-		%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChange.));
-		%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / &Population. * (1 - &SocialDistancingChangeTwo.));
-		%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
-		%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
-		%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+		/* these are the calculations for variables used from above:
+			* calculated parameters used in model post-processing;
+				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
+				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
+				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
+			* calculated parameters used in models;
+				%LET I = %SYSEVALF(&KnownCOVID. / 
+									(&KnownCOVID. / 
+										(&KnownAdmits. / 
+											&MarketSharePercent. / 
+												(&Admission_Rate. * &DiagnosedRate.))));
+				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancing.));
+				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange.));
+				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
+				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
+				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
 			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
@@ -474,17 +500,17 @@ libname store "&homedir.";
 					INF = &RecoveryDays.;
 					SIGMA = &SIGMA.;
 					/* Differential equations */
-					GAMMA = 1/INF;
-					BETA = R0*GAMMA/N;
+					GAMMA = 1 / INF;
+					BETA = R0 * GAMMA / N;
 					/* Differential equations */
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-					DERT.S_N = -BETA*S_N*I_N;
+					DERT.S_N = -BETA * S_N * I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA*S_N*I_N-SIGMA*E_N;
+					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA*E_N-GAMMA*I_N;
+					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
-					DERT.R_N = GAMMA*I_N;
+					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
 					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10
@@ -721,7 +747,13 @@ libname store "&homedir.";
 
 %mend;
 
-/*Test runs of EasyRun macro*/
+/* Test runs of EasyRun macro 
+	IMPORTANT NOTES: 
+		These example runs have all the positional macro variables.  
+		There are even more keyword parameters available.
+			These need to be set for your population.
+			They can be reviewed within the %EasyRun macro at the very top.
+*/
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
 IncubationPeriod=0,
@@ -791,6 +823,16 @@ plots=YES
 /* Scenarios can be run in batch by specifying them in a sas dataset.
     In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
     An example run_scenarios.csv file is provided with this code.
+
+	IMPORTANT NOTES: 
+		The example run_scenarios.csv file has columns for all the positional macro variables.  
+		There are even more keyword parameters available.
+			These need to be set for your population.
+			They can be reviewed within the %EasyRun macro at the very top.
+		THEN:
+			you can set fixed values for the keyword parameters in the %EasyRun definition call
+			OR
+			you can add columns for the keyword parameters to this input file
 
 	You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
 */

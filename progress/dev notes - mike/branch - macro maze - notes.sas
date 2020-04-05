@@ -10,23 +10,23 @@ GOALS
         - how to I adapt it to my situation
 
 Branch: Macro Maze (move this to readme.md under /build)
-    - [x] Trace Macro Variables from input to model
-    - [x] Remove renaming and duplication
-    - [x] Move hardcoded macro variables to macro keyword parameters
-        - [ ] Edit the creation of STORE.SCENARIOS to account for new position of parameter creation
-        - [ ] Add new variables to STORE.INPUTS with labels
-    - [x] Move calculations near models for ease of review
-        - [x] copy to model as a comment using Build.py
-    - [ ] Tidy the model specifications
-        - [ ] make equations easy to read and use parentheses 
-    - [x] update &DAY_ZERO - input format changed to match other input dates, usage changed to reflex this in TMODEL models and post processing.sas
-    - [ ] Fix variable formating
-        - [ ] underscore or CamelCase
-    - [ ] Plots = yes, YES, Y - not case sensitive
+    - [X] Trace Macro Variables from input to model
+    - [X] Remove renaming and duplication
+    - [X] Move hardcoded macro variables to macro keyword parameters
+        - [X] Edit the creation of STORE.SCENARIOS to account for new position of parameter creation
+        - [X] Add new variables to STORE.INPUTS with labels
+    - [X] Move calculations near models for ease of review
+        - [X] copy to model as a comment using Build.py
+    - [X] Tidy the model specifications
+        - [X] make equations easy to read and use parentheses 
+    - [X] update &DAY_ZERO - input format changed to match other input dates, usage changed to reflex this in TMODEL models and post processing.sas
+    - [X] Plots = yes or YES - not case sensitive
+        - [X] do not include plots variable in scenario evaluation.  If the scenario was run before with a different plots= value then it is not a new scenario.
     - [ ] update readme.md in main repo
           - [ ] add Markdown table to readme.md with all inputs described
     - [ ] update readme.md in /build
-    - [ ] notes in code near %EasyRun calls and the run_scenarios.csv input to point keyword parameters available
+    - [X] notes in code near %EasyRun calls and the run_scenarios.csv input to point out keyword parameters are available and need adjustment for populations
+    - [ ] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
   
 
 harcoded value to add to easyrun:

@@ -1,5 +1,5 @@
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
@@ -74,17 +74,17 @@ X_IMPORT: parameters.sas
 					INF = &RecoveryDays.;
 					SIGMA = &SIGMA.;
 					/* Differential equations */
-					GAMMA = 1/INF;
-					BETA = R0*GAMMA/N;
+					GAMMA = 1 / INF;
+					BETA = R0 * GAMMA / N;
 					/* Differential equations */
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-					DERT.S_N = -BETA*S_N*I_N;
+					DERT.S_N = -BETA * S_N * I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA*S_N*I_N-SIGMA*E_N;
+					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA*E_N-GAMMA*I_N;
+					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
-					DERT.R_N = GAMMA*I_N;
+					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
 					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10

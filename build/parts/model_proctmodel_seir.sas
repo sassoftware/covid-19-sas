@@ -1,5 +1,5 @@
 	/*PROC TMODEL SEIR APPROACH*/
-		/* these are the calculations for variable used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
@@ -30,9 +30,9 @@ X_IMPORT: parameters.sas
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
 				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N-SIGMA*E_N;
+				DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = SIGMA*E_N-GAMMA*I_N;
+				DERT.I_N = SIGMA*E_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
