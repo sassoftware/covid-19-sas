@@ -27,7 +27,33 @@ Branch: Macro Maze (move this to readme.md under /build)
     - [ ] update readme.md in /build
     - [X] notes in code near %EasyRun calls and the run_scenarios.csv input to point out keyword parameters are available and need adjustment for populations
     - [ ] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
-  
+
+COMMIT 1:
+- carried all macro varibles that were hardcoded to the %EasyRun macro as keyword variables with default values
+- removed macro variable renaming and preserved the names on %EasyRun macro
+- Collapsed all calculated macro variables to single variables
+- put a commented out copy of the calcualted macro variable sat the top of each model method for make model easier to trace and read
+- Update STORE.INPUTS and STORE.SCENARIOS to reflect these changes
+- NO IMPACT on STORE.MODEL_FINAL
+
+COMMIT 2:
+- Updated creation of STORE.SCENARIOS and STORE.INPUTS to account for new macro variable layout
+- Updated labels in STORE.INPUTS for new keyword macro variable additions
+- Included comments at the top of each model section with a copy of the calcualted macro variable to aide in model review
+- Tidyed up the model specifications to account for new varaible layout
+- made the plots= input variable more flexible: case does not matter
+    - remove plots= input varaible from the scenario evaluation to prevent creating a new scenario due to plots= value changing
+- added notes near example %EasyRun calls and the input file run_scenarios.csv to point out new keyword parameters available for more flexibility to users scenario 
+
+COMMIT 3:
+- updated readme.md in main repository
+- added a table of inputs with descriptions in readme.md in main repository 
+
+COMMIT 4:
+- updated reame.md in /build with release notes for this branch: macro-maze
+- Use PROC COMPARE to compare STORE.MODEL_FINAL from master branch and macro-maze branch to ensure all results are identical after these changes 
+
+
 
 harcoded value to add to easyrun:
 	used in models:
