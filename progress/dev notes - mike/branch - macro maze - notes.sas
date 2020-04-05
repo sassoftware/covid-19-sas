@@ -22,13 +22,13 @@ Branch: Macro Maze (move this to readme.md under /build)
     - [X] update &DAY_ZERO - input format changed to match other input dates, usage changed to reflex this in TMODEL models and post processing.sas
     - [X] Plots = yes or YES - not case sensitive
         - [X] do not include plots variable in scenario evaluation.  If the scenario was run before with a different plots= value then it is not a new scenario.
-    - [ ] update readme.md in main repo
-          - [ ] add Markdown table to readme.md with all inputs described
+    - [X] update readme.md in main repo
+          - [X] add Markdown table to readme.md with all inputs described
     - [ ] update readme.md in /build
     - [X] notes in code near %EasyRun calls and the run_scenarios.csv input to point out keyword parameters are available and need adjustment for populations
     - [ ] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
 
-COMMIT 1:
+COMMIT 1: Macro Variable Remap
 - carried all macro varibles that were hardcoded to the %EasyRun macro as keyword variables with default values
 - removed macro variable renaming and preserved the names on %EasyRun macro
 - Collapsed all calculated macro variables to single variables
@@ -36,7 +36,7 @@ COMMIT 1:
 - Update STORE.INPUTS and STORE.SCENARIOS to reflect these changes
 - NO IMPACT on STORE.MODEL_FINAL
 
-COMMIT 2:
+COMMIT 2: Cleanup
 - Updated creation of STORE.SCENARIOS and STORE.INPUTS to account for new macro variable layout
 - Updated labels in STORE.INPUTS for new keyword macro variable additions
 - Included comments at the top of each model section with a copy of the calcualted macro variable to aide in model review
@@ -45,11 +45,11 @@ COMMIT 2:
     - remove plots= input varaible from the scenario evaluation to prevent creating a new scenario due to plots= value changing
 - added notes near example %EasyRun calls and the input file run_scenarios.csv to point out new keyword parameters available for more flexibility to users scenario 
 
-COMMIT 3:
+COMMIT 3: Documentation of Inputs
 - updated readme.md in main repository
 - added a table of inputs with descriptions in readme.md in main repository 
 
-COMMIT 4:
+COMMIT 4: Verification of Results and Finalize Documentation
 - updated reame.md in /build with release notes for this branch: macro-maze
 - Use PROC COMPARE to compare STORE.MODEL_FINAL from master branch and macro-maze branch to ensure all results are identical after these changes 
 
