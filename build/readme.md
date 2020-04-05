@@ -33,6 +33,8 @@ The logic setup recursively calls parts while honoring a hierarchy of inclusion:
 - [x] Consolidate the post-fitting datastep from all model approaches into postprocess.sas.  The steps still show up in each model approach in the public code but it is managed in a central location: postprocess.sas.
 - [x] flag columns in SCENARIOS that are input parameters of %EasyRun - introduced column STAGE with values INPUT (variables coming into macro) and MODEL (variables available at time Models execute)
 
+# branch=Macro-Maze (done and pulled)
+
 # Being addressed currently
 - [x] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS.  Using data_dictionary.sas to create labels for each columns of the two output datasets.
 - [x] Add macro input variable descriptions as comment below the macro call

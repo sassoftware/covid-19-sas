@@ -1,27 +1,45 @@
 C_IMPORT: CCF_pre.sas
 
-%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,plots=no);
+%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,
+                SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
+                MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
+                plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=0.90,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
+                ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
+
     DATA INPUTS;
         FORMAT
-            Scenario                   $200.     
-            IncubationPeriod           BEST12.    
-            InitRecovered              BEST12.  
-            RecoveryDays               BEST12.    
-            doublingtime               BEST12.    
-            Population                 BEST12.    
-            KnownAdmits                BEST12.    
-            KnownCOVID                 BEST12.    
-            SocialDistancing           BEST12.    
-            ISOChangeDate              DATE9.    
-            SocialDistancingChange     BEST12.    
-            ISOChangeDateTwo           DATE9.    
-            SocialDistancingChangeTwo  BEST12.    
-            MarketSharePercent         BEST12.    
-            Admission_Rate             BEST12.    
-            ICUPercent                 BEST12.    
-            VentPErcent                BEST12.    
-            FatalityRate               BEST12.   
-            plots                      $3.    
+            Scenario                    $200.     
+            IncubationPeriod            BEST12.    
+            InitRecovered               BEST12.  
+            RecoveryDays                BEST12.    
+            doublingtime                BEST12.    
+            Population                  BEST12.    
+            KnownAdmits                 BEST12.    
+            KnownCOVID                  BEST12.    
+            SocialDistancing            BEST12.    
+            ISOChangeDate               DATE9.    
+            SocialDistancingChange      BEST12.    
+            ISOChangeDateTwo            DATE9.    
+            SocialDistancingChangeTwo   BEST12.    
+            MarketSharePercent          BEST12.    
+            Admission_Rate              BEST12.    
+            ICUPercent                  BEST12.    
+            VentPErcent                 BEST12.    
+            FatalityRate                BEST12.   
+            plots                       $3.
+            N_DAYS                      BEST12.
+            DiagnosedRate               BEST12.
+            E                           BEST12.
+            SIGMA                       BEST12.
+            DAY_ZERO                    DATE9.
+            BETA_DECAY                  BEST12.
+            ECMO_RATE                   BEST12.
+            DIAL_RATE                   BEST12.
+            HOSP_LOS                    BEST12.
+            ICU_LOS                     BEST12.
+            VENT_LOS                    BEST12.
+            ECMO_LOS                    BEST12.
+            DIAL_LOS                    BEST12.
         ;
         LABEL
             Scenario                    =   "Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID"
@@ -43,6 +61,19 @@ C_IMPORT: CCF_pre.sas
             VentPErcent                 =   "Percentage of hospitalized patients who will require Ventilators"
             FatalityRate                =   "Percentage of hospitalized patients who will die"
             plots                       =   "YES/NO display plots in output"
+            N_DAYS                      =   "T"
+            DiagnosedRate               =   "T"
+            E                           =   "T"
+            SIGMA                       =   "T"
+            DAY_ZERO                    =   "T"
+            BETA_DECAY                  =   "T"
+            ECMO_RATE                   =   "T"
+            DIAL_RATE                   =   "T"
+            HOSP_LOS                    =   "T"
+            ICU_LOS                     =   "T"
+            VENT_LOS                    =   "T"
+            ECMO_LOS                    =   "T"
+            DIAL_LOS                    =   "T"
         ;
         Scenario                    =   "&Scenario.";
         IncubationPeriod            =   &IncubationPeriod.;
@@ -63,6 +94,19 @@ C_IMPORT: CCF_pre.sas
         VentPErcent                 =   &VentPErcent.;
         FatalityRate                =   &FatalityRate.;
         plots                       =   "&plots.";
+        N_DAYS                      =   &N_DAYS.;
+        DiagnosedRate               =   &DiagnosedRate.;
+        E                           =   &E.;
+        SIGMA                       =   &SIGMA.;
+        DAY_ZERO                    =   &DAY_ZERO.;
+        BETA_DECAY                  =   &BETA_DECAY.;
+        ECMO_RATE                   =   &ECMO_RATE.;
+        DIAL_RATE                   =   &DIAL_RATE.;
+        HOSP_LOS                    =   &HOSP_LOS.;
+        ICU_LOS                     =   &ICU_LOS.;
+        VENT_LOS                    =   &VENT_LOS.;
+        ECMO_LOS                    =   &ECMO_LOS.;
+        DIAL_LOS                    =   &DIAL_LOS.;
     RUN;
 
 X_IMPORT: scenario_setup.sas
@@ -89,9 +133,9 @@ X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
                 PROC SGPLOT DATA=store.MODEL_FINAL;
                     where ScenarioIndex=&ScenarioIndex.;
                     TITLE "Daily Hospital Occupancy - All Approaches";
-                    TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-                    TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-                    TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
+                    TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+                    TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+                    TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
                     SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
                     XAXIS LABEL="Date";
                     YAXIS LABEL="Daily Occupancy";

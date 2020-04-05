@@ -1,4 +1,7 @@
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
+		/* these are the calculations for variable used from above:
+X_IMPORT: parameters.sas
+		*/
 		%IF &HAVE_SASETS = YES %THEN %DO;
 			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
@@ -11,7 +14,7 @@
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF &LATEST_CASE < %eval(%sysfunc(today())-2) %THEN %DO;
+					%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
 						FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 						OPTION VALIDVARNAME=V7;
 						PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;
@@ -23,7 +26,7 @@
 							%let dsid=%sysfunc(open(WORK.OHIO_SUMMARY));
 							%let countnum=%sysfunc(varnum(&dsid.,var1));
 							%let rc=%sysfunc(close(&dsid.));
-							%IF &countnum > 0 %THEN %DO;
+							%IF &countnum. > 0 %THEN %DO;
 								data WORK.OHIO_SUMMARY; set WORK.OHIO_SUMMARY; rename VAR1=COUNTY; run;
 							%END;
 						/* Prepare Ohio Data For Model - add rows for missing days (had no activity) */
@@ -43,8 +46,8 @@
 
 							DATA ALLDATES;
 								FORMAT DATE DATE9.;
-								DO DATE = &FIRST_CASE TO &LATEST_CASE;
-									TIME = DATE - &FIRST_CASE + 1;
+								DO DATE = &FIRST_CASE. TO &LATEST_CASE.;
+									TIME = DATE - &FIRST_CASE. + 1;
 									OUTPUT;
 								END;
 							RUN;
@@ -61,15 +64,15 @@
 					%END;
 
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
-				%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
 					/* Parameters of interest */
-					PARMS R0 &R_T I0 &I;
+					PARMS R0 &R_T. I0 &I.;
 					BOUNDS 1 <= R0 <= 13;
 					/* Fixed values */
-					N = &S;
-					INF = &RECOVERY_DAYS;
-					SIGMA=&SIGMA;
+					N = &Population.;
+					INF = &RecoveryDays.;
+					SIGMA = &SIGMA.;
 					/* Differential equations */
 					GAMMA = 1/INF;
 					BETA = R0*GAMMA/N;
@@ -84,8 +87,8 @@
 					DERT.R_N = GAMMA*I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
-					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&S E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10
-						%IF &HAVE_V151 = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;
+					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10
+						%IF &HAVE_V151. = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;
 					OUTVARS S_N E_N I_N R_N;
 				QUIT;
 
@@ -95,7 +98,7 @@
 						SET EPIPRED;
 						LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
 						FORMAT DATE DATE9.; 
-						DATE = &FIRST_CASE + TIME -1;
+						DATE = &FIRST_CASE. + TIME -1;
 					run;
 					PROC SGPLOT DATA=EPIPRED;
 						WHERE _TYPE_  NE 'RESIDUAL';
@@ -108,18 +111,18 @@
 
 			/* DATA FOR PROC TMODEL APPROACHES */
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
-					DO TIME = 0 TO &N_DAYS; 
-						S_N = &S. - (&I/&DIAGNOSED_RATE) - &R;
-						E_N = &E;
-						I_N = &I/&DIAGNOSED_RATE;
-						R_N = &R;
-						R0  = &R_T;
+					DO TIME = 0 TO &N_DAYS.; 
+						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
+						E_N = &E.;
+						I_N = &I. / &DiagnosedRate.;
+						R_N = &InitRecovered.;
+						R0  = &R_T.;
 						OUTPUT; 
 					END; 
 				RUN;
 
 			/* Create SEIR Projections based on model fit above */
-				%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
 					SOLVE CUMULATIVE_CASE_COUNT / TIME=TIME OUT=TMODEL_SEIR_FIT;
 				QUIT;
@@ -127,7 +130,7 @@
 				DATA TMODEL_SEIR_FIT;
 					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
 					ModelType="TMODEL - SEIR - OHIO FIT";
-					ScenarioName="&Scenario";
+					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
@@ -149,9 +152,9 @@ X_IMPORT: postprocess.sas
 					PROC SGPLOT DATA=TMODEL_SEIR_FIT;
 						where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
 						TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
-						TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-						TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-						TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
+						TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+						TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+						TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
 						SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 						SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 						SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);

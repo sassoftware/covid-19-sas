@@ -1,28 +1,31 @@
 	/* DATA STEP APPROACH FOR SIR - SIMULATION APPROACH TO BOUNDS*/
+		/* these are the calculations for variable used from above:
+X_IMPORT: parameters.sas
+		*/
 		DATA DS_SIR_SIM;
 			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
 			ModelType="DS - SIR - SIM";
-			ScenarioName="&Scenario";
+			ScenarioName="&Scenario.";
 			ScenarioIndex=&ScenarioIndex.;
 			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 		CALL STREAMINIT(2019);
 		DO SIM = 1 to 100;
-			DO DAY = 0 TO &N_DAYS;
+			DO DAY = 0 TO &N_DAYS.;
 				IF DAY = 0 THEN DO;
-					S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
-					I_N = &I/&DIAGNOSED_RATE;
-					R_N = &R;
-					BETA=&BETA;
+					S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
+					I_N = &I. / &DiagnosedRate.;
+					R_N = &InitRecovered.;
+					BETA = &BETA.;
 					N = SUM(S_N, I_N, R_N);
 				END;
 				ELSE DO;
-					BETA = LAG_BETA * (1- &BETA_DECAY);
+					BETA = LAG_BETA * (1- &BETA_DECAY.);
 					poisson = rand('POISson', BETA * LAG_S * LAG_I);
 					S_N = (-poisson) + LAG_S;
-					I_N = (poisson - &GAMMA * LAG_I) + LAG_I;
-					R_N = &GAMMA * LAG_I + LAG_R;
+					I_N = (poisson - &GAMMA. * LAG_I) + LAG_I;
+					R_N = &GAMMA. * LAG_I + LAG_R;
 					N = SUM(S_N, I_N, R_N);
 					SCALE = LAG_N / N;
 					IF S_N < 0 THEN S_N = 0;
@@ -32,14 +35,13 @@
 					I_N = SCALE*I_N;
 					R_N = SCALE*R_N;
 				END;
-				E_N = &E;
 				LAG_S = S_N;
-				LAG_E = E_N;
+				E_N = &E.; LAG_E = E_N;  /* placeholder for post-processing of SIR model */
 				LAG_I = I_N;
 				LAG_R = R_N;
 				LAG_N = N;
-				IF date = &ISO_Change_Date THEN BETA = &BETA_Change;
-				ELSE IF date = &ISO_Change_Date_Two THEN BETA = &BETA_Change_Two;
+				IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
+				ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
 				LAG_BETA = BETA;
 X_IMPORT: postprocess.sas
 				OUTPUT;
@@ -51,10 +53,10 @@ X_IMPORT: postprocess.sas
 			PROC SGPLOT DATA=DS_SIR_SIM;
 				where ModelType='DS - SIR - SIM' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate, date10.), date9.): %SYSFUNC(round(&R_T_Change,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo, date10.), date9.): %SYSFUNC(round(&R_T_Change_Two,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo*100)%";
-				SERIES X=DATE Y=I_N / LINEATTRS=(THICKNESS=2) GROUPBY=SIM;
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=I_N / LINEATTRS=(THICKNESS=2) GROUP=SIM;
 				*SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				*SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				*SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
