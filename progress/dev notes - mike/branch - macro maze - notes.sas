@@ -9,7 +9,7 @@ GOALS
         - what is it doing
         - how to I adapt it to my situation
 
-Branch: Macro Maze (move this to readme.md under /build)
+Branch: Macro Maze (move this to readme.md under /build) DONE
     - [X] Trace Macro Variables from input to model
     - [X] Remove renaming and duplication
     - [X] Move hardcoded macro variables to macro keyword parameters
@@ -24,9 +24,9 @@ Branch: Macro Maze (move this to readme.md under /build)
         - [X] do not include plots variable in scenario evaluation.  If the scenario was run before with a different plots= value then it is not a new scenario.
     - [X] update readme.md in main repo
           - [X] add Markdown table to readme.md with all inputs described
-    - [ ] update readme.md in /build
+    - [X] update readme.md in /build
     - [X] notes in code near %EasyRun calls and the run_scenarios.csv input to point out keyword parameters are available and need adjustment for populations
-    - [ ] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
+    - [X] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
 
 COMMIT 1: Macro Variable Remap
 - carried all macro varibles that were hardcoded to the %EasyRun macro as keyword variables with default values
@@ -52,7 +52,8 @@ COMMIT 3: Documentation of Inputs
 COMMIT 4: Verification of Results and Finalize Documentation
 - updated reame.md in /build with release notes for this branch: macro-maze
 - Use PROC COMPARE to compare STORE.MODEL_FINAL from master branch and macro-maze branch to ensure all results are identical after these changes 
-
+    - code: proc compare data=temp.model_final_old compare=temp.model_final_new criterion=.001; run; quit;
+    - results: Number of Observations with Some Compared Variables Unequal: 0. 
 
 
 harcoded value to add to easyrun:

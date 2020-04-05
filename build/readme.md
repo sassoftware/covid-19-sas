@@ -34,7 +34,23 @@ The logic setup recursively calls parts while honoring a hierarchy of inclusion:
 - [X] flag columns in SCENARIOS that are input parameters of %EasyRun - introduced column STAGE with values INPUT (variables coming into macro) and MODEL (variables available at time Models execute)
 
 # branch=Macro-Maze (done and pulled)
-
+- [X] Trace Macro Variables from input to model
+- [X] Remove renaming and duplication
+- [X] Move hardcoded macro variables to macro keyword parameters
+    - [X] Edit the creation of STORE.SCENARIOS to account for new position of parameter creation
+    - [X] Add new variables to STORE.INPUTS with labels
+- [X] Move calculations near models for ease of review
+    - [X] copy to model as a comment using Build.py
+- [X] Tidy the model specifications
+    - [X] make equations easy to read and use parentheses 
+- [X] update &DAY_ZERO - input format changed to match other input dates, usage changed to reflex this in TMODEL models and post processing.sas
+- [X] Plots = yes or YES - not case sensitive
+    - [X] do not include plots variable in scenario evaluation.  If the scenario was run before with a different plots= value then it is not a new scenario.
+- [X] update readme.md in main repo
+        - [X] add Markdown table to readme.md with all inputs described
+- [X] update readme.md in /build
+- [X] notes in code near %EasyRun calls and the run_scenarios.csv input to point out keyword parameters are available and need adjustment for populations
+- [X] PROC COMPARE on STORE.MODEL_FINAL from master branch and macro-maze branch
 
 # Being addressed currently
 - [X] Create a data dictionary for the Columns in MODEL_FINAL and SCENARIOS.  Using data_dictionary.sas to create labels for each columns of the two output datasets.
