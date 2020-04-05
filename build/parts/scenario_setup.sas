@@ -16,6 +16,7 @@
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
+        /* Calculate Parameters form Macro Inputs Here - these are repeated as comments at the start of each model phase below */
 X_IMPORT: parameters.sas
 
         DATA PARMS;
@@ -33,11 +34,11 @@ X_IMPORT: parameters.sas
                         from 
                             (select *, count(*) as cnt 
                                 from PARMS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
                         having count(*) = t1.cnt)
@@ -56,3 +57,6 @@ X_IMPORT: parameters.sas
             drop table PARMS;
             drop table INPUTS;
         QUIT;
+    /* Prepare to create request plots from input parameter plots= */
+        %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
+        %ELSE %DO; %LET plots = NO; %END;
