@@ -111,9 +111,6 @@ C_IMPORT: CCF_pre.sas
 
 X_IMPORT: scenario_setup.sas
 
-    /* If this is a new scenario then run it */
-    %IF &ScenarioExist = 0 %THEN %DO;
-
 P_IMPORT: model_proctmodel_seir.sas
 
 P_IMPORT: model_proctmodel_sir.sas
@@ -124,6 +121,8 @@ P_IMPORT: model_datastep_seir.sas
 
 X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
 
+    /* If this is a new scenario then run it */
+    %IF &ScenarioExist = 0 %THEN %DO;
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;
@@ -143,8 +142,8 @@ X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
                 TITLE; TITLE2; TITLE3; TITLE4;
             %END;	
         %END;
-
     %END;
+
 
 X_IMPORT: data_dictionary.sas
 
