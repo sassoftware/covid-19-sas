@@ -46,7 +46,7 @@ C_IMPORT: CCF_pre.sas
             IncubationPeriod            =   "Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right"
             InitRecovered               =   "Initial number of Recovered patients, assumed to have immunity to future infection"
             RecoveryDays                =   "Number of days a patient is considered infectious (the amount of time it takes to recover or die)"
-            doublingtime                =   "Baseline Doubling Time without social distancing"
+            doublingtime                =   "Baseline Infection Doubling Time without social distancing"
             Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
             KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
             KnownCOVID                  =   "Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations"
