@@ -199,6 +199,9 @@ libname store "&homedir.";
             PROC APPEND base=store.SCENARIOS data=PARMS; run;
             PROC APPEND base=store.INPUTS data=INPUTS; run;
         %END;
+        %ELSE %DO;
+            /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+        %END;
         PROC SQL; 
             drop table PARMS;
             drop table INPUTS;
@@ -206,9 +209,6 @@ libname store "&homedir.";
     /* Prepare to create request plots from input parameter plots= */
         %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
         %ELSE %DO; %LET plots = NO; %END;
-
-    /* If this is a new scenario then run it */
-    %IF &ScenarioExist = 0 %THEN %DO;
 
 	/*PROC TMODEL SEIR APPROACH*/
 		/* these are the calculations for variables used from above:
@@ -233,7 +233,8 @@ libname store "&homedir.";
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
 					DO TIME = 0 TO &N_DAYS.; 
@@ -351,6 +352,7 @@ libname store "&homedir.";
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: ;
 			RUN;
+
 			%IF &PLOTS. = YES %THEN %DO;
 				PROC SGPLOT DATA=TMODEL_SEIR;
 					where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
@@ -368,8 +370,10 @@ libname store "&homedir.";
 				RUN;
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
+
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
+			
 		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
@@ -395,7 +399,8 @@ libname store "&homedir.";
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
 					DO TIME = 0 TO &N_DAYS.; 
@@ -507,6 +512,7 @@ libname store "&homedir.";
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM:;
 			RUN;
+
 			%IF &PLOTS. = YES %THEN %DO;
 				PROC SGPLOT DATA=TMODEL_SIR;
 					where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
@@ -524,8 +530,10 @@ libname store "&homedir.";
 				RUN;
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
+
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
+			
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
@@ -551,44 +559,46 @@ libname store "&homedir.";
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
-		DATA DS_SIR;
-			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
-			ModelType="DS - SIR";
-			ScenarioName="&Scenario.";
-			ScenarioIndex=&ScenarioIndex.;
-			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-			DO DAY = 0 TO &N_DAYS.;
-				IF DAY = 0 THEN DO;
-					S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-					I_N = &I./&DiagnosedRate.;
-					R_N = &InitRecovered.;
-					BETA = &BETA.;
-					N = SUM(S_N, I_N, R_N);
-				END;
-				ELSE DO;
-					BETA = LAG_BETA * (1- &BETA_DECAY.);
-					S_N = LAG_S -BETA * LAG_S * LAG_I;
-					I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
-					R_N = LAG_R + &GAMMA. * LAG_I;
-					N = SUM(S_N, I_N, R_N);
-					SCALE = LAG_N / N;
-					IF S_N < 0 THEN S_N = 0;
-					IF I_N < 0 THEN I_N = 0;
-					IF R_N < 0 THEN R_N = 0;
-					S_N = SCALE*S_N;
-					I_N = SCALE*I_N;
-					R_N = SCALE*R_N;
-				END;
-				LAG_S = S_N;
-				E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
-				LAG_I = I_N;
-				LAG_R = R_N;
-				LAG_N = N;
-				IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
-				ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
-				LAG_BETA = BETA;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 %THEN %DO;
+			DATA DS_SIR;
+				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				ModelType="DS - SIR";
+				ScenarioName="&Scenario.";
+				ScenarioIndex=&ScenarioIndex.;
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
+					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
+				DO DAY = 0 TO &N_DAYS.;
+					IF DAY = 0 THEN DO;
+						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
+						I_N = &I./&DiagnosedRate.;
+						R_N = &InitRecovered.;
+						BETA = &BETA.;
+						N = SUM(S_N, I_N, R_N);
+					END;
+					ELSE DO;
+						BETA = LAG_BETA * (1- &BETA_DECAY.);
+						S_N = LAG_S -BETA * LAG_S * LAG_I;
+						I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
+						R_N = LAG_R + &GAMMA. * LAG_I;
+						N = SUM(S_N, I_N, R_N);
+						SCALE = LAG_N / N;
+						IF S_N < 0 THEN S_N = 0;
+						IF I_N < 0 THEN I_N = 0;
+						IF R_N < 0 THEN R_N = 0;
+						S_N = SCALE*S_N;
+						I_N = SCALE*I_N;
+						R_N = SCALE*R_N;
+					END;
+					LAG_S = S_N;
+					E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
+					LAG_I = I_N;
+					LAG_R = R_N;
+					LAG_N = N;
+					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
+					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+					LAG_BETA = BETA;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -649,29 +659,34 @@ libname store "&homedir.";
 					DATE = &DAY_ZERO. + DAY;
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				OUTPUT;
-			END;
-			DROP LAG: BETA CUM: ;
-		RUN;
-		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=DS_SIR;
-				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - Data Step SIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				XAXIS LABEL="Date";
-				YAXIS LABEL="Daily Occupancy";
+					OUTPUT;
+				END;
+				DROP LAG: BETA CUM: ;
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+
+			%IF &PLOTS. = YES %THEN %DO;
+				PROC SGPLOT DATA=DS_SIR;
+					where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
+					TITLE "Daily Occupancy - Data Step SIR Approach";
+					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					XAXIS LABEL="Date";
+					YAXIS LABEL="Daily Occupancy";
+				RUN;
+				TITLE; TITLE2; TITLE3; TITLE4;
+			%END;
+
+			PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
+			PROC SQL; drop table DS_SIR; QUIT;
+
 		%END;
-		PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-		PROC SQL; drop table DS_SIR; QUIT;
+
 
 	/* DATA STEP APPROACH FOR SEIR */
 		/* these are the calculations for variables used from above:
@@ -696,48 +711,50 @@ libname store "&homedir.";
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
-		DATA DS_SEIR;
-			FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
-			ModelType="DS - SEIR";
-			ScenarioName="&Scenario.";
-			ScenarioIndex=&ScenarioIndex.;
-			ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-			LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-				ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-			DO DAY = 0 TO &N_DAYS.;
-				IF DAY = 0 THEN DO;
-					S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-					E_N = &E.;
-					I_N = &I. / &DiagnosedRate.;
-					R_N = &InitRecovered.;
-					BETA = &BETA.;
-					N = SUM(S_N, E_N, I_N, R_N);
-				END;
-				ELSE DO;
-					BETA = LAG_BETA * (1 - &BETA_DECAY.);
-					S_N = LAG_S -BETA * LAG_S * LAG_I;
-					E_N = LAG_E + BETA * LAG_S * LAG_I - &SIGMA. * LAG_E;
-					I_N = LAG_I + &SIGMA. * LAG_E - &GAMMA. * LAG_I;
-					R_N = LAG_R + &GAMMA. * LAG_I;
-					N = SUM(S_N, E_N, I_N, R_N);
-					SCALE = LAG_N / N;
-					IF S_N < 0 THEN S_N = 0;
-					IF E_N < 0 THEN E_N = 0;
-					IF I_N < 0 THEN I_N = 0;
-					IF R_N < 0 THEN R_N = 0;
-					S_N = SCALE*S_N;
-					E_N = SCALE*E_N;
-					I_N = SCALE*I_N;
-					R_N = SCALE*R_N;
-				END;
-				LAG_S = S_N;
-				LAG_E = E_N;
-				LAG_I = I_N;
-				LAG_R = R_N;
-				LAG_N = N;
-				IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
-				ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
-				LAG_BETA = BETA;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 %THEN %DO;
+			DATA DS_SEIR;
+				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				ModelType="DS - SEIR";
+				ScenarioName="&Scenario.";
+				ScenarioIndex=&ScenarioIndex.;
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
+					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
+				DO DAY = 0 TO &N_DAYS.;
+					IF DAY = 0 THEN DO;
+						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
+						E_N = &E.;
+						I_N = &I. / &DiagnosedRate.;
+						R_N = &InitRecovered.;
+						BETA = &BETA.;
+						N = SUM(S_N, E_N, I_N, R_N);
+					END;
+					ELSE DO;
+						BETA = LAG_BETA * (1 - &BETA_DECAY.);
+						S_N = LAG_S -BETA * LAG_S * LAG_I;
+						E_N = LAG_E + BETA * LAG_S * LAG_I - &SIGMA. * LAG_E;
+						I_N = LAG_I + &SIGMA. * LAG_E - &GAMMA. * LAG_I;
+						R_N = LAG_R + &GAMMA. * LAG_I;
+						N = SUM(S_N, E_N, I_N, R_N);
+						SCALE = LAG_N / N;
+						IF S_N < 0 THEN S_N = 0;
+						IF E_N < 0 THEN E_N = 0;
+						IF I_N < 0 THEN I_N = 0;
+						IF R_N < 0 THEN R_N = 0;
+						S_N = SCALE*S_N;
+						E_N = SCALE*E_N;
+						I_N = SCALE*I_N;
+						R_N = SCALE*R_N;
+					END;
+					LAG_S = S_N;
+					LAG_E = E_N;
+					LAG_I = I_N;
+					LAG_R = R_N;
+					LAG_N = N;
+					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
+					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+					LAG_BETA = BETA;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -798,29 +815,33 @@ libname store "&homedir.";
 					DATE = &DAY_ZERO. + DAY;
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				OUTPUT;
-			END;
-			DROP LAG: BETA CUM: ;
-		RUN;
-		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=DS_SEIR;
-				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - Data Step SEIR Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				XAXIS LABEL="Date";
-				YAXIS LABEL="Daily Occupancy";
+					OUTPUT;
+				END;
+				DROP LAG: BETA CUM: ;
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+
+			%IF &PLOTS. = YES %THEN %DO;
+				PROC SGPLOT DATA=DS_SEIR;
+					where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
+					TITLE "Daily Occupancy - Data Step SEIR Approach";
+					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+					XAXIS LABEL="Date";
+					YAXIS LABEL="Daily Occupancy";
+				RUN;
+				TITLE; TITLE2; TITLE3; TITLE4;
+			%END;
+
+			PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
+			PROC SQL; drop table DS_SEIR; QUIT;
+
 		%END;
-		PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
-		PROC SQL; drop table DS_SEIR; QUIT;
 
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
 		/* these are the calculations for variables used from above:
@@ -845,7 +866,8 @@ libname store "&homedir.";
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
 		*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
 				%IF %sysfunc(exist(STORE.OHIO_SUMMARY)) %THEN %DO;
@@ -1050,6 +1072,7 @@ libname store "&homedir.";
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					DROP LAG: CUM: ;
 				RUN;
+
 				%IF &PLOTS. = YES %THEN %DO;
 					PROC SGPLOT DATA=TMODEL_SEIR_FIT;
 						where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
@@ -1067,6 +1090,7 @@ libname store "&homedir.";
 					RUN;
 					TITLE; TITLE2; TITLE3; TITLE4;
 				%END;
+
 				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT;
@@ -1074,8 +1098,11 @@ libname store "&homedir.";
 					drop table EPIPRED;
 					drop table SEIRMOD;
 				QUIT;
+
 		%END;
 
+    /* If this is a new scenario then run it */
+    %IF &ScenarioExist = 0 %THEN %DO;
         %IF &PLOTS. = YES %THEN %DO;
             /* if multiple models for a single scenarioIndex then plot them */
             PROC SQL noprint;
@@ -1095,8 +1122,8 @@ libname store "&homedir.";
                 TITLE; TITLE2; TITLE3; TITLE4;
             %END;	
         %END;
-
     %END;
+
 
 	/* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
 		optional for efficiency: check to see if this has already be done, if not do it

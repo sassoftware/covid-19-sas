@@ -2,7 +2,8 @@
 		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
 				%IF %sysfunc(exist(STORE.OHIO_SUMMARY)) %THEN %DO;
@@ -148,6 +149,7 @@ X_IMPORT: parameters.sas
 X_IMPORT: postprocess.sas
 					DROP LAG: CUM: ;
 				RUN;
+
 				%IF &PLOTS. = YES %THEN %DO;
 					PROC SGPLOT DATA=TMODEL_SEIR_FIT;
 						where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
@@ -165,6 +167,7 @@ X_IMPORT: postprocess.sas
 					RUN;
 					TITLE; TITLE2; TITLE3; TITLE4;
 				%END;
+
 				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT;
@@ -172,4 +175,5 @@ X_IMPORT: postprocess.sas
 					drop table EPIPRED;
 					drop table SEIRMOD;
 				QUIT;
+
 		%END;

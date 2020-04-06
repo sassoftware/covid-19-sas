@@ -2,7 +2,8 @@
 		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
-		%IF &HAVE_SASETS = YES %THEN %DO;
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
 					DO TIME = 0 TO &N_DAYS.; 
@@ -55,6 +56,7 @@ X_IMPORT: parameters.sas
 X_IMPORT: postprocess.sas
 				DROP LAG: CUM:;
 			RUN;
+
 			%IF &PLOTS. = YES %THEN %DO;
 				PROC SGPLOT DATA=TMODEL_SIR;
 					where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
@@ -72,6 +74,8 @@ X_IMPORT: postprocess.sas
 				RUN;
 				TITLE; TITLE2; TITLE3; TITLE4;
 			%END;
+
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
+			
 		%END;

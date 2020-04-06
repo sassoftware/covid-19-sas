@@ -53,6 +53,9 @@ X_IMPORT: parameters.sas
             PROC APPEND base=store.SCENARIOS data=PARMS; run;
             PROC APPEND base=store.INPUTS data=INPUTS; run;
         %END;
+        %ELSE %DO;
+            /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+        %END;
         PROC SQL; 
             drop table PARMS;
             drop table INPUTS;
