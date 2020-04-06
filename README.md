@@ -28,7 +28,7 @@ This code takes a set of input parameters and uses them in infectious disease mo
 
 # Input Definitions & Notes
 **INPUT:**
-- The description of the input parameters for the `%EasyRun` Macro follow the macro definition in `COVID_19.sas` and are detailed in the table below
+- The description of the input parameters for the `%EasyRun` Macro follow the macro definition in `COVID_19.sas` and are detailed in the table below:
 
 | Input Parameter | Description | Example Input | Type of Parameter |
 | --- | --- | --- | --- |
@@ -36,7 +36,7 @@ This code takes a set of input parameters and uses them in infectious disease mo
 | IncubationPeriod | Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right | 0 | positional |
 | InitRecovered | Initial number of Recovered patients, assumed to have immunity to future infection | 0 | positional |
 | RecoveryDays | Number of days a patient is considered infectious (the amount of time it takes to recover or die) | 14 | positional |
-| doublingtime | Baseline Doubling Time without social distancing | 5 | positional |
+| doublingtime | Baseline Infection Doubling Time without social distancing | 5 | positional |
 | Population | Number of people in region of interest, assumed to be well mixed and independent of other populations | 4690484 | positional |
 | KnownAdmits | Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections | 10 | positional |
 | KnownCOVID | Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations | 46 | positional |
