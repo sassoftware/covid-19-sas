@@ -20,11 +20,11 @@ This code takes a set of input parameters and uses them in infectious disease mo
         - This option swaps out `PROC MODEL` for `PROC TMODEL`
         - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
 - **RUN**
-    - Make calls to the macro `%EasyRun`.  Examples scenarios are at the end of the file.
-    - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv` is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
+    - Make calls to the macro `%EasyRun`.  Example scenarios are at the end of the file.
+    - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv`, is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
 - **REVIEW**
     - All model output for each call to `%EasyRun` saves in the dataset `STORE.MODEL_FINAL`
-    - All of the parameters that lead to the results in `STORE.MODEL_FINAL` save in `STORE.SCENARIOS` and all inputs to the macro also save to `STORE.INPUTS`.  The variable `SCENARIOINDEX` links these files.
+    - All of the parameters that lead to the results in `STORE.MODEL_FINAL` save in `STORE.SCENARIOS`, and all inputs to the macro also save to `STORE.INPUTS`.  The variable `SCENARIOINDEX` links these files.
 
 # Input Definitions & Notes
 **INPUT:**
