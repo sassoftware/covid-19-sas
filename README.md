@@ -4,7 +4,7 @@ COVID-19 tool development
 An open collaboration between the Cleveland Clinic and SAS Institute.
 
 
-# What This Code Does
+# What this Code Does
 This code takes a set of input parameters and uses them in infectious disease models (SIR & SEIR).  Model output is used to calculate useful metrics for each day of an epidemic, such as the number of hospitalizations.  
 
 # Getting Started
