@@ -42,12 +42,15 @@ In addition to the information shared within this readme and the commenting with
 | doublingtime | Baseline Infection Doubling Time without social distancing | 5 | positional |
 | Population | Number of people in region of interest, assumed to be well mixed and independent of other populations | 4690484 | positional |
 | KnownAdmits | Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections | 10 | positional |
-| KnownCOVID | Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations | 46 | positional |
 | SocialDistancing | Baseline Social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
 | ISOChangeDate | Date of first change from baseline in social distancing parameter | '13MAR2020'd | positional |
 | SocialDistancingChange | Second value of social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
 | ISOChangeDateTwo | Date of second change in social distancing parameter | '06APR2020'd | positional |
 | SocialDistancingChangeTwo | Third value of social distancing (% reduction in social contact compared to normal activity) | 0.4 | positional |
+| ISOChangeDate3 | Date of third change in social distancing parameter | '20APR2020'd | positional |
+| SocialDistancingChange3 | Forth value of social distancing (% reduction in social contact compared to normal activity) | 0.5 | positional |
+| ISOChangeDateTwo | Date of fourth change in social distancing parameter | '01May2020'd | positional |
+| SocialDistancingChangeTwo | Fifth value of social distancing (% reduction in social contact compared to normal activity) | 0.3 | positional |
 | MarketSharePercent | Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest | 0.29 | positional |
 | Admission_Rate | Percentage of Infected patients in the region who will be hospitalized | 0.075 | positional |
 | ICUPercent | Percentage of hospitalized patients who will require ICU | 0.45 | positional |
