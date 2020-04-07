@@ -3,11 +3,9 @@
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
