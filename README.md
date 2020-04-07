@@ -7,6 +7,9 @@ An open collaboration between the Cleveland Clinic and SAS Institute.
 # What this Code Does
 This code takes a set of input parameters and uses them in infectious disease models (SIR & SEIR).  Model output is used to calculate useful metrics for each day of an epidemic, such as the number of hospitalizations.  
 
+# Documentation
+In addition to the information shared within this readme and the commenting within the code, you can also review the [documentation on the implementation of the models](./docs/seir-modeling).
+
 # Getting Started
 - **PREPARE**
     - Download `COVID_19.sas` to your SAS environment
