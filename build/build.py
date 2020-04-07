@@ -5,7 +5,7 @@
 # X_IMPORT: will import for all
 #   If X then P then only P - not C
 #   If X then C then only C - not P
-# T_IMPORT: will for for test versions
+# T_IMPORT: will import for test versions
 #   If X then T then only T - not P or C
 
 from shutil import copyfile
