@@ -171,7 +171,7 @@ X_IMPORT: postprocess.sas
 
 				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
 				PROC SQL; 
-					drop table TMODEL_SEIR_FIT;
+					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
 					drop table EPIPRED;
 					drop table SEIRMOD_I;
