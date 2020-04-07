@@ -121,29 +121,25 @@ P_IMPORT: model_datastep_seir.sas
 
 X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
 
-    /* If this is a new scenario then run it */
-    %IF &ScenarioExist = 0 %THEN %DO;
-        %IF &PLOTS. = YES %THEN %DO;
-            /* if multiple models for a single scenarioIndex then plot them */
-            PROC SQL noprint;
-                select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
-            QUIT;
-            %IF &scenplot > 1 %THEN %DO;
-                PROC SGPLOT DATA=store.MODEL_FINAL;
-                    where ScenarioIndex=&ScenarioIndex.;
-                    TITLE "Daily Hospital Occupancy - All Approaches";
-                    TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-                    TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-                    TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-                    SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
-                    XAXIS LABEL="Date";
-                    YAXIS LABEL="Daily Occupancy";
-                RUN;
-                TITLE; TITLE2; TITLE3; TITLE4;
-            %END;	
-        %END;
+    %IF &PLOTS. = YES %THEN %DO;
+        /* if multiple models for a single scenarioIndex then plot them */
+        PROC SQL noprint;
+            select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
+        QUIT;
+        %IF &scenplot > 1 %THEN %DO;
+            PROC SGPLOT DATA=STORE.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+                TITLE "Daily Hospital Occupancy - All Approaches";
+                TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+                TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+                TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+                SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                XAXIS LABEL="Date";
+                YAXIS LABEL="Daily Occupancy";
+            RUN;
+            TITLE; TITLE2; TITLE3; TITLE4;
+        %END;	
     %END;
-
 
 X_IMPORT: data_dictionary.sas
 

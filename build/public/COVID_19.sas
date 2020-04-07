@@ -62,7 +62,7 @@ libname store "&homedir.";
             IncubationPeriod            =   "Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right"
             InitRecovered               =   "Initial number of Recovered patients, assumed to have immunity to future infection"
             RecoveryDays                =   "Number of days a patient is considered infectious (the amount of time it takes to recover or die)"
-            doublingtime                =   "Baseline Doubling Time without social distancing"
+            doublingtime                =   "Baseline Infection Doubling Time without social distancing"
             Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
             KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
             KnownCOVID                  =   "Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations"
@@ -201,6 +201,22 @@ libname store "&homedir.";
         %END;
         %ELSE %DO;
             /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+            PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
+				select max(t2.ScenarioIndex) into :ScenarioIndex from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex
+                        from 
+                            (select *, count(*) as cnt 
+                                from PARMS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
+                                group by ScenarioIndex) t1
+                            join
+                            (select * from store.SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        having count(*) = t1.cnt)
+                ;
+            QUIT;
         %END;
         PROC SQL; 
             drop table PARMS;
@@ -353,27 +369,27 @@ libname store "&homedir.";
 				DROP LAG: CUM: ;
 			RUN;
 
-			%IF &PLOTS. = YES %THEN %DO;
-				PROC SGPLOT DATA=TMODEL_SEIR;
-					where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
-					TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
-					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					XAXIS LABEL="Date";
-					YAXIS LABEL="Daily Occupancy";
-				RUN;
-				TITLE; TITLE2; TITLE3; TITLE4;
-			%END;
-
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 			
+		%END;
+
+		%IF &PLOTS. = YES %THEN %DO;
+			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
@@ -513,27 +529,27 @@ libname store "&homedir.";
 				DROP LAG: CUM:;
 			RUN;
 
-			%IF &PLOTS. = YES %THEN %DO;
-				PROC SGPLOT DATA=TMODEL_SIR;
-					where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
-					TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
-					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					XAXIS LABEL="Date";
-					YAXIS LABEL="Daily Occupancy";
-				RUN;
-				TITLE; TITLE2; TITLE3; TITLE4;
-			%END;
-
 			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 			
+		%END;
+
+		%IF &PLOTS. = YES %THEN %DO;
+			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
@@ -664,27 +680,27 @@ libname store "&homedir.";
 				DROP LAG: BETA CUM: ;
 			RUN;
 
-			%IF &PLOTS. = YES %THEN %DO;
-				PROC SGPLOT DATA=DS_SIR;
-					where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
-					TITLE "Daily Occupancy - Data Step SIR Approach";
-					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					XAXIS LABEL="Date";
-					YAXIS LABEL="Daily Occupancy";
-				RUN;
-				TITLE; TITLE2; TITLE3; TITLE4;
-			%END;
-
 			PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
 			PROC SQL; drop table DS_SIR; QUIT;
 
+		%END;
+
+		%IF &PLOTS. = YES %THEN %DO;
+			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - Data Step SIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 
 
@@ -820,27 +836,27 @@ libname store "&homedir.";
 				DROP LAG: BETA CUM: ;
 			RUN;
 
-			%IF &PLOTS. = YES %THEN %DO;
-				PROC SGPLOT DATA=DS_SEIR;
-					where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
-					TITLE "Daily Occupancy - Data Step SEIR Approach";
-					TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-					TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-					TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-					SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-					XAXIS LABEL="Date";
-					YAXIS LABEL="Daily Occupancy";
-				RUN;
-				TITLE; TITLE2; TITLE3; TITLE4;
-			%END;
-
 			PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
 			PROC SQL; drop table DS_SEIR; QUIT;
 
+		%END;
+
+		%IF &PLOTS. = YES %THEN %DO;
+			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - Data Step SEIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
@@ -1073,24 +1089,6 @@ libname store "&homedir.";
 					DROP LAG: CUM: ;
 				RUN;
 
-				%IF &PLOTS. = YES %THEN %DO;
-					PROC SGPLOT DATA=TMODEL_SEIR_FIT;
-						where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
-						TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
-						TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-						TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-						TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-						SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-						SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-						SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-						SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-						SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-						XAXIS LABEL="Date";
-						YAXIS LABEL="Daily Occupancy";
-					RUN;
-					TITLE; TITLE2; TITLE3; TITLE4;
-				%END;
-
 				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT;
@@ -1101,29 +1099,43 @@ libname store "&homedir.";
 
 		%END;
 
-    /* If this is a new scenario then run it */
-    %IF &ScenarioExist = 0 %THEN %DO;
-        %IF &PLOTS. = YES %THEN %DO;
-            /* if multiple models for a single scenarioIndex then plot them */
-            PROC SQL noprint;
-                select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
-            QUIT;
-            %IF &scenplot > 1 %THEN %DO;
-                PROC SGPLOT DATA=store.MODEL_FINAL;
-                    where ScenarioIndex=&ScenarioIndex.;
-                    TITLE "Daily Hospital Occupancy - All Approaches";
-                    TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-                    TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-                    TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-                    SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
-                    XAXIS LABEL="Date";
-                    YAXIS LABEL="Daily Occupancy";
-                RUN;
-                TITLE; TITLE2; TITLE3; TITLE4;
-            %END;	
-        %END;
-    %END;
+		%IF &PLOTS. = YES %THEN %DO;
+			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4;
+		%END;
 
+    %IF &PLOTS. = YES %THEN %DO;
+        /* if multiple models for a single scenarioIndex then plot them */
+        PROC SQL noprint;
+            select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
+        QUIT;
+        %IF &scenplot > 1 %THEN %DO;
+            PROC SGPLOT DATA=STORE.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+                TITLE "Daily Hospital Occupancy - All Approaches";
+                TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+                TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+                TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+                SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                XAXIS LABEL="Date";
+                YAXIS LABEL="Daily Occupancy";
+            RUN;
+            TITLE; TITLE2; TITLE3; TITLE4;
+        %END;	
+    %END;
 
 	/* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
 		optional for efficiency: check to see if this has already be done, if not do it

@@ -55,6 +55,22 @@ X_IMPORT: parameters.sas
         %END;
         %ELSE %DO;
             /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+            PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
+				select max(t2.ScenarioIndex) into :ScenarioIndex from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex
+                        from 
+                            (select *, count(*) as cnt 
+                                from PARMS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
+                                group by ScenarioIndex) t1
+                            join
+                            (select * from store.SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        having count(*) = t1.cnt)
+                ;
+            QUIT;
         %END;
         PROC SQL; 
             drop table PARMS;
