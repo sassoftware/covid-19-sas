@@ -162,7 +162,7 @@ X_IMPORT: postprocess.sas
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=STORE.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - OHIO FIT' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
