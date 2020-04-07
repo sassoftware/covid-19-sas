@@ -44,6 +44,8 @@ X_IMPORT: parameters.sas
 						LAG_N = N;
 						IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 						ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+						ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
+						ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 						LAG_BETA = BETA;
 X_IMPORT: postprocess.sas
 						OUTPUT;
@@ -64,6 +66,8 @@ X_IMPORT: postprocess.sas
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=I_N / LINEATTRS=(THICKNESS=2) GROUP=SIM;
 				*SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				*SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);

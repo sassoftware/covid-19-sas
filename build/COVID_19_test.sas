@@ -16,8 +16,10 @@ libname store "&homedir.";
 %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
-%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,KnownCOVID,
+
+%macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
+                ISOChangeDate3,SocialDistancingChange3,ISOChangeDate4,SocialDistancingChange4,
                 MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
                 plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=0.90,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
                 ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
@@ -31,12 +33,15 @@ libname store "&homedir.";
             doublingtime                BEST12.    
             Population                  BEST12.    
             KnownAdmits                 BEST12.    
-            KnownCOVID                  BEST12.    
             SocialDistancing            BEST12.    
             ISOChangeDate               DATE9.    
             SocialDistancingChange      BEST12.    
             ISOChangeDateTwo            DATE9.    
             SocialDistancingChangeTwo   BEST12.    
+            ISOChangeDate3              DATE9.    
+            SocialDistancingChange3     BEST12.    
+            ISOChangeDate4              DATE9.    
+            SocialDistancingChange4     BEST12.    
             MarketSharePercent          BEST12.    
             Admission_Rate              BEST12.    
             ICUPercent                  BEST12.    
@@ -65,12 +70,15 @@ libname store "&homedir.";
             doublingtime                =   "Baseline Infection Doubling Time without social distancing"
             Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
             KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
-            KnownCOVID                  =   "Number of known COVID-19 patients in the region at Day 0, not used in S(E)IR calculations"
             SocialDistancing            =   "Baseline Social distancing (% reduction in social contact compared to normal activity)"
             ISOChangeDate               =   "Date of first change from baseline in social distancing parameter"
             SocialDistancingChange      =   "Second value of social distancing (% reduction in social contact compared to normal activity)"
             ISOChangeDateTwo            =   "Date of second change in social distancing parameter"
             SocialDistancingChangeTwo   =   "Third value of social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDate3              =   "Date of third change in social distancing parameter"
+            SocialDistancingChange3     =   "Fourth value of social distancing (% reduction in social contact compared to normal activity)"
+            ISOChangeDate4              =   "Date of fourth change in social distancing parameter"
+            SocialDistancingChange4     =   "Fifth value of social distancing (% reduction in social contact compared to normal activity)"
             MarketSharePercent          =   "Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest"
             Admission_Rate              =   "Percentage of Infected patients in the region who will be hospitalized"
             ICUPercent                  =   "Percentage of hospitalized patients who will require ICU"
@@ -98,12 +106,15 @@ libname store "&homedir.";
         doublingtime                =   &doublingtime.;
         Population                  =   &Population.;
         KnownAdmits                 =   &KnownAdmits.;
-        KnownCOVID                  =   &KnownCOVID.;
         SocialDistancing            =   &SocialDistancing.;
         ISOChangeDate               =   &ISOChangeDate.;
         SocialDistancingChange      =   &SocialDistancingChange.;
         ISOChangeDateTwo            =   &ISOChangeDateTwo.;
         SocialDistancingChangeTwo   =   &SocialDistancingChangeTwo.;
+        ISOChangeDate3              =   &ISOChangeDate3.;
+        SocialDistancingChange3     =   &SocialDistancingChange3.;
+        ISOChangeDate4              =   &ISOChangeDate4.;
+        SocialDistancingChange4     =   &SocialDistancingChange4.;
         MarketSharePercent          =   &MarketSharePercent.;
         Admission_Rate              =   &Admission_Rate.;
         ICUPercent                  =   &ICUPercent.;
@@ -149,11 +160,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -161,9 +170,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 
         DATA PARMS;
             set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
@@ -233,11 +248,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -245,9 +258,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
@@ -265,15 +284,17 @@ libname store "&homedir.";
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.; 
+				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
 				BOUNDS 1 <= R0 <= 13;
-				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 				GAMMA = &GAMMA.;
 				SIGMA = &SIGMA.;
 				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
 				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				change_2 = (TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)); 	         
-				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
+				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
@@ -381,6 +402,8 @@ libname store "&homedir.";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -399,11 +422,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -411,9 +432,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
@@ -431,14 +458,16 @@ libname store "&homedir.";
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two.;
+				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
 				BOUNDS 1 <= R0 <= 13;
-				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 				GAMMA = &GAMMA.;
 				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
 				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				change_2 = (TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)); 	         
-				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
+				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				DERT.S_N = -BETA*S_N*I_N; 				
 				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;   
@@ -541,6 +570,8 @@ libname store "&homedir.";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -559,11 +590,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -571,9 +600,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
@@ -614,6 +649,8 @@ libname store "&homedir.";
 					LAG_N = N;
 					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
+					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
@@ -692,6 +729,8 @@ libname store "&homedir.";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -710,11 +749,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -722,9 +759,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
@@ -768,6 +811,8 @@ libname store "&homedir.";
 						LAG_N = N;
 						IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 						ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+						ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
+						ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 						LAG_BETA = BETA;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
@@ -847,6 +892,8 @@ libname store "&homedir.";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=I_N / LINEATTRS=(THICKNESS=2) GROUP=SIM;
 				*SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				*SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -866,11 +913,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -878,9 +923,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
@@ -925,6 +976,8 @@ libname store "&homedir.";
 					LAG_N = N;
 					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
+					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
+					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
@@ -1003,6 +1056,8 @@ libname store "&homedir.";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -1021,11 +1076,9 @@ libname store "&homedir.";
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
 				%LET VENT_RATE = %SYSEVALF(&VentPErcent. * &DiagnosedRate.);
 			* calculated parameters used in models;
-				%LET I = %SYSEVALF(&KnownCOVID. / 
-									(&KnownCOVID. / 
-										(&KnownAdmits. / 
+				%LET I = %SYSEVALF(&KnownAdmits. / 
 											&MarketSharePercent. / 
-												(&Admission_Rate. * &DiagnosedRate.))));
+												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
@@ -1033,9 +1086,15 @@ libname store "&homedir.";
 												&Population. * (1 - &SocialDistancingChange.));
 				%LET BETAChangeTwo = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancingChangeTwo.));
+				%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange3.));
+				%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancingChange4.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 				%LET R_T_Change = %SYSEVALF(&BETAChange. / &GAMMA. * &Population.);
 				%LET R_T_Change_Two = %SYSEVALF(&BETAChangeTwo. / &GAMMA. * &Population.);
+				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
@@ -1259,8 +1318,6 @@ libname store "&homedir.";
 				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -1284,6 +1341,8 @@ libname store "&homedir.";
                 TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
                 TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
                 TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
                 SERIES X=DATE Y=HOSPITAL_OCCUPANCY / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
                 XAXIS LABEL="Date";
                 YAXIS LABEL="Daily Occupancy";
@@ -1372,7 +1431,6 @@ InitRecovered=0,
 RecoveryDays=14,
 doublingtime=5,
 KnownAdmits=10,
-KnownCOVID=46,
 Population=4390484,
 SocialDistancing=0,
 MarketSharePercent=0.29,
@@ -1383,6 +1441,10 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.2,
+ISOChangeDate3='20APR2020'd,
+SocialDistancingChange3=0.5,
+ISOChangeDate4='01MAY2020'd,
+SocialDistancingChange4=0.3,
 FatalityRate=0,
 plots=YES	
 );
@@ -1394,7 +1456,6 @@ InitRecovered=0,
 RecoveryDays=14,
 doublingtime=5,
 KnownAdmits=10,
-KnownCOVID=46,
 Population=4390484,
 SocialDistancing=0,
 MarketSharePercent=0.29,
@@ -1405,6 +1466,10 @@ ISOChangeDate='31MAR2020'd,
 SocialDistancingChange=0,
 ISOChangeDateTwo='06APR2020'd,
 SocialDistancingChangeTwo=0.4,
+ISOChangeDate3='20APR2020'd,
+SocialDistancingChange3=0.5,
+ISOChangeDate4='01MAY2020'd,
+SocialDistancingChange4=0.3,
 FatalityRate=0,
 plots=YES	
 );
@@ -1416,7 +1481,6 @@ InitRecovered=0,
 RecoveryDays=14,
 doublingtime=5,
 KnownAdmits=10,
-KnownCOVID=46,
 Population=4390484,
 SocialDistancing=0,
 MarketSharePercent=0.29,
@@ -1427,6 +1491,10 @@ ISOChangeDate='31MAY2020'd,
 SocialDistancingChange=0.25,
 ISOChangeDateTwo='06AUG2020'd,
 SocialDistancingChangeTwo=0.5,
+ISOChangeDate3='20AUG2020'd,
+SocialDistancingChange3=0.4,
+ISOChangeDate4='01SEP2020'd,
+SocialDistancingChange4=0.2,
 FatalityRate=0,
 plots=YES	
 );
