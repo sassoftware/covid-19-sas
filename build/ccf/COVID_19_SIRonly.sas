@@ -18,53 +18,54 @@ libname store "&homedir.";
 %LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
 
 /* the following is specific to CCF coding and included prior to the %EasyRun Macro */
-    libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
-    libname DL_COV teradata server=tdprod1 database=DL_COVID;
-    libname CovData '/sas/data/ccf_preprod/finance/sas/EA_COVID_19/CovidData';
-    proc datasets lib=work kill;run;quit;
+	libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
+	libname DL_COV teradata server=tdprod1 database=DL_COVID;
+	libname CovData '/sas/data/ccf_preprod/finance/sas/EA_COVID_19/CovidData';
+	proc datasets lib=work kill;run;quit;
 
-    proc sql; 
-    connect to teradata(Server=tdprod1);
-    create table CovData.PullRealCovid as select * from connection to teradata 
+	proc sql; 
+	connect to teradata(Server=tdprod1);
+	create table CovData.PullRealCovid as select * from connection to teradata 
 
-    (
-    Select COVID_RESULT_V.*, DEP_STATE from DL_COVID.COVID_RESULT_V
-    LEFT JOIN (SELECT DISTINCT COVID_FACT_V.patient_identifier,COVID_FACT_V.DEP_STATE from DL_COVID.COVID_FACT_V) dep_st
-    on dep_st.patient_identifier = COVID_RESULT_V.patient_identifier
-    WHERE COVIDYN = 'YES' and DEP_STATE='OH'and discharge_Cat in ('Inpatient','Discharged To Home');
-    )
+	(
+	Select COVID_RESULT_V.*, DEP_STATE from DL_COVID.COVID_RESULT_V
+	LEFT JOIN (SELECT DISTINCT COVID_FACT_V.patient_identifier,COVID_FACT_V.DEP_STATE from DL_COVID.COVID_FACT_V) dep_st
+	on dep_st.patient_identifier = COVID_RESULT_V.patient_identifier
+	WHERE COVIDYN = 'YES' and DEP_STATE='OH'and discharge_Cat in ('Inpatient','Discharged To Home');
+	)
 
-    ;quit;
-    PROC SQL;
-      CREATE TABLE CovData.PullRealAdmitCovid AS 
-      SELECT /* AdmitDate */
-                (datepart(t1.HSP_ADMIT_DTTM)) FORMAT=Date9. AS AdmitDate, 
-              /* COUNT_DISTINCT_of_patient_identi */
-                (COUNT(DISTINCT(t1.patient_identifier))) AS TrueDailyAdmits, 
-              /* SumICUNum_1 */
-                (SUM(input(t1.ICU, 3.))) AS SumICUNum_1, 
-              /* SumICUNum */
-                (SUM(case when t1.ICU='YES' then 1
-                else case when t1.ICU='1' then 1 else 0
-                end end)) AS SumICUNum
-          FROM CovData.PULLREALCOVID t1
-          GROUP BY (CALCULATED AdmitDate);
-    QUIT;
-    PROC SQL;
-      CREATE TABLE CovData.RealCovid_DischargeDt AS 
-      SELECT /* COUNT_of_patient_identifier */
-                (COUNT(t1.patient_identifier)) AS TrueDailyDischarges, 
-              /* DischargDate */
-                (datepart(t1.HSP_DISCH_DTTM)) FORMAT=Date9. AS DischargDate, 
-              /* SUMICUDISCHARGE */
-                (SUM(Case when t1.DISCHARGEICUYN ='YES' then 1
-                else case when t1.DISCHARGEICUYN ='1' then 1
-                else 0
-                end end)) AS SUMICUDISCHARGE
-          FROM CovData.PULLREALCOVID t1
-          WHERE (CALCULATED DischargDate) NOT = .
-          GROUP BY (CALCULATED DischargDate);
-    QUIT;
+	;quit;
+	PROC SQL;
+	CREATE TABLE CovData.PullRealAdmitCovid AS 
+	SELECT /* AdmitDate */
+				(datepart(t1.HSP_ADMIT_DTTM)) FORMAT=Date9. AS AdmitDate, 
+			/* COUNT_DISTINCT_of_patient_identi */
+				(COUNT(DISTINCT(t1.patient_identifier))) AS TrueDailyAdmits, 
+			/* SumICUNum_1 */
+				(SUM(input(t1.ICU, 3.))) AS SumICUNum_1, 
+			/* SumICUNum */
+				(SUM(case when t1.ICU='YES' then 1
+				else case when t1.ICU='1' then 1 else 0
+				end end)) AS SumICUNum
+		FROM CovData.PULLREALCOVID t1
+		GROUP BY (CALCULATED AdmitDate);
+	QUIT;
+	PROC SQL;
+	CREATE TABLE CovData.RealCovid_DischargeDt AS 
+	SELECT /* COUNT_of_patient_identifier */
+				(COUNT(t1.patient_identifier)) AS TrueDailyDischarges, 
+			/* DischargDate */
+				(datepart(t1.HSP_DISCH_DTTM)) FORMAT=Date9. AS DischargDate, 
+			/* SUMICUDISCHARGE */
+				(SUM(Case when t1.DISCHARGEICUYN ='YES' then 1
+				else case when t1.DISCHARGEICUYN ='1' then 1
+				else 0
+				end end)) AS SUMICUDISCHARGE
+		FROM CovData.PULLREALCOVID t1
+		WHERE (CALCULATED DischargDate) NOT = .
+		GROUP BY (CALCULATED DischargDate);
+	QUIT;
+
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
                 ISOChangeDate3,SocialDistancingChange3,ISOChangeDate4,SocialDistancingChange4,
@@ -423,6 +424,50 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + DAY;
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					LABEL
+						ADMIT_DATE = "Date of Admission"
+						DATE = "Date of Infection"
+						DAY = "Day of Pandemic"
+						HOSP = "New Hospitalized Patients"
+						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
+						MARKET_HOSP = "New Region Hospitalized Patients"
+						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
+						ICU = "New Hospital ICU Patients"
+						ICU_OCCUPANCY = "Current Hospital ICU Census"
+						MARKET_ICU = "New Region ICU Patients"
+						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
+						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
+						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
+						VENT = "New Hospital Ventilator Patients"
+						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
+						MARKET_VENT = "New Region Ventilator Patients"
+						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
+						DIAL = "New Hospital Dialysis Patients"
+						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
+						MARKET_DIAL = "New Region Dialysis Patients"
+						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
+						ECMO = "New Hospital ECMO Patients"
+						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
+						MARKET_ECMO = "New Region ECMO Patients"
+						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
+						Total_Deaths = "Cumulative Hospital Mortality"
+						Market_Deceased_Today = "New Region Mortality"
+						Market_Fatality = "New Region Mortality"
+						Market_Total_Deaths = "Cumulative Region Mortality"
+						N = "Region Population"
+						S_N = "Current Susceptible Population"
+						E_N = "Current Exposed Population"
+						I_N = "Current Infected Population"
+						R_N = "Current Recovered Population"
+						NEWINFECTED = "New Infected Population"
+						ModelType = "Model Type Used to Generate Scenario"
+						SCALE = "Ratio of Previous Day Population to Current Day Population"
+						ScenarioIndex = "Unique Scenario ID"
+						ScenarionNameUnique = "Unique Scenario Name"
+						Scenarioname = "Scenario Name"
+						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					OUTPUT;
 				END;
@@ -686,6 +731,50 @@ libname store "&homedir.";
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + DAY;
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					LABEL
+						ADMIT_DATE = "Date of Admission"
+						DATE = "Date of Infection"
+						DAY = "Day of Pandemic"
+						HOSP = "New Hospitalized Patients"
+						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
+						MARKET_HOSP = "New Region Hospitalized Patients"
+						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
+						ICU = "New Hospital ICU Patients"
+						ICU_OCCUPANCY = "Current Hospital ICU Census"
+						MARKET_ICU = "New Region ICU Patients"
+						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
+						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
+						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
+						VENT = "New Hospital Ventilator Patients"
+						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
+						MARKET_VENT = "New Region Ventilator Patients"
+						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
+						DIAL = "New Hospital Dialysis Patients"
+						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
+						MARKET_DIAL = "New Region Dialysis Patients"
+						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
+						ECMO = "New Hospital ECMO Patients"
+						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
+						MARKET_ECMO = "New Region ECMO Patients"
+						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
+						Total_Deaths = "Cumulative Hospital Mortality"
+						Market_Deceased_Today = "New Region Mortality"
+						Market_Fatality = "New Region Mortality"
+						Market_Total_Deaths = "Cumulative Region Mortality"
+						N = "Region Population"
+						S_N = "Current Susceptible Population"
+						E_N = "Current Exposed Population"
+						I_N = "Current Infected Population"
+						R_N = "Current Recovered Population"
+						NEWINFECTED = "New Infected Population"
+						ModelType = "Model Type Used to Generate Scenario"
+						SCALE = "Ratio of Previous Day Population to Current Day Population"
+						ScenarioIndex = "Unique Scenario ID"
+						ScenarionNameUnique = "Unique Scenario Name"
+						Scenarioname = "Scenario Name"
+						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					DROP LAG: CUM: ;
 				RUN;
@@ -762,69 +851,6 @@ libname store "&homedir.";
             PROC SQL; drop table work.MODEL_FINAL; quit;
         %END;
 
-	/* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
-		optional for efficiency: check to see if this has already be done, if not do it
-	*/
-		PROC DATASETS LIB=STORE NOPRINT;
-			MODIFY MODEL_FINAL;
-				LABEL
-					ADMIT_DATE = "Date of Admission"
-					DATE = "Date of Infection"
-					DAY = "Day of Pandemic"
-					HOSP = "New Hospitalized Patients"
-					HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-					MARKET_HOSP = "New Region Hospitalized Patients"
-					MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-					ICU = "New Hospital ICU Patients"
-					ICU_OCCUPANCY = "Current Hospital ICU Census"
-					MARKET_ICU = "New Region ICU Patients"
-					MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-					MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-					Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-					VENT = "New Hospital Ventilator Patients"
-					VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-					MARKET_VENT = "New Region Ventilator Patients"
-					MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-					DIAL = "New Hospital Dialysis Patients"
-					DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-					MARKET_DIAL = "New Region Dialysis Patients"
-					MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-					ECMO = "New Hospital ECMO Patients"
-					ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-					MARKET_ECMO = "New Region ECMO Patients"
-					MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-					Deceased_Today = "New Hospital Mortality"
-					Fatality = "New Hospital Mortality"
-					Total_Deaths = "Cumulative Hospital Mortality"
-					Market_Deceased_Today = "New Region Mortality"
-					Market_Fatality = "New Region Mortality"
-					Market_Total_Deaths = "Cumulative Region Mortality"
-					N = "Region Population"
-					S_N = "Current Susceptible Population"
-					E_N = "Current Exposed Population"
-					I_N = "Current Infected Population"
-					R_N = "Current Recovered Population"
-					NEWINFECTED = "New Infected Population"
-					ModelType = "Model Type Used to Generate Scenario"
-					SCALE = "Ratio of Previous Day Population to Current Day Population"
-					ScenarioIndex = "Unique Scenario ID"
-					ScenarionNameUnique = "Unique Scenario Name"
-					Scenarioname = "Scenario Name"
-					;
-				MODIFY SCENARIOS;
-				LABEL
-					scope = "Source Macro for variable"
-					name = "Name of the macro variable"
-					offset = "Offset for long character macro variables (>200 characters)"
-					value = "The value of macro variable name"
-					ScenarioIndex = "Unique Scenario ID"
-					Stage = "INPUT for input variables - MODEL for all variables"
-					;
-		RUN;
-		QUIT;
-
-		/*PROC CONTENTS DATA=STORE.MODEL_FINAL;*/
-		/*RUN;*/
 
 %mend;
 

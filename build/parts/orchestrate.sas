@@ -157,6 +157,6 @@ T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
 
 X_IMPORT: output.sas
 
-X_IMPORT: data_dictionary.sas
+T_IMPORT: data_dictionary.sas
 
 %mend;
