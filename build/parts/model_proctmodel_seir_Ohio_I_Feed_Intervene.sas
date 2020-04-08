@@ -110,7 +110,7 @@ X_IMPORT: postprocess.sas
 					DROP LAG: CUM: ;
 				RUN;
 
-				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
+				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
@@ -121,7 +121,7 @@ X_IMPORT: postprocess.sas
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR - OHIO FIT INTERVENTION' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";

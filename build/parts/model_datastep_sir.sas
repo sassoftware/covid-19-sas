@@ -50,13 +50,13 @@ X_IMPORT: postprocess.sas
 				DROP LAG: BETA CUM: ;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
+			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
 			PROC SQL; drop table DS_SIR; QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -75,4 +75,4 @@ X_IMPORT: postprocess.sas
 			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
 
-T_IMPORT: sim_model_datastep_sir.sas
+T_IMPORT: model_sim_datastep_sir.sas

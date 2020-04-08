@@ -71,6 +71,10 @@ X_IMPORT: parameters.sas
                         having count(*) = t1.cnt)
                 ;
             QUIT;
+            /* pull the current scenario data to work for plots below */
+            %IF &PLOTS. = YES %THEN %DO;
+                data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
+            %END;
         %END;
         PROC SQL; 
             drop table PARMS;

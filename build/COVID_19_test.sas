@@ -15,6 +15,7 @@ libname store "&homedir.";
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
 %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
+%LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
 
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
@@ -232,6 +233,10 @@ libname store "&homedir.";
                         having count(*) = t1.cnt)
                 ;
             QUIT;
+            /* pull the current scenario data to work for plots below */
+            %IF &PLOTS. = YES %THEN %DO;
+                data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
+            %END;
         %END;
         PROC SQL; 
             drop table PARMS;
@@ -390,13 +395,13 @@ libname store "&homedir.";
 				DROP LAG: CUM: ;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
+			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 			
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -558,13 +563,13 @@ libname store "&homedir.";
 				DROP LAG: CUM:;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
+			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 			
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -717,13 +722,13 @@ libname store "&homedir.";
 				DROP LAG: BETA CUM: ;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
+			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
 			PROC SQL; drop table DS_SIR; QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -880,13 +885,13 @@ libname store "&homedir.";
 				DROP LAG: BETA CUM: poisson;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL_SIM data=DS_SIR_SIM NOWARN FORCE; run;
+			PROC APPEND base=work.MODEL_FINAL_SIM data=DS_SIR_SIM NOWARN FORCE; run;
 			PROC SQL; drop table DS_SIR_SIM; QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='DS - SIR - SIM' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -1044,13 +1049,13 @@ libname store "&homedir.";
 				DROP LAG: BETA CUM: ;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
+			PROC APPEND base=work.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
 			PROC SQL; drop table DS_SEIR; QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -1303,7 +1308,7 @@ libname store "&homedir.";
 					DROP LAG: CUM: ;
 				RUN;
 
-				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
+				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT;
 					drop table DINIT;
@@ -1314,7 +1319,7 @@ libname store "&homedir.";
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR - OHIO FIT' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -1523,7 +1528,7 @@ libname store "&homedir.";
 					DROP LAG: CUM: ;
 				RUN;
 
-				PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
+				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
@@ -1534,7 +1539,7 @@ libname store "&homedir.";
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR - OHIO FIT INTERVENTION' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
@@ -1553,10 +1558,10 @@ libname store "&homedir.";
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */
         PROC SQL noprint;
-            select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
+            select count(*) into :scenplot from (select distinct ModelType from work.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
         QUIT;
         %IF &scenplot > 1 %THEN %DO;
-            PROC SGPLOT DATA=STORE.MODEL_FINAL;
+            PROC SGPLOT DATA=work.MODEL_FINAL;
                 where ScenarioIndex=&ScenarioIndex.;
                 TITLE "Daily Hospital Occupancy - All Approaches";
                 TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -1571,6 +1576,29 @@ libname store "&homedir.";
             TITLE; TITLE2; TITLE3; TITLE4;
         %END;	
     %END;
+
+    /* code to manage output tables in STORE and CAS table management (coming soon) */
+        %IF &ScenarioExist = 0 %THEN %DO;
+            PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
+            PROC SQL; drop table work.MODEL_FINAL; QUIT;
+
+			%IF &CAS_LOAD=YES %THEN %DO;
+				CAS;
+
+				CASLIB _ALL_ ASSIGN;
+
+				PROC CASUTIL;
+					DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
+					LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+				QUIT;
+
+				CAS CASAUTO TERMINATE;
+			%END;
+
+        %END;
+        %ELSE %IF &PLOTS. = YES %THEN %DO;
+            PROC SQL; drop table work.MODEL_FINAL; quit;
+        %END;
 
 	/* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
 		optional for efficiency: check to see if this has already be done, if not do it
@@ -1789,21 +1817,4 @@ proc sql;
     drop table store.MODEL_FINAL_SIM;
     *drop table store.ohio_summary;
 quit;
-*/
-
-
-/* uncomment the following section to load/replace the files in CAS - Viya based Visual Analytics, Visual Statistics, ... */
-/*
-CAS;
-
-CASLIB _ALL_ ASSIGN;
-
-PROC CASUTIL;
-	DROPTABLE INCASLIB="CASUSER" CASDATA="PROJECT_DS" QUIET;
-	LOAD DATA=store.MODEL_FINAL CASOUT="PROJECT_DS" OUTCASLIB="CASUSER" PROMOTE;
-	DROPTABLE INCASLIB="CASUSER" CASDATA="PROJECT_SCENARIOS" QUIET;
-	LOAD DATA=store.SCENARIOS CASOUT="PROJECT_SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
-QUIT;
-
-CAS CASAUTO TERMINATE;
 */

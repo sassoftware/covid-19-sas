@@ -136,10 +136,10 @@ T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */
         PROC SQL noprint;
-            select count(*) into :scenplot from (select distinct ModelType from store.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
+            select count(*) into :scenplot from (select distinct ModelType from work.MODEL_FINAL where ScenarioIndex=&ScenarioIndex.);
         QUIT;
         %IF &scenplot > 1 %THEN %DO;
-            PROC SGPLOT DATA=STORE.MODEL_FINAL;
+            PROC SGPLOT DATA=work.MODEL_FINAL;
                 where ScenarioIndex=&ScenarioIndex.;
                 TITLE "Daily Hospital Occupancy - All Approaches";
                 TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
@@ -154,6 +154,8 @@ T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
             TITLE; TITLE2; TITLE3; TITLE4;
         %END;	
     %END;
+
+X_IMPORT: output.sas
 
 X_IMPORT: data_dictionary.sas
 

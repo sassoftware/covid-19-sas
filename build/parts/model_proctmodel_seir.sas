@@ -65,13 +65,13 @@ X_IMPORT: postprocess.sas
 				DROP LAG: CUM: ;
 			RUN;
 
-			PROC APPEND base=store.MODEL_FINAL data=TMODEL_SEIR; run;
+			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 			
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
-			PROC SGPLOT DATA=STORE.MODEL_FINAL;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";

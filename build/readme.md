@@ -9,7 +9,7 @@ The build.py file uses python to construct .SAS files for different users bases.
         - IMPORT: parameters.sas
     - IMPORT: model * .sas
         - IMPORT: postprocess.sas
-        - IMPORT: sim_model * .sas (in development)
+        - IMPORT: model_sim * .sas (in development)
     - IMPORT: data_dictionary.sas
 - driver.sas - call macro %EasyRun
     - IMPORT: header.sas

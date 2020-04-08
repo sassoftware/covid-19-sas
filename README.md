@@ -22,6 +22,8 @@ In addition to the information shared within this readme and the commenting with
     - If you have the latest analytical release of SAS, 15.1, then set `line 17` to YES
         - This option swaps out `PROC MODEL` for `PROC TMODEL`
         - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
+    - If you have SAS Viya and want to manage the `STORE.MODEL_FINAL` table in CAS, then set `line 18` to YES
+        - with each scenario run the `STORE.MODEL_FINAL` table is loaded\replaced in CASUSER as `MODEL_FINAL`
 - **RUN**
     - Make calls to the macro `%EasyRun`.  Example scenarios are at the end of the file.
     - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv`, is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
