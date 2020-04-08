@@ -1199,7 +1199,7 @@ libname store "&homedir.";
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=STORE.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - OHIO FIT' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -1212,6 +1212,7 @@ libname store "&homedir.";
 			RUN;
 			TITLE; TITLE2; TITLE3; TITLE4;
 		%END;
+
 
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */

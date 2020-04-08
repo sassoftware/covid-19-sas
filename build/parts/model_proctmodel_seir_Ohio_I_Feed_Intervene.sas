@@ -1,4 +1,4 @@
-	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
+	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT INTERVENE */
 		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
@@ -181,7 +181,7 @@ X_IMPORT: postprocess.sas
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=STORE.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - FIT INTERVENTION' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - OHIO FIT INTERVENTION' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
