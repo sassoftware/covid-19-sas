@@ -1390,16 +1390,15 @@ libname store "&homedir.";
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
-					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED_I LTEBOUND=1E-10
+					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED_I LTEBOUND=1E-10 OUTEST=PARAMS
 						%IF &HAVE_V151. = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;
 					OUTVARS S_N E_N I_N R_N;
-					ODS OUTPUT PARAMETERESTIMATES=PARAMS;
 				QUIT;
 
 				PROC SQL NOPRINT;
-					SELECT "'"||PUT(ESTIMATE,DATE9.)||"'"||"D" INTO :CURVEBEND1 FROM PARAMS WHERE PARAMETER="DI";
-					SELECT ESTIMATE INTO :R0_FIT FROM PARAMS WHERE PARAMETER="R0";
-					SELECT SUM(ESTIMATE) INTO :R0_BEND_FIT FROM PARAMS WHERE PARAMETER IN("R0","RI");
+					SELECT "'"||PUT(DI,DATE9.)||"'"||"D" INTO :CURVEBEND1 FROM PARAMS;
+					SELECT R0 INTO :R0_FIT FROM PARAMS;
+					SELECT SUM(R0,RI) INTO :R0_BEND_FIT FROM PARAMS;
 				QUIT;
 
 				%LET SOC_DIST_FIT = %SYSEVALF(1 - &R0_BEND_FIT / &R0_FIT);
@@ -1449,7 +1448,7 @@ libname store "&homedir.";
 
 				DATA TMODEL_SEIR_FIT_I;
 					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
-					ModelType="TMODEL - SEIR - OHIO FIT INTERVENTION";
+					ModelType="TMODEL - SEIR - OHIO FIT INTER";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
@@ -1532,15 +1531,16 @@ libname store "&homedir.";
 				PROC SQL; 
 					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
-					drop table EPIPRED;
+					drop table EPIPRED_I;
 					drop table SEIRMOD_I;
+					drop table PARAMS;
 				QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - OHIO FIT INTERVENTION' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - OHIO FIT INTER' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
