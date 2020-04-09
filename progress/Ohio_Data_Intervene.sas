@@ -28,6 +28,27 @@ libname store "&homedir.";
 %LET SocialDistancingChangeTwo=0.25;
 %LET FatalityRate=;
 %LET plots=YES;
+
+
+%LET R_T = 3.0817769699584;
+%LET I = 459.770114942528;
+%LET POPULATION = 4390484;
+%LET RECOVERYDAYS = 14;
+%LET SIGMA = 0.90;
+%LET GAMMA = 0.07142857142857;
+%LET DiagnosedRate = 1.0;
+%LET InitRecovered = 0;
+%LET E = 0;
+%LET N_DAYS = 365;
+%LET DAY_ZERO = '13MAR2020'd;
+%LET ISOChangeDate='23MAR2020'd;
+%LET SocialDistancingChange=0.0;
+%LET ISOChangeDateTwo='30APR2020'd;
+%LET SocialDistancingChangeTwo=0.25;
+%LET ISOChangeDate3='20MAY2020'd;
+%LET SocialDistancingChange3=0.5;
+%LET ISOChangeDate4='01JUN2020'd;
+%LET SocialDistancingChange4=0.3;
 			
 /* Dynamic Variables across Scenario Runs */
 /*Number of people in region of interest, assumed to be well mixed and independent of other populations*/
@@ -89,12 +110,8 @@ libname store "&homedir.";
 %LET DIAL_LOS=11;
 /*rate of latent individuals Exposed transported to the infectious stage each time period*/
 %LET SIGMA = 0.90;
-/*Days to project*/
-%LET N_DAYS = 900;
 /*Factor (%) used for daily reduction of Beta*/
 %LET BETA_DECAY = 0.00;
-/*Date of first COVID-19 Case*/
-%LET DAY_ZERO = 13MAR2020;
 
 /*Parameters derived from other inputs*/
 /*Regional Population*/
@@ -111,26 +128,20 @@ libname store "&homedir.";
 %LET BETA = %SYSEVALF((&INTRINSIC_GROWTH_RATE + &GAMMA) / &S * (1-&RELATIVE_CONTACT_RATE));
 %LET BETA_Change = %SYSEVALF((&INTRINSIC_GROWTH_RATE + &GAMMA) / &S * (1-&RELATIVE_CONTACT_RATE_Change));
 %LET BETA_Change_Two = %SYSEVALF((&INTRINSIC_GROWTH_RATE + &GAMMA) / &S * (1-&RELATIVE_CONTACT_RATE_Change_Two));
+%LET BETAChange3 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+								&Population. * (1 - &SocialDistancingChange3.));
+%LET BETAChange4 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+								&Population. * (1 - &SocialDistancingChange4.));
 /*R_T is R_0 after distancing*/
 %LET R_T = %SYSEVALF(&BETA / &GAMMA * &S);
 %LET R_T_Change = %SYSEVALF(&BETA_Change / &GAMMA * &S);
 %LET R_T_Change_Two = %SYSEVALF(&BETA_Change_Two / &GAMMA * &S);
+%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
+%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 %LET R_NAUGHT = %SYSEVALF(&R_T / (1-&RELATIVE_CONTACT_RATE));
 /*doubling time after distancing*/
 %LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
 
-%LET R_T = 3.0817769699584;
-%LET I = 459.770114942528;
-%LET POPULATION = 4390484;
-%LET RECOVERYDAYS = 14;
-%LET SIGMA = 0.90;
-%LET GAMMA = 0.07142857142857;
-%LET ISOChangeDate='23MAR2020'd;
-%LET DiagnosedRate = 1.0;
-%LET InitRecovered = 0;
-%LET E = 0;
-%LET N_DAYS = 365;
-%LET DAY_ZERO = '13MAR2020'd;
 
 				PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD /*NOPRINT*/; 
 					/* Parameters of interest */
@@ -205,15 +216,17 @@ libname store "&homedir.";
 
 			PROC MODEL DATA = DINIT /*NOPRINT*/;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two.; 
+				PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; 
 				BOUNDS 1 <= R0 <= 13;
-				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 				GAMMA = &GAMMA.;
 				SIGMA = &SIGMA.;
 				change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
-				change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				change_2 = (TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)); 	         
-				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N;
+				change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
+				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
