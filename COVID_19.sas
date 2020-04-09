@@ -15,7 +15,7 @@ libname store "&homedir.";
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
 %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
-%LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
+%LET CAS_LOAD = YES; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
 
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
@@ -1418,21 +1418,38 @@ libname store "&homedir.";
         %IF &ScenarioExist = 0 %THEN %DO;
 
 
-            PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-            PROC SQL; drop table work.MODEL_FINAL; QUIT;
+                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
+
 				CAS;
 
 				CASLIB _ALL_ ASSIGN;
 
-				PROC CASUTIL;
-					DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
-					LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
-				QUIT;
+				%IF &ScenarioIndex=1 %THEN %DO;
+
+					/* ScenarioIndex=1 implies a new MODEL_FINAL is being built, load it to CAS, if already in CAS then drop first */
+					PROC CASUTIL;
+						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
+						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+					QUIT;
+
+				%END;
+				%ELSE %DO;
+
+					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
+					PROC CASUTIL;
+						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
+					QUIT;
+
+				%END;
+
 
 				CAS CASAUTO TERMINATE;
+
 			%END;
+
+                PROC SQL; drop table work.MODEL_FINAL; QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;

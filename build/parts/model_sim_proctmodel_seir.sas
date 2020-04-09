@@ -9,12 +9,14 @@
                     /* what if range dips below zero? */
                     DO SIGMA = &SIGMA-.3 to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
                         DO RECOVERYDAYS = &RecoveryDays.-5 to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            GAMMA = 1 / RECOVERYDAYS;
-                            BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                            &Population. * (1 - &SocialDistancing.);
-                            DO R0 = (BETA / GAMMA * &Population.)-2 to (BETA / GAMMA * &Population.)+2 by .1; /* range of 2, increment by .1*/
-                                DO TIME = 0 TO &N_DAYS.;
-                                    OUTPUT; 
+                            DO SOCIALD = &SocialDistancing.-.1 to &SocialDistancing.+.1 by .01; 
+                                GAMMA = 1 / RECOVERYDAYS;
+                                BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - SOCIALD);
+                                DO R0 = (BETA / GAMMA * &Population.)-2 to (BETA / GAMMA * &Population.)+2 by .1; /* range of 2, increment by .1*/
+                                    DO TIME = 0 TO &N_DAYS.;
+                                        OUTPUT; 
+                                    END;
                                 END;
                             END;
                         END;
@@ -46,7 +48,7 @@
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR; 
-                by Sigma RECOVERYDAYS R0;
+                by Sigma RECOVERYDAYS SOCIALD R0;
 			RUN;
 			QUIT;
 
@@ -55,7 +57,7 @@
                 create table TMODEL_SEIR as
                     select Sigma,R0,Gamma,S_N,E_N,I_N,R_N,Time
                     from TMODEL_SEIR
-                    order by Sigma,R0,Gamma,Time;
+                    order by Sigma,R0, SOCIALD, Gamma,Time;
             quit;
             data TMODEL_SEIR;
                 set TMODEL_SEIR;

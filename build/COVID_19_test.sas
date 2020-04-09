@@ -1667,12 +1667,14 @@ libname store "&homedir.";
                     /* what if range dips below zero? */
                     DO SIGMA = &SIGMA-.3 to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
                         DO RECOVERYDAYS = &RecoveryDays.-5 to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            GAMMA = 1 / RECOVERYDAYS;
-                            BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                            &Population. * (1 - &SocialDistancing.);
-                            DO R0 = (BETA / GAMMA * &Population.)-2 to (BETA / GAMMA * &Population.)+2 by .1; /* range of 2, increment by .1*/
-                                DO TIME = 0 TO &N_DAYS.;
-                                    OUTPUT; 
+                            DO SOCIALD = &SocialDistancing.-.1 to &SocialDistancing.+.1 by .01; 
+                                GAMMA = 1 / RECOVERYDAYS;
+                                BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - SOCIALD);
+                                DO R0 = (BETA / GAMMA * &Population.)-2 to (BETA / GAMMA * &Population.)+2 by .1; /* range of 2, increment by .1*/
+                                    DO TIME = 0 TO &N_DAYS.;
+                                        OUTPUT; 
+                                    END;
                                 END;
                             END;
                         END;
@@ -1704,7 +1706,7 @@ libname store "&homedir.";
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR; 
-                by Sigma RECOVERYDAYS R0;
+                by Sigma RECOVERYDAYS SOCIALD R0;
 			RUN;
 			QUIT;
 
@@ -1713,7 +1715,7 @@ libname store "&homedir.";
                 create table TMODEL_SEIR as
                     select Sigma,R0,Gamma,S_N,E_N,I_N,R_N,Time
                     from TMODEL_SEIR
-                    order by Sigma,R0,Gamma,Time;
+                    order by Sigma,R0, SOCIALD, Gamma,Time;
             quit;
             data TMODEL_SEIR;
                 set TMODEL_SEIR;
@@ -1763,21 +1765,38 @@ libname store "&homedir.";
         %IF &ScenarioExist = 0 %THEN %DO;
 
 
-            PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-            PROC SQL; drop table work.MODEL_FINAL; QUIT;
+                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
+
 				CAS;
 
 				CASLIB _ALL_ ASSIGN;
 
-				PROC CASUTIL;
-					DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
-					LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
-				QUIT;
+				%IF &ScenarioIndex=1 %THEN %DO;
+
+					/* ScenarioIndex=1 implies a new MODEL_FINAL is being built, load it to CAS, if already in CAS then drop first */
+					PROC CASUTIL;
+						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
+						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+					QUIT;
+
+				%END;
+				%ELSE %DO;
+
+					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
+					PROC CASUTIL;
+						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
+					QUIT;
+
+				%END;
+
 
 				CAS CASAUTO TERMINATE;
+
 			%END;
+
+                PROC SQL; drop table work.MODEL_FINAL; QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;

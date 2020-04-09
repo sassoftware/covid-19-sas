@@ -3,10 +3,11 @@
 
 C_IMPORT: CCF_post.sas
 
-            PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-            PROC SQL; drop table work.MODEL_FINAL; QUIT;
+                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
 
 X_IMPORT: CAS_post.sas
+
+                PROC SQL; drop table work.MODEL_FINAL; QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;
