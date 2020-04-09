@@ -173,5 +173,5 @@ X_IMPORT: postprocess.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2;
 		%END;

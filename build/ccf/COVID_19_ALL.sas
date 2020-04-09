@@ -509,7 +509,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
@@ -721,7 +721,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
@@ -924,9 +924,8 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
-
 
 	/* DATA STEP APPROACH FOR SEIR */
 		/* these are the calculations for variables used from above:
@@ -1132,7 +1131,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
@@ -1436,8 +1435,9 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2;
 		%END;
+
 
 
     %IF &PLOTS. = YES %THEN %DO;
@@ -1458,7 +1458,7 @@ libname store "&homedir.";
                 XAXIS LABEL="Date";
                 YAXIS LABEL="Daily Occupancy";
             RUN;
-            TITLE; TITLE2; TITLE3; TITLE4;
+            TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
         %END;	
     %END;
 
