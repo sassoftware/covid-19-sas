@@ -6,10 +6,11 @@ X_IMPORT: parameters.sas
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
+				%LET tempkeep='23MAR2020'd;
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD_I NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD_I NOPRINT; %END;
 					/* Parameters of interest */
-					PARMS R0 &R_T. I0 &I. RI -1 DI '23MAR2020'd;
+					PARMS R0 &R_T. I0 &I. RI -1 DI &tempkeep.;
 					BOUNDS 1 <= R0 <= 13;
 					RESTRICT RI + R0 > 0;
 					/* Fixed values */
@@ -134,5 +135,5 @@ X_IMPORT: postprocess.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3;
 		%END;
