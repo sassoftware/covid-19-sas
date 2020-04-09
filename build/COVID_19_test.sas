@@ -142,8 +142,8 @@ libname store "&homedir.";
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
-    /* store all the macro variables that set up this scenario in PARMS dataset */
-        DATA PARMS;
+    /* store all the macro variables that set up this scenario in SCENARIOS dataset */
+        DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
@@ -181,13 +181,13 @@ libname store "&homedir.";
 				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
 				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 
-        DATA PARMS;
-            set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
+        DATA SCENARIOS;
+            set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             if i then STAGE='MODEL';
         RUN;
-    /* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
+    /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
         %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
             PROC SQL noprint;
                 /* has this scenario been run before - all the same parameters and value - no more and no less */
@@ -195,7 +195,7 @@ libname store "&homedir.";
                     (select t1.ScenarioIndex, t2.ScenarioIndex
                         from 
                             (select *, count(*) as cnt 
-                                from PARMS
+                                from work.SCENARIOS
                                 where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
@@ -211,18 +211,16 @@ libname store "&homedir.";
             %LET ScenarioExist = 0;
         %END;
         %IF &ScenarioExist = 0 %THEN %DO;
-            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
-            PROC APPEND base=store.SCENARIOS data=PARMS; run;
-            PROC APPEND base=store.INPUTS data=INPUTS; run;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
-        %ELSE %DO;
+        %ELSE %IF &PLOTS. = YES %THEN %DO;
             /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
 				select max(t2.ScenarioIndex) into :ScenarioIndex from
                     (select t1.ScenarioIndex, t2.ScenarioIndex
                         from 
                             (select *, count(*) as cnt 
-                                from PARMS
+                                from work.SCENARIOS
                                 where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
@@ -234,14 +232,9 @@ libname store "&homedir.";
                 ;
             QUIT;
             /* pull the current scenario data to work for plots below */
-            %IF &PLOTS. = YES %THEN %DO;
-                data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
-            %END;
+            data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
         %END;
-        PROC SQL; 
-            drop table PARMS;
-            drop table INPUTS;
-        QUIT;
+        
     /* Prepare to create request plots from input parameter plots= */
         %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
         %ELSE %DO; %LET plots = NO; %END;
@@ -1766,6 +1759,8 @@ libname store "&homedir.";
 
 
                 PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
+                PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
+                PROC APPEND base=store.INPUTS data=work.INPUTS; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
 
@@ -1779,6 +1774,12 @@ libname store "&homedir.";
 					PROC CASUTIL;
 						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
 						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+						
+						DROPTABLE INCASLIB="CASUSER" CASDATA="SCENARIOS" QUIET;
+						LOAD DATA=store.SCENARIOS CASOUT="SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
+
+						DROPTABLE INCASLIB="CASUSER" CASDATA="INPUTS" QUIET;
+						LOAD DATA=store.INPUTS CASOUT="INPUTS" OUTCASLIB="CASUSER" PROMOTE;
 					QUIT;
 
 				%END;
@@ -1786,7 +1787,11 @@ libname store "&homedir.";
 
 					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
 					PROC CASUTIL;
-						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
+						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
+						
+						LOAD DATA=work.SCENARIOS CASOUT="SCENARIOS" APPEND;
+						
+						LOAD DATA=work.INPUTS CASOUT="INPUTS" APPEND;
 					QUIT;
 
 				%END;
@@ -1796,11 +1801,17 @@ libname store "&homedir.";
 
 			%END;
 
-                PROC SQL; drop table work.MODEL_FINAL; QUIT;
+                PROC SQL;
+                    drop table work.MODEL_FINAL;
+                    drop table work.SCENARIOS;
+                    drop table work.INPUTS;
+                QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;
-            PROC SQL; drop table work.MODEL_FINAL; quit;
+            PROC SQL; 
+                drop table work.MODEL_FINAL; 
+            QUIT;
         %END;
 
 %mend;
