@@ -1,13 +1,18 @@
-                                 Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
+
+The original contributor SAS Institute Inc. offer this work subject to the license agreement below.  
+
+[NOTE: This agreement is based on the Apache License Version 2.0, January 2004
+http://www.apache.org/licenses/.   Other than a numbering change in Section 1, the additions are Sections 10 and 11.]
+
+
+License Agreement
 
    TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
    1. Definitions.
 
       "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
+      and distribution as defined by Sections 1 through 11 of this document.
 
       "Licensor" shall mean the copyright owner or entity authorized by
       the copyright owner that is granting the License.
@@ -173,29 +178,20 @@
       incurred by, or claims asserted against, such Contributor by reason
       of your accepting any such warranty or additional liability.
 
-   END OF TERMS AND CONDITIONS
+   10. Indemnity. In addition to any indemnity obligations imposed by
+       Section 9, You agree to defend, indemnify and hold harmless
+       each Contributor from and against any claims, suits,
+       losses, damages, liabilities, costs, and expenses (including
+       reasonable legal or attorneys’ fees) resulting from or relating to
+       any use of the Work or Derivative Works thereof by You. 
 
-   APPENDIX: How to apply the Apache License to your work.
+   11. No Work, Derivative Work, or Contribution constitute medical advice.
+       The Work, Derivative Works, and Contributions are not a substitute for 
+       professional medical advice, diagnosis, or treatment.  You will rely exclusively 
+       on physicians and other healthcare professionals for the provision of 
+       medical advice and for the treatment of patients.   No Contributor is 
+       providing any medical advice relating to the Work, Derivative Works, or 
+       any Contribution. You are solely responsible for providing medical care to 
+       Your patients.	
+ 	
 
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright [yyyy] [name of copyright owner]
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
