@@ -98,7 +98,7 @@
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */

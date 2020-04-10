@@ -17,14 +17,6 @@ libname store "&homedir.";
 %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 %LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
 
-* dc - new macros --------------------------;
-* there are new parameters that will provide controls in the UI via checkboxes or radio buttons;
-%let runBatch=YES; *default for when running batch mode;
-%let runCSV=NO; * default to 'NO' for JES code used to run the csv scripts;
-%let runAdhoc=NO; *used for running an individual scenario that will not be appended, but will replace the adhoc... copy of the tables;
-%let append=YES;
-* dc end -----------------------------------;
-
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
@@ -1477,6 +1469,14 @@ libname store "&homedir.";
 
 %mend;
 
+* dc - new macros --------------------------;
+	* there are new parameters that will provide controls in the UI via checkboxes or radio buttons;
+	%let runBatch=YES; *default for when running batch mode;
+	%let runCSV=NO; * default to 'NO' for JES code used to run the csv scripts;
+	%let runAdhoc=NO; *used for running an individual scenario that will not be appended, but will replace the adhoc... copy of the tables;
+	%let append=YES;
+* dc end -----------------------------------;
+
 /* Test runs of EasyRun macro 
 	IMPORTANT NOTES: 
 		These example runs have all the positional macro variables.  
@@ -1486,8 +1486,8 @@ libname store "&homedir.";
 */
 
 * dc - macro condition for 3 %easyRun calls ---------------------------------; 
-* this is where the macro calls happen;
-%if runBatch=YES %then %do;
+	* this is where the macro calls happen;
+	%if runBatch=YES %then %do;
 * ---------------------------------------------------------------------------;
 
 

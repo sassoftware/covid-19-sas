@@ -10,7 +10,7 @@
 								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
 								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
 							FROM WORK.MODEL_FINAL
-							GROUP BY SCENARIONNAMEUNIQUE, MODELTYPE
-							ORDER BY SCENARIONNAMEUNIQUE, MODELTYPE, DATE
+							GROUP BY SCENARIONAMEUNIQUE, MODELTYPE
+							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE
 						;
 					QUIT;

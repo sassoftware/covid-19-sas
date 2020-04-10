@@ -360,7 +360,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -473,7 +473,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -572,7 +572,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -685,7 +685,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -751,7 +751,7 @@ libname store "&homedir.";
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -886,7 +886,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -954,7 +954,7 @@ libname store "&homedir.";
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -1093,7 +1093,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1285,7 +1285,7 @@ libname store "&homedir.";
 					ModelType="TMODEL - SEIR - OHIO FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
-					ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -1398,7 +1398,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1471,8 +1471,8 @@ libname store "&homedir.";
 								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
 								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
 							FROM WORK.MODEL_FINAL
-							GROUP BY SCENARIONNAMEUNIQUE, MODELTYPE
-							ORDER BY SCENARIONNAMEUNIQUE, MODELTYPE, DATE
+							GROUP BY SCENARIONAMEUNIQUE, MODELTYPE
+							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE
 						;
 					QUIT;
             /* CCF specific post-processing of MODEL_FINAL */
