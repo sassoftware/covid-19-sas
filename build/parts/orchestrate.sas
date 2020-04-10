@@ -131,7 +131,9 @@ P_IMPORT: model_datastep_seir.sas
 
 X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
 
-T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
+/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
+
+T_IMPORT: model_sim_proctmodel_seir.sas
 
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */
@@ -151,7 +153,7 @@ T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
                 XAXIS LABEL="Date";
                 YAXIS LABEL="Daily Occupancy";
             RUN;
-            TITLE; TITLE2; TITLE3; TITLE4;
+            TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
         %END;	
     %END;
 

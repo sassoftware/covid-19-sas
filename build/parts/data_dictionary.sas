@@ -1,3 +1,5 @@
+	/* THIS CODE HAS MOVED INTO THE POSTPROCESSING.SAS FILE */
+	
 	/* use proc datasets to apply labels to each column of MODEL_FINAL and SCENARIOS
 		optional for efficiency: check to see if this has already be done, if not do it
 	*/
@@ -44,7 +46,7 @@
 					ModelType = "Model Type Used to Generate Scenario"
 					SCALE = "Ratio of Previous Day Population to Current Day Population"
 					ScenarioIndex = "Unique Scenario ID"
-					ScenarionNameUnique = "Unique Scenario Name"
+					ScenarioNameUnique = "Unique Scenario Name"
 					Scenarioname = "Scenario Name"
 					;
 				MODIFY SCENARIOS;

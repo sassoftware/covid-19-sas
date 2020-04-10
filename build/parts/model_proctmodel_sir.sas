@@ -42,7 +42,7 @@ X_IMPORT: parameters.sas
 				ModelType="TMODEL - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -81,5 +81,5 @@ X_IMPORT: postprocess.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;

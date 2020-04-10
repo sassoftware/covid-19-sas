@@ -11,10 +11,11 @@
 from shutil import copyfile
 
 # write the COVID_19.sas program
-covid=open('./public/COVID_19.sas', 'w')
+covid=open('./public/COVID_19.sas','w')
 ccf=open('./ccf/COVID_19_SIRonly.sas','w') 
 ccfall=open('./ccf/COVID_19_ALL.sas','w')
 test=open('./COVID_19_test.sas','w')
+ui=open('./UI/COVID_19.sas','w')
 
 def subpart(file,type):
     with open('./parts/'+file) as part:
@@ -53,6 +54,7 @@ def subpart(file,type):
                 subpart(file,'T')
             elif type=='X':
                 covid.write(piece)
+                ui.write(piece)
                 ccf.write(piece)
                 ccfall.write(piece)
                 test.write(piece)
@@ -61,6 +63,7 @@ def subpart(file,type):
                 ccfall.write(piece)
             elif type=='P':
                 covid.write(piece)
+                ui.write(piece)
                 ccfall.write(piece)
                 test.write(piece)
             elif type=='T':
@@ -72,6 +75,7 @@ covid.close()
 ccf.close()
 ccfall.close()
 test.close()
+ui.close()
 
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')
 copyfile('./public/run_scenarios.csv', '../run_scenarios.csv')

@@ -83,8 +83,8 @@
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -98,7 +98,7 @@
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */

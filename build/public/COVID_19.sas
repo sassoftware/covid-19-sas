@@ -142,8 +142,8 @@ libname store "&homedir.";
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
-    /* store all the macro variables that set up this scenario in PARMS dataset */
-        DATA PARMS;
+    /* store all the macro variables that set up this scenario in SCENARIOS dataset */
+        DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
@@ -181,13 +181,13 @@ libname store "&homedir.";
 				%LET R_T_Change_3 = %SYSEVALF(&BETAChange3. / &GAMMA. * &Population.);
 				%LET R_T_Change_4 = %SYSEVALF(&BETAChange4. / &GAMMA. * &Population.);
 
-        DATA PARMS;
-            set PARMS sashelp.vmacro(in=i where=(scope='EASYRUN'));
+        DATA SCENARIOS;
+            set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             if i then STAGE='MODEL';
         RUN;
-    /* Check to see if PARMS (this scenario) has already been run before in SCENARIOS dataset */
+    /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
         %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
             PROC SQL noprint;
                 /* has this scenario been run before - all the same parameters and value - no more and no less */
@@ -195,7 +195,7 @@ libname store "&homedir.";
                     (select t1.ScenarioIndex, t2.ScenarioIndex
                         from 
                             (select *, count(*) as cnt 
-                                from PARMS
+                                from work.SCENARIOS
                                 where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
@@ -211,18 +211,16 @@ libname store "&homedir.";
             %LET ScenarioExist = 0;
         %END;
         %IF &ScenarioExist = 0 %THEN %DO;
-            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.parms; QUIT;
-            PROC APPEND base=store.SCENARIOS data=PARMS; run;
-            PROC APPEND base=store.INPUTS data=INPUTS; run;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
-        %ELSE %DO;
+        %ELSE %IF &PLOTS. = YES %THEN %DO;
             /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
 				select max(t2.ScenarioIndex) into :ScenarioIndex from
                     (select t1.ScenarioIndex, t2.ScenarioIndex
                         from 
                             (select *, count(*) as cnt 
-                                from PARMS
+                                from work.SCENARIOS
                                 where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
@@ -234,14 +232,9 @@ libname store "&homedir.";
                 ;
             QUIT;
             /* pull the current scenario data to work for plots below */
-            %IF &PLOTS. = YES %THEN %DO;
-                data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
-            %END;
+            data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
         %END;
-        PROC SQL; 
-            drop table PARMS;
-            drop table INPUTS;
-        QUIT;
+        
     /* Prepare to create request plots from input parameter plots= */
         %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
         %ELSE %DO; %LET plots = NO; %END;
@@ -319,7 +312,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -417,8 +410,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -432,7 +425,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -461,7 +454,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/*PROC TMODEL SIR APPROACH*/
@@ -531,7 +524,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -629,8 +622,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -644,7 +637,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -673,7 +666,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
@@ -710,7 +703,7 @@ libname store "&homedir.";
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -830,8 +823,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -845,7 +838,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -876,9 +869,8 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
-
 
 	/* DATA STEP APPROACH FOR SEIR */
 		/* these are the calculations for variables used from above:
@@ -914,7 +906,7 @@ libname store "&homedir.";
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -1038,8 +1030,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -1053,7 +1045,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1084,7 +1076,7 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
 	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
@@ -1245,7 +1237,7 @@ libname store "&homedir.";
 					ModelType="TMODEL - SEIR - OHIO FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
-					ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -1343,8 +1335,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -1358,7 +1350,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarionNameUnique = "Unique Scenario Name"
+						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1388,8 +1380,10 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2;
 		%END;
+
+/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
 
 
     %IF &PLOTS. = YES %THEN %DO;
@@ -1410,35 +1404,85 @@ libname store "&homedir.";
                 XAXIS LABEL="Date";
                 YAXIS LABEL="Daily Occupancy";
             RUN;
-            TITLE; TITLE2; TITLE3; TITLE4;
+            TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
         %END;	
     %END;
 
     /* code to manage output tables in STORE and CAS table management (coming soon) */
         %IF &ScenarioExist = 0 %THEN %DO;
 
+				/*CREATE FLAGS FOR DAYS WITH PEAK VALUES OF DIFFERENT METRICS*/
+					PROC SQL;
+						CREATE TABLE WORK.MODEL_FINAL AS
+							SELECT *,
+								CASE when HOSPITAL_OCCUPANCY = max(HOSPITAL_OCCUPANCY) then 1 else 0 END as PEAK_HOSPITAL_OCCUPANCY LABEL="Peak Value: Current Hospitalized Census",
+								CASE when ICU_OCCUPANCY = max(ICU_OCCUPANCY) then 1 else 0 END as PEAK_ICU_OCCUPANCY LABEL="Peak Value: Current Hospital ICU Census",
+								CASE when VENT_OCCUPANCY = max(VENT_OCCUPANCY) then 1 else 0 END as PEAK_VENT_OCCUPANCY LABEL="Peak Value: Current Hospital Ventilator Patients",
+								CASE when ECMO_OCCUPANCY = max(ECMO_OCCUPANCY) then 1 else 0 END as PEAK_ECMO_OCCUPANCY LABEL="Peak Value: Current Hospital ECMO Patients",
+								CASE when DIAL_OCCUPANCY = max(DIAL_OCCUPANCY) then 1 else 0 END as PEAK_DIAL_OCCUPANCY LABEL="Peak Value: Current Hospital Dialysis Patients",
+								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
+								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
+							FROM WORK.MODEL_FINAL
+							GROUP BY SCENARIONAMEUNIQUE, MODELTYPE
+							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE
+						;
+					QUIT;
 
-            PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-            PROC SQL; drop table work.MODEL_FINAL; QUIT;
+                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
+                PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
+                PROC APPEND base=store.INPUTS data=work.INPUTS; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
+
 				CAS;
 
 				CASLIB _ALL_ ASSIGN;
 
-				PROC CASUTIL;
-					DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
-					LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
-				QUIT;
+				%IF &ScenarioIndex=1 %THEN %DO;
+
+					/* ScenarioIndex=1 implies a new MODEL_FINAL is being built, load it to CAS, if already in CAS then drop first */
+					PROC CASUTIL;
+						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
+						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+						
+						DROPTABLE INCASLIB="CASUSER" CASDATA="SCENARIOS" QUIET;
+						LOAD DATA=store.SCENARIOS CASOUT="SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
+
+						DROPTABLE INCASLIB="CASUSER" CASDATA="INPUTS" QUIET;
+						LOAD DATA=store.INPUTS CASOUT="INPUTS" OUTCASLIB="CASUSER" PROMOTE;
+					QUIT;
+
+				%END;
+				%ELSE %DO;
+
+					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
+					PROC CASUTIL;
+						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
+						
+						LOAD DATA=work.SCENARIOS CASOUT="SCENARIOS" APPEND;
+						
+						LOAD DATA=work.INPUTS CASOUT="INPUTS" APPEND;
+					QUIT;
+
+				%END;
+
 
 				CAS CASAUTO TERMINATE;
+
 			%END;
+
+                PROC SQL;
+                    drop table work.MODEL_FINAL;
+                    drop table work.SCENARIOS;
+                    drop table work.INPUTS;
+                QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;
-            PROC SQL; drop table work.MODEL_FINAL; quit;
+            PROC SQL; 
+                drop table work.MODEL_FINAL; 
+            QUIT;
         %END;
-
 %mend;
 
 /* Test runs of EasyRun macro 
@@ -1583,4 +1627,3 @@ plots=YES
 		set run_scenarios;
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
-

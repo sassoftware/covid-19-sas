@@ -312,7 +312,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -410,8 +410,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -425,7 +425,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarioNameUnique = "Unique Scenario Name"
+						ScenarionNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -524,7 +524,7 @@ libname store "&homedir.";
 				ModelType="TMODEL - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -622,8 +622,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -637,7 +637,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarioNameUnique = "Unique Scenario Name"
+						ScenarionNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -703,7 +703,7 @@ libname store "&homedir.";
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -823,8 +823,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -838,7 +838,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarioNameUnique = "Unique Scenario Name"
+						ScenarionNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -906,7 +906,7 @@ libname store "&homedir.";
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -1030,8 +1030,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -1045,7 +1045,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarioNameUnique = "Unique Scenario Name"
+						ScenarionNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1237,7 +1237,7 @@ libname store "&homedir.";
 					ModelType="TMODEL - SEIR - OHIO FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+					ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -1335,8 +1335,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
+						Deceased_Today = "New Hospital Mortality"
+						Fatality = "New Hospital Mortality"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -1350,7 +1350,7 @@ libname store "&homedir.";
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
 						ScenarioIndex = "Unique Scenario ID"
-						ScenarioNameUnique = "Unique Scenario Name"
+						ScenarionNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
@@ -1383,90 +1383,7 @@ libname store "&homedir.";
 			TITLE; TITLE2;
 		%END;
 
-/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
 
-    /* TMODEL APPROACH FOR SEIR - SIMULATION APPROACH TO BOUNDS*/
-			/*DATA FOR PROC TMODEL APPROACHES*/
-				DATA DINIT(Label="Initial Conditions of Simulation");  
-                    S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-                    E_N = &E.;
-                    I_N = &I. / &DiagnosedRate.;
-                    R_N = &InitRecovered.;
-                    *R0  = &R_T.;
-                    /* what if range dips below zero? */
-                    DO SIGMA = &SIGMA-.3 to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = &RecoveryDays.-5 to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            DO SOCIALD = &SocialDistancing.-.1 to &SocialDistancing.+.1 by .05; 
-                                GAMMA = 1 / RECOVERYDAYS;
-                                BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - SOCIALD);
-                                DO R0 = (BETA / GAMMA * &Population.)-2 to (BETA / GAMMA * &Population.)+2 by .1; /* range of 2, increment by .1*/
-                                    DO TIME = 0 TO &N_DAYS.;
-                                        OUTPUT; 
-                                    END;
-                                END;
-                            END;
-                        END;
-                    END; 
-				RUN;
-
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
-			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* PARAMETER SETTINGS */ 
-				*PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
-				*BOUNDS 1 <= R0 <= 13;
-				*RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
-				*GAMMA = &GAMMA.;
-				*SIGMA = &SIGMA.;
-				*change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
-				*change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				*change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
-				*change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
-				*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
-				*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
-				/* DIFFERENTIAL EQUATIONS */ 
-				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
-				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
-				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = SIGMA*E_N - GAMMA*I_N;
-				/* d. Recovered and death humans through "promotion" inflow from c.*/
-				DERT.R_N = GAMMA*I_N;           
-				/* SOLVE THE EQUATIONS */ 
-				SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR; 
-                by Sigma RECOVERYDAYS SOCIALD R0;
-			RUN;
-			QUIT;
-
-
-            proc sql;
-                create table TMODEL_SEIR as
-                    select Sigma,R0,Gamma,S_N,E_N,I_N,R_N,Time
-                    from TMODEL_SEIR
-                    order by Sigma,R0, SOCIALD, Gamma,Time;
-            quit;
-            data TMODEL_SEIR;
-                set TMODEL_SEIR;
-                format date date9.;
-                *date="&CurrentDate"d+time-1;
-                DATE = &DAY_ZERO. + Time;
-            run;
-            proc sql;
-                create table TMODEL_SEIR as	
-                    select min(I_N) as lower, max(I_N) as upper, mean(I_N) as middle, Date
-                    from TMODEL_SEIR
-                    group by Date
-                ;
-            quit;
-
-            PROC SGPLOT DATA=TMODEL_SEIR;
-                TITLE "TMODEL SEIR - Plot of I with bounds from simulation";
-                band x=Date lower=lower upper=upper / legendlabel="Band for I" name="band1";
-                SERIES X=DATE Y=middle / LINEATTRS=(THICKNESS=2);
-                XAXIS LABEL="Date";
-                YAXIS LABEL="I";
-            RUN;
 
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */
@@ -1493,22 +1410,6 @@ libname store "&homedir.";
     /* code to manage output tables in STORE and CAS table management (coming soon) */
         %IF &ScenarioExist = 0 %THEN %DO;
 
-				/*CREATE FLAGS FOR DAYS WITH PEAK VALUES OF DIFFERENT METRICS*/
-					PROC SQL;
-						CREATE TABLE WORK.MODEL_FINAL AS
-							SELECT *,
-								CASE when HOSPITAL_OCCUPANCY = max(HOSPITAL_OCCUPANCY) then 1 else 0 END as PEAK_HOSPITAL_OCCUPANCY LABEL="Peak Value: Current Hospitalized Census",
-								CASE when ICU_OCCUPANCY = max(ICU_OCCUPANCY) then 1 else 0 END as PEAK_ICU_OCCUPANCY LABEL="Peak Value: Current Hospital ICU Census",
-								CASE when VENT_OCCUPANCY = max(VENT_OCCUPANCY) then 1 else 0 END as PEAK_VENT_OCCUPANCY LABEL="Peak Value: Current Hospital Ventilator Patients",
-								CASE when ECMO_OCCUPANCY = max(ECMO_OCCUPANCY) then 1 else 0 END as PEAK_ECMO_OCCUPANCY LABEL="Peak Value: Current Hospital ECMO Patients",
-								CASE when DIAL_OCCUPANCY = max(DIAL_OCCUPANCY) then 1 else 0 END as PEAK_DIAL_OCCUPANCY LABEL="Peak Value: Current Hospital Dialysis Patients",
-								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
-								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
-							FROM WORK.MODEL_FINAL
-							GROUP BY SCENARIONAMEUNIQUE, MODELTYPE
-							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE
-						;
-					QUIT;
 
                 PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                 PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
@@ -1565,7 +1466,16 @@ libname store "&homedir.";
                 drop table work.MODEL_FINAL; 
             QUIT;
         %END;
+
 %mend;
+
+* dc - new macros --------------------------;
+	* there are new parameters that will provide controls in the UI via checkboxes or radio buttons;
+	%let runBatch=YES; *default for when running batch mode;
+	%let runCSV=NO; * default to 'NO' for JES code used to run the csv scripts;
+	%let runAdhoc=NO; *used for running an individual scenario that will not be appended, but will replace the adhoc... copy of the tables;
+	%let append=YES;
+* dc end -----------------------------------;
 
 /* Test runs of EasyRun macro 
 	IMPORTANT NOTES: 
@@ -1574,147 +1484,199 @@ libname store "&homedir.";
 			These need to be set for your population.
 			They can be reviewed within the %EasyRun macro at the very top.
 */
-%EasyRun(
-scenario=Scenario_DrS_00_20_run_1,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAR2020'd,
-SocialDistancingChange=0,
-ISOChangeDateTwo='06APR2020'd,
-SocialDistancingChangeTwo=0.2,
-ISOChangeDate3='20APR2020'd,
-SocialDistancingChange3=0.5,
-ISOChangeDate4='01MAY2020'd,
-SocialDistancingChange4=0.3,
-FatalityRate=0,
-plots=YES	
-);
-	
-%EasyRun(
-scenario=Scenario_DrS_00_40_run_1,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAR2020'd,
-SocialDistancingChange=0,
-ISOChangeDateTwo='06APR2020'd,
-SocialDistancingChangeTwo=0.4,
-ISOChangeDate3='20APR2020'd,
-SocialDistancingChange3=0.5,
-ISOChangeDate4='01MAY2020'd,
-SocialDistancingChange4=0.3,
-FatalityRate=0,
-plots=YES	
-);
-	
-%EasyRun(
-scenario=Scenario_DrS_00_40_run_12,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAY2020'd,
-SocialDistancingChange=0.25,
-ISOChangeDateTwo='06AUG2020'd,
-SocialDistancingChangeTwo=0.5,
-ISOChangeDate3='20AUG2020'd,
-SocialDistancingChange3=0.4,
-ISOChangeDate4='01SEP2020'd,
-SocialDistancingChange4=0.2,
-FatalityRate=0,
-plots=YES	
-);
 
-/* Scenarios can be run in batch by specifying them in a sas dataset.
-    In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
-    An example run_scenarios.csv file is provided with this code.
+* dc - macro condition for 3 %easyRun calls ---------------------------------; 
+	* this is where the macro calls happen;
+	%if runBatch=YES %then %do;
+* ---------------------------------------------------------------------------;
 
-	IMPORTANT NOTES: 
-		The example run_scenarios.csv file has columns for all the positional macro variables.  
-		There are even more keyword parameters available.
-			These need to be set for your population.
-			They can be reviewed within the %EasyRun macro at the very top.
-		THEN:
-			you can set fixed values for the keyword parameters in the %EasyRun definition call
-			OR
-			you can add columns for the keyword parameters to this input file
 
-	You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
-*/
-%macro run_scenarios(ds);
-	/* import file */
-	PROC IMPORT DATAFILE="&homedir./&ds."
-		DBMS=CSV
-		OUT=run_scenarios
-		REPLACE;
-		GETNAMES=YES;
-	RUN;
-	/* extract column names into space delimited string stored in macro variable &names */
-	PROC SQL noprint;
-		select name into :names separated by ' '
-	  		from dictionary.columns
-	  		where memname = 'RUN_SCENARIOS';
-		select name into :dnames separated by ' '
-	  		from dictionary.columns
-	  		where memname = 'RUN_SCENARIOS' and substr(format,1,4)='DATE';
-	QUIT;
-	/* change date variables to character and of the form 'ddmmmyyyy'd */
-	%DO i = 1 %TO %sysfunc(countw(&dnames.));
-		%LET dname = %scan(&dnames,&i);
-		data run_scenarios(drop=x);
-			set run_scenarios(rename=(&dname.=x));
-			&dname.="'"||put(x,date9.)||"'d";
-		run;
-	%END;
-	/* build a call to %EasyRun for each row in run_scenarios */
-	%GLOBAL cexecute;
-	%DO i=1 %TO %sysfunc(countw(&names.));
-		%LET next_name = %scan(&names, &i);
-		%IF &i = 1 %THEN %DO;
-			%LET cexecute = "&next_name.=",&next_name.; 
-		%END;
-		%ELSE %DO;
-			%LET cexecute = &cexecute ,", &next_name.=",&next_name;
-		%END;
-	%END;
-%mend;
+    %EasyRun(
+    scenario=Scenario_DrS_00_20_run_1,
+    IncubationPeriod=0,
+    InitRecovered=0,
+    RecoveryDays=14,
+    doublingtime=5,
+    KnownAdmits=10,
+    Population=4390484,
+    SocialDistancing=0,
+    MarketSharePercent=0.29,
+    Admission_Rate=0.075,
+    ICUPercent=0.45,
+    VentPErcent=0.35,
+    ISOChangeDate='31MAR2020'd,
+    SocialDistancingChange=0,
+    ISOChangeDateTwo='06APR2020'd,
+    SocialDistancingChangeTwo=0.2,
+    ISOChangeDate3='20APR2020'd,
+    SocialDistancingChange3=0.5,
+    ISOChangeDate4='01MAY2020'd,
+    SocialDistancingChange4=0.3,
+    FatalityRate=0,
+    plots=YES	
+    );
+        
+    %EasyRun(
+    scenario=Scenario_DrS_00_40_run_1,
+    IncubationPeriod=0,
+    InitRecovered=0,
+    RecoveryDays=14,
+    doublingtime=5,
+    KnownAdmits=10,
+    Population=4390484,
+    SocialDistancing=0,
+    MarketSharePercent=0.29,
+    Admission_Rate=0.075,
+    ICUPercent=0.45,
+    VentPErcent=0.35,
+    ISOChangeDate='31MAR2020'd,
+    SocialDistancingChange=0,
+    ISOChangeDateTwo='06APR2020'd,
+    SocialDistancingChangeTwo=0.4,
+    ISOChangeDate3='20APR2020'd,
+    SocialDistancingChange3=0.5,
+    ISOChangeDate4='01MAY2020'd,
+    SocialDistancingChange4=0.3,
+    FatalityRate=0,
+    plots=YES	
+    );
+        
+    %EasyRun(
+    scenario=Scenario_DrS_00_40_run_12,
+    IncubationPeriod=0,
+    InitRecovered=0,
+    RecoveryDays=14,
+    doublingtime=5,
+    KnownAdmits=10,
+    Population=4390484,
+    SocialDistancing=0,
+    MarketSharePercent=0.29,
+    Admission_Rate=0.075,
+    ICUPercent=0.45,
+    VentPErcent=0.35,
+    ISOChangeDate='31MAY2020'd,
+    SocialDistancingChange=0.25,
+    ISOChangeDateTwo='06AUG2020'd,
+    SocialDistancingChangeTwo=0.5,
+    ISOChangeDate3='20AUG2020'd,
+    SocialDistancingChange3=0.4,
+    ISOChangeDate4='01SEP2020'd,
+    SocialDistancingChange4=0.2,
+    FatalityRate=0,
+    plots=YES	
+    );
 
-%run_scenarios(run_scenarios.csv);
-	/* use the &cexecute variable and the run_scenario dataset to run all the scenarios with call execute */
-	data _null_;
-		set run_scenarios;
-		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
-	run;
-/*
-proc sql;
-    drop table store.MODEL_FINAL;
-    drop table store.SCENARIOS;
-    drop table store.INPUTS;
-    drop table store.MODEL_FINAL_SIM;
-    *drop table store.ohio_summary;
-quit;
-*/
+    * dc - macro condition for 'individual' new %easyRun calls ---------------------------------; 
+    %end;
+    %else %if runBatch=NO %then %do;
+        %EasyRun(
+        scenario=Scenario_DrS_00_40_run_12,
+        IncubationPeriod=0,
+        InitRecovered=0,
+        RecoveryDays=14,
+        doublingtime=5,
+        KnownAdmits=10,
+        Population=4390484,
+        SocialDistancing=0,
+        MarketSharePercent=0.29,
+        Admission_Rate=0.075,
+        ICUPercent=0.45,
+        VentPErcent=0.35,
+        ISOChangeDate='31MAY2020'd,
+        SocialDistancingChange=0.25,
+        ISOChangeDateTwo='06AUG2020'd,
+        SocialDistancingChangeTwo=0.5,
+        ISOChangeDate3='20AUG2020'd,
+        SocialDistancingChange3=0.4,
+        ISOChangeDate4='01SEP2020'd,
+        SocialDistancingChange4=0.2,
+        FatalityRate=0,
+        plots=YES	
+        );
+    %end;
+
+    * dc - macro condition for csv run ---------------------------------; 
+    %if runCSV=YES %then %do;
+    * ------------------------------------------------------------------;
+
+        /* Scenarios can be run in batch by specifying them in a sas dataset.
+            In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
+            An example run_scenarios.csv file is provided with this code.
+
+            IMPORTANT NOTES: 
+                The example run_scenarios.csv file has columns for all the positional macro variables.  
+                There are even more keyword parameters available.
+                    These need to be set for your population.
+                    They can be reviewed within the %EasyRun macro at the very top.
+                THEN:
+                    you can set fixed values for the keyword parameters in the %EasyRun definition call
+                    OR
+                    you can add columns for the keyword parameters to this input file
+
+            You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
+        */
+        %macro run_scenarios(ds);
+            /* import file */
+            PROC IMPORT DATAFILE="&homedir./&ds."
+                DBMS=CSV
+                OUT=run_scenarios
+                REPLACE;
+                GETNAMES=YES;
+            RUN;
+            /* extract column names into space delimited string stored in macro variable &names */
+            PROC SQL noprint;
+                select name into :names separated by ' '
+                    from dictionary.columns
+                    where memname = 'RUN_SCENARIOS';
+                select name into :dnames separated by ' '
+                    from dictionary.columns
+                    where memname = 'RUN_SCENARIOS' and substr(format,1,4)='DATE';
+            QUIT;
+            /* change date variables to character and of the form 'ddmmmyyyy'd */
+            %DO i = 1 %TO %sysfunc(countw(&dnames.));
+                %LET dname = %scan(&dnames,&i);
+                data run_scenarios(drop=x);
+                    set run_scenarios(rename=(&dname.=x));
+                    &dname.="'"||put(x,date9.)||"'d";
+                run;
+            %END;
+            /* build a call to %EasyRun for each row in run_scenarios */
+            %GLOBAL cexecute;
+            %DO i=1 %TO %sysfunc(countw(&names.));
+                %LET next_name = %scan(&names, &i);
+                %IF &i = 1 %THEN %DO;
+                    %LET cexecute = "&next_name.=",&next_name.; 
+                %END;
+                %ELSE %DO;
+                    %LET cexecute = &cexecute ,", &next_name.=",&next_name;
+                %END;
+            %END;
+        %mend;
+
+        %run_scenarios(run_scenarios.csv);
+            /* use the &cexecute variable and the run_scenario dataset to run all the scenarios with call execute */
+            data _null_;
+                set run_scenarios;
+                call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
+            run;
+
+    * dc - end macro condition for csv run ---------------------------------;   
+    %end;
+    * ----------------------------------------------------------------------;
+
+
+    * dc - macro conditions for which cas tables to update/append ---------------------------------; 
+    %if runAdhoc=YES %then %do;
+        DROPTABLE INCASLIB="CASUSER" CASDATA="adhoc_MODEL_FINAL" QUIET;
+        LOAD DATA=word.MODEL_FINAL CASOUT="adhoc_MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
+        
+        DROPTABLE INCASLIB="CASUSER" CASDATA="adhoc_INPUTS" QUIET;
+        LOAD DATA=work.INPUTS CASOUT="adhoc_INPUTS" OUTCASLIB="CASUSER" PROMOTE; *this might not be needed;
+    %end;
+                
+    %if append=YES %then %do;
+        LOAD DATA=word.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" append;
+        LOAD DATA=word.INPUTS CASOUT="INPUTS" OUTCASLIB="CASUSER" append;
+    %end; 
+    * ----------------------------------------------------------------------------------------------;
+

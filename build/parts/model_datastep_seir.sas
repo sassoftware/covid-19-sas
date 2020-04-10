@@ -9,7 +9,7 @@ X_IMPORT: parameters.sas
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarionNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -76,5 +76,5 @@ X_IMPORT: postprocess.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
