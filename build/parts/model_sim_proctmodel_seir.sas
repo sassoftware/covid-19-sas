@@ -9,7 +9,7 @@
                     /* what if range dips below zero? */
                     DO SIGMA = &SIGMA-.3 to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
                         DO RECOVERYDAYS = &RecoveryDays.-5 to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            DO SOCIALD = &SocialDistancing.-.1 to &SocialDistancing.+.1 by .01; 
+                            DO SOCIALD = &SocialDistancing.-.1 to &SocialDistancing.+.1 by .05; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);

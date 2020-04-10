@@ -443,8 +443,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -749,8 +749,8 @@ libname store "&homedir.";
 						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
 						MARKET_ECMO = "New Region ECMO Patients"
 						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality"
-						Fatality = "New Hospital Mortality"
+						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
+						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
 						Total_Deaths = "Cumulative Hospital Mortality"
 						Market_Deceased_Today = "New Region Mortality"
 						Market_Fatality = "New Region Mortality"
@@ -797,6 +797,7 @@ libname store "&homedir.";
 			TITLE; TITLE2;
 		%END;
 
+/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
 
 
     %IF &PLOTS. = YES %THEN %DO;
@@ -824,6 +825,22 @@ libname store "&homedir.";
     /* code to manage output tables in STORE and CAS table management (coming soon) */
         %IF &ScenarioExist = 0 %THEN %DO;
 
+				/*CREATE FLAGS FOR DAYS WITH PEAK VALUES OF DIFFERENT METRICS*/
+					PROC SQL;
+						CREATE TABLE WORK.MODEL_FINAL AS
+							SELECT *,
+								CASE when HOSPITAL_OCCUPANCY = max(HOSPITAL_OCCUPANCY) then 1 else 0 END as PEAK_HOSPITAL_OCCUPANCY LABEL="Peak Value: Current Hospitalized Census",
+								CASE when ICU_OCCUPANCY = max(ICU_OCCUPANCY) then 1 else 0 END as PEAK_ICU_OCCUPANCY LABEL="Peak Value: Current Hospital ICU Census",
+								CASE when VENT_OCCUPANCY = max(VENT_OCCUPANCY) then 1 else 0 END as PEAK_VENT_OCCUPANCY LABEL="Peak Value: Current Hospital Ventilator Patients",
+								CASE when ECMO_OCCUPANCY = max(ECMO_OCCUPANCY) then 1 else 0 END as PEAK_ECMO_OCCUPANCY LABEL="Peak Value: Current Hospital ECMO Patients",
+								CASE when DIAL_OCCUPANCY = max(DIAL_OCCUPANCY) then 1 else 0 END as PEAK_DIAL_OCCUPANCY LABEL="Peak Value: Current Hospital Dialysis Patients",
+								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
+								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
+							FROM WORK.MODEL_FINAL
+							GROUP BY SCENARIONNAMEUNIQUE, MODELTYPE
+							ORDER BY SCENARIONNAMEUNIQUE, MODELTYPE, DATE
+						;
+					QUIT;
             /* CCF specific post-processing of MODEL_FINAL */
             /*pull real COVID admits and ICU*/
                 proc sql; 
@@ -942,7 +959,6 @@ libname store "&homedir.";
                 drop table work.MODEL_FINAL; 
             QUIT;
         %END;
-
 %mend;
 
 /* Test runs of EasyRun macro 
@@ -1087,4 +1103,3 @@ plots=YES
 		set run_scenarios;
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
-
