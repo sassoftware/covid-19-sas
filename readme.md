@@ -1,8 +1,8 @@
-# covid
-COVID-19 tool development
+# covid-19-sas
 
-An open collaboration between the Cleveland Clinic and SAS Institute.
+This is a collaboration space for SAS and others to understand, model, and mitigate COVID-19 through analytics.
 
+## SIR & SEIR Modeling (with CCF)
 
-# New Location
-The ongoing development of these tools has been relocated to [sassoftware / covid-19-sas / ccf](https://github.com/sassoftware/covid-19-sas/tree/master/CCF) as part of the repository [sassoftware / covid-19-sas](https://github.com/sassoftware/covid-19-sas).
+This first entry is a collaboration between the Cleveland Clinic and SAS Institute. Explore [the /CCF folder](./CCF)
+for code and documentation about the model implementation.
