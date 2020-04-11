@@ -9,6 +9,8 @@ for code and documentation about the model implementation.
 
 ### Outputs from sample scenarios
 
-![](./CCF/sample-output/dailyocc_tmodel_seir.png | width=400)
-![](./CCF/sample-output/prd_vs_act.png | width=400)
-![](./CCF/sample-output/dailyocc_all.png | width=400)
+<img alt="Daily Hosp. Occ. via SEIR approach using TMODEL" src="./CCF/sample-output/dailyocc_tmodel_seir.png" width="400"/>
+
+<img alt="Act vs Pred in scenario" src="./CCF/sample-output/prd_vs_act.png" width="400"/>
+
+<img alt="Daily Hosp. Occ. all approaches" src="./CCF/sample-output/dailyocc_all.png" width="400"/>
