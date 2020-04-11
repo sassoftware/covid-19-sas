@@ -1,0 +1,143 @@
+/* PHARMASUG SIR METHODS */
+data arrepi (keep=t s i r);
+    /* Parameter settings */
+    N = 1000;
+    R0 = 1.4;
+    inf = 3;
+    gamma = 1/inf;
+    beta = R0*gamma/N;
+    array s_arr(90);
+    array i_arr(90);
+    array r_arr(90);
+    do t = 1 to 90;
+        /* initial conditions */
+        if t = 1 then do;
+            s_arr(1) = 1000;
+            i_arr(1) = 1;
+            r_arr(1) = 0;
+        end;
+        else do;
+            s_arr(t) = s_arr(t-1)-beta*s_arr(t-1)*i_arr(t-1);
+            i_arr(t) = i_arr(t-1)+beta*s_arr(t-1)*i_arr(t-1)-gamma*i_arr(t-1);
+            r_arr(t) = r_arr(t-1)+gamma*i_arr(t-1);
+        end;
+        /* output compartments */
+        s = s_arr(t);
+        i = i_arr(t);
+        r = r_arr(t);
+        output;
+    end;
+run;
+PROC SGPLOT DATA=arrepi;
+    SERIES X=t Y=i / LINEATTRS=(THICKNESS=2);
+    XAXIS LABEL="Date";
+    YAXIS LABEL="Daily Occupancy";
+RUN;
+
+
+/* LOOP VERSION */
+%LET N_DAYS = 90;
+%LET DIAGNOSED_RATE = 1.0;
+%LET S = 4390484;
+%LET I = 459.770114942528;
+%LET R = 0;
+%LET BETA = 5.013728017813E-8;
+%LET GAMMA = 0.07142857142857;
+DATA DS_SIR;
+    GAMMA=1/3;
+    BETA=1.4*GAMMA/1000;
+	DO DAY = 0 TO &N_DAYS;
+		IF DAY = 0 THEN DO;
+			*S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
+			*I_N = &I/&DIAGNOSED_RATE;
+			*R_N = &R;
+			*BETA=&BETA;
+			*N = SUM(S_N, I_N, R_N);
+            S_N = 1000;
+            I_N = 1;
+            R_N = 0;
+		END;
+		ELSE DO;
+			S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
+			I_N = (BETA * LAG_S * LAG_I - GAMMA * LAG_I) + LAG_I;
+			R_N = GAMMA * LAG_I + LAG_R;
+			*N = SUM(S_N, I_N, R_N);
+			*SCALE = LAG_N / N;
+			IF S_N < 0 THEN S_N = 0;
+			IF I_N < 0 THEN I_N = 0;
+			IF R_N < 0 THEN R_N = 0;
+			*S_N = SCALE*S_N;
+			*I_N = SCALE*I_N;
+			*R_N = SCALE*R_N;
+		END;
+		LAG_S = S_N;
+		LAG_I = I_N;
+		LAG_R = R_N;
+		*LAG_N = N;
+		*LAG_BETA = BETA;
+		OUTPUT;
+    END;
+RUN;
+PROC SGPLOT DATA=DS_SIR;
+    SERIES X=day Y=i_n / LINEATTRS=(THICKNESS=2);
+    XAXIS LABEL="Date";
+    YAXIS LABEL="Daily Occupancy";
+RUN;
+
+
+
+
+
+/* LOOP VERSION */
+%LET N_DAYS = 365;
+%LET DIAGNOSED_RATE = 1.0;
+%LET S = 4390484;
+%LET E = 0;
+%LET I = 459.770114942528;
+%LET R = 0;
+%LET BETA = 5.013728017813E-8;
+%LET BETA_DECAY = 0;
+%LET SIGMA = 0.90;
+%LET GAMMA = 0.07142857142857;
+%LET IncubationPeriod = 0;
+%LET DAY_ZERO = 13MAR2020;
+%LET HOSP_RATE = 0.075;
+%LET MARKET_SHARE = .29 ;
+%LET HOSP_LOS = 7;
+DATA DS_SIR;
+	DO DAY = 0 TO &N_DAYS;
+		IF DAY = 0 THEN DO;
+			S_N = &S - (&I/&DIAGNOSED_RATE) - &R;
+			I_N = &I/&DIAGNOSED_RATE;
+			R_N = &R;
+			BETA=&BETA;
+			N = SUM(S_N, I_N, R_N);
+		END;
+		ELSE DO;
+			BETA = LAG_BETA * (1- &BETA_DECAY);
+			S_N = (-BETA * LAG_S * LAG_I) + LAG_S;
+			I_N = (BETA * LAG_S * LAG_I - &GAMMA * LAG_I) + LAG_I;
+			R_N = &GAMMA * LAG_I + LAG_R;
+			N = SUM(S_N, I_N, R_N);
+			SCALE = LAG_N / N;
+			IF S_N < 0 THEN S_N = 0;
+			IF I_N < 0 THEN I_N = 0;
+			IF R_N < 0 THEN R_N = 0;
+			S_N = SCALE*S_N;
+			I_N = SCALE*I_N;
+			R_N = SCALE*R_N;
+		END;
+		LAG_S = S_N;
+		LAG_I = I_N;
+		LAG_R = R_N;
+		LAG_N = N;
+		LAG_BETA = BETA;
+        DATE = "&DAY_ZERO"D + DAY;
+		OUTPUT;
+    END;
+RUN;
+PROC SGPLOT DATA=DS_SIR;
+    SERIES X=day Y=i_n / LINEATTRS=(THICKNESS=2);
+    XAXIS LABEL="Date";
+    YAXIS LABEL="Daily Occupancy";
+RUN;
