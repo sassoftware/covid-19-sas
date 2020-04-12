@@ -7,7 +7,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 */
 
 /* directory path for files: COVID_19.sas (this file), libname store */
-%let homedir = /Local_Files/covid;
+%let homedir = /Local_Files/covid-19-sas/ccf;
 
 /* the storage location for the MODEL_FINAL table and the SCENARIOS table */
 libname store "&homedir.";
@@ -1079,7 +1079,7 @@ libname store "&homedir.";
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
-	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
+	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT INTERVENE */
 		/* these are the calculations for variables used from above:
 			* calculated parameters used in model post-processing;
 				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
@@ -1169,18 +1169,20 @@ libname store "&homedir.";
 					%END;
 
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
-				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
-				%ELSE %DO; PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD_I NOPRINT; %END;
+				%ELSE %DO; PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD_I NOPRINT; %END;
 					/* Parameters of interest */
-					PARMS R0 &R_T. I0 &I.;
+					PARMS R0 &R_T. I0 &I. RI -1 DI &ISOChangeDate.;
 					BOUNDS 1 <= R0 <= 13;
+					RESTRICT RI + R0 > 0;
 					/* Fixed values */
 					N = &Population.;
 					INF = &RecoveryDays.;
 					SIGMA = &SIGMA.;
+					STEP = CDF('NORMAL',DATE, DI, 1);
 					/* Differential equations */
 					GAMMA = 1 / INF;
-					BETA = R0 * GAMMA / N;
+					BETA = (R0 + RI*STEP) * GAMMA / N;
 					/* Differential equations */
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA * S_N * I_N;
@@ -1192,49 +1194,86 @@ libname store "&homedir.";
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
-					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10
+					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED_I LTEBOUND=1E-10 OUTEST=PARAMS
 						%IF &HAVE_V151. = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;
 					OUTVARS S_N E_N I_N R_N;
 				QUIT;
 
+				/*Capture basline R0, date of Intervention effect, R0 after intervention*/
+				PROC SQL NOPRINT;
+					SELECT R0 INTO :R0_FIT FROM PARAMS;
+					SELECT "'"||PUT(DI,DATE9.)||"'"||"D" INTO :CURVEBEND1 FROM PARAMS;
+					SELECT SUM(R0,RI) INTO :R0_BEND_FIT FROM PARAMS;
+				QUIT;
+
+				/*Calculate observed social distancing (and other interventions) percentage*/
+				%LET SOC_DIST_FIT = %SYSEVALF(1 - &R0_BEND_FIT / &R0_FIT);
+
 				%IF &PLOTS. = YES %THEN %DO;
 					/* Plot Fit of Actual v. Predicted */
-					DATA EPIPRED;
-						SET EPIPRED;
+					DATA EPIPRED_I;
+						SET EPIPRED_I;
 						LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
 						FORMAT DATE DATE9.; 
 						DATE = &FIRST_CASE. + TIME -1;
 					run;
-					PROC SGPLOT DATA=EPIPRED;
+					PROC SGPLOT DATA=EPIPRED_I;
 						WHERE _TYPE_  NE 'RESIDUAL';
 						TITLE "Actual v. Predicted Infections in Region";
+						TITLE2 "Initial R0: %SYSFUNC(round(&R0_FIT.,.01))";
+						TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
 						SERIES X=DATE Y=CUMULATIVE_CASE_COUNT / LINEATTRS=(THICKNESS=2) GROUP=_TYPE_  MARKERS NAME="cases";
 						FORMAT CUMULATIVE_CASE_COUNT COMMA10.;
 					RUN;
-					TITLE;
+					TITLE;TITLE2;TITLE3;
 				%END;
 
 			/* DATA FOR PROC TMODEL APPROACHES */
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
+					FORMAT DATE DATE9.; 
 					DO TIME = 0 TO &N_DAYS.; 
 						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
 						E_N = &E.;
 						I_N = &I. / &DiagnosedRate.;
 						R_N = &InitRecovered.;
 						R0  = &R_T.;
+						DATE = &DAY_ZERO. + TIME;
 						OUTPUT; 
 					END; 
 				RUN;
 
-			/* Create SEIR Projections based on model fit above */
-				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
-				%ELSE %DO; PROC MODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
-					SOLVE CUMULATIVE_CASE_COUNT / TIME=TIME OUT=TMODEL_SEIR_FIT;
+			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
+				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
+					/* PARAMETER SETTINGS */ 
+					PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; 
+					BOUNDS 1 <= R0 <= 13;
+					RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
+					GAMMA = &GAMMA.;
+					SIGMA = &SIGMA.;
+					change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
+					change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
+					change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+					change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+					change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+					BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
+					/* DIFFERENTIAL EQUATIONS */ 
+					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
+					DERT.S_N = -BETA*S_N*I_N;
+					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
+					DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+					/* c. inflow from b. - outflow through recovery or death during illness*/
+					DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+					/* d. Recovered and death humans through "promotion" inflow from c.*/
+					DERT.R_N = GAMMA*I_N;           
+					/* SOLVE THE EQUATIONS */ 
+					SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR_FIT_I;
+				RUN;
 				QUIT;
 
-				DATA TMODEL_SEIR_FIT;
+				DATA TMODEL_SEIR_FIT_I;
 					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
-					ModelType="TMODEL - SEIR - OHIO FIT";
+					ModelType="TMODEL - SEIR - OHIO FIT INTER";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
@@ -1247,7 +1286,7 @@ libname store "&homedir.";
 					LAG_I = I_N; 
 					LAG_R = R_N; 
 					LAG_N = N; 
-					SET TMODEL_SEIR_FIT(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+					SET TMODEL_SEIR_FIT_I(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 					N = SUM(S_N, E_N, I_N, R_N);
 					SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -1357,21 +1396,26 @@ libname store "&homedir.";
 					DROP LAG: CUM: ;
 				RUN;
 
-				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
+				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
 				PROC SQL; 
-					drop table TMODEL_SEIR_FIT;
+					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
-					drop table EPIPRED;
-					drop table SEIRMOD;
+					drop table EPIPRED_I;
+					drop table SEIRMOD_I;
+					drop table PARAMS;
 				QUIT;
 
 		%END;
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - OHIO FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - OHIO FIT INTER' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
+				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -1380,10 +1424,8 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
-
-/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
 
 
     %IF &PLOTS. = YES %THEN %DO;

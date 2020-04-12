@@ -7,7 +7,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 */
 
 /* directory path for files: COVID_19.sas (this file), libname store */
-%let homedir = /Local_Files/covid;
+%let homedir = /Local_Files/covid-19-sas/ccf;
 
 /* the storage location for the MODEL_FINAL table and the SCENARIOS table */
 libname store "&homedir.";

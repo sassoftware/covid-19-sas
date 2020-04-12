@@ -129,9 +129,7 @@ X_IMPORT: model_datastep_sir.sas
 
 P_IMPORT: model_datastep_seir.sas
 
-X_IMPORT: model_proctmodel_seir_Ohio_I_Feed.sas
-
-/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
+P_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
 
 T_IMPORT: model_sim_proctmodel_seir.sas
 
