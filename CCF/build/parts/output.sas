@@ -1,7 +1,7 @@
     /* code to manage output tables in STORE and CAS table management (coming soon) */
         %IF &ScenarioExist = 0 %THEN %DO;
 
-X_IMPORT: peak_flags.sas
+X_IMPORT: peak_flags2.sas
 
 C_IMPORT: CCF_post.sas
 

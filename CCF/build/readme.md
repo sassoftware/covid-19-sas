@@ -10,6 +10,7 @@ The build.py file uses python to construct .SAS files for different users bases.
     - IMPORT: model * .sas
         - IMPORT: parameters.sas
         - IMPORT: postprocess.sas
+        - IMPORT: fit_input.sas (on methods with fitting this manages an input source - ohio data in our case)
     - IMPORT: output.sas
         - IMPORT: peak_flags.sas
         - IMPORT: CCF_post.sas
