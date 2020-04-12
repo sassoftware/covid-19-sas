@@ -91,21 +91,21 @@ In addition to the information shared within this readme and the commenting with
 This code computes SIR and SEIR models with different methods and different parameterizations, as described in the following. 
 
 The output file, MODEL_FINAL, uses the column ModelType to differentiate output from each of the following setups:
-- ModelType = 'DS - SIR'
+- **ModelType = 'DS - SIR'**
     - Fits a SIR model with Data Step
     - Initial values of `&SocialDistancing` contribute to `BETA` and then `&ISOChangeDate` used to step Beta down using `&SocialDistancingChange` at the specified date.  Similarly, `&ISOChangeDateTwo` and `&SocialDistancingChangeTwo` are and additional step down.
     - An internal parameter, `&BETA_DECAY`, is used to adjust `BETA` each day.  It is currently set to 0.
-- ModelType = 'DS - SEIR'
+- **ModelType = 'DS - SEIR'**
     - Fits an SEIR model with Data Step
     - Initial values of `&SocialDistancing` contribute to `BETA` and then `&ISOChangeDate` used to step Beta down using `&SocialDistancingChange` at the specified date.  Similarly, `&ISOChangeDateTwo` and `&SocialDistancingChangeTwo` are and additional step down.
     - An internal parameter, `&BETA_DECAY`, is used to adjust `BETA` each day.  It is currently set to 0.
-- ModelType = 'TMODEL - SEIR'
+- **ModelType = 'TMODEL - SEIR'**
     - Fits an SEIR model with PROC (T)MODEL 
     - The `BETA` parameter incorporates different `R0` parameters for each phase as defined by: before `&ISOChangeDate`, starting on `&ISOChangeDateTwo`, the period between these two
-- ModelType = 'TMODEL - SIR'
+- **ModelType = 'TMODEL - SIR'**
     - Fits an SEIR model with PROC (T)MODEL 
     - The `BETA` parameter incorporates different `R0` parameters for each phase as defined by: before `&ISOChangeDate`, starting on `&ISOChangeDateTwo`, the period between these two
-- ModelType = 'TMODEL - SEIR - FIT'
+- **ModelType = 'TMODEL - SEIR - FIT'**
     - This is a prototype for using a data feed of daily case counts from a geographical region.  In this prototype case it is a region of the state of Ohio in the United States.
         - The feed is stored in `STORE.FIT_INPUT`.  You could replace the data in the file with data from your region of analysis.
     - Fits a SEIR model with PROC (T)MODEL 
