@@ -281,6 +281,8 @@ libname store "&homedir.";
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PRED; set STORE.FIT_PRED; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PARMS; set STORE.FIT_PARMS; where ScenarioIndex=&ScenarioIndex.; run;
         %END;
         
     /* Prepare to create request plots from input parameter plots= */
@@ -602,6 +604,8 @@ libname store "&homedir.";
                 PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                 PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                 PROC APPEND base=store.INPUTS data=work.INPUTS; run;
+                PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
+                PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
 
@@ -646,12 +650,16 @@ libname store "&homedir.";
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS;
+                    drop table work.FIT_PRED;
+                    drop table work.FIT_PARMS;
                 QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;
             PROC SQL; 
                 drop table work.MODEL_FINAL; 
+                drop table work.FIT_PRED;
+                drop table work.FIT_PARMS;
             QUIT;
         %END;
 %mend;

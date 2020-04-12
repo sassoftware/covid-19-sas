@@ -23,13 +23,15 @@ In addition to the information shared within this readme and the commenting with
         - This option swaps out `PROC MODEL` for `PROC TMODEL`
         - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
     - If you have SAS Viya and want to manage the `STORE.MODEL_FINAL` table in CAS, then set `line 18` to YES
-        - with each scenario run the `STORE.MODEL_FINAL` table is loaded\replaced in CASUSER as `MODEL_FINAL`
+        - with each scenario run the `STORE.MODEL_FINAL` table the CASUSER table `MODEL_FINAL` are appended to (or created on first fun)
 - **RUN**
     - Make calls to the macro `%EasyRun`.  Example scenarios are at the end of the file.
     - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv`, is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
 - **REVIEW**
     - All model output for each call to `%EasyRun` saves in the dataset `STORE.MODEL_FINAL`
     - All of the parameters that lead to the results in `STORE.MODEL_FINAL` save in `STORE.SCENARIOS`, and all inputs to the macro also save to `STORE.INPUTS`.  The variable `SCENARIOINDEX` links these files.
+- **ADJUST inputs to your population**
+    - Change the input parameters to match the population you are working with.  If their is a wide range of scenarios you want to run then use the run_scenarios.csv method to easily submit all the combinations.
 
 # Input Definitions & Notes
 **INPUT:**
@@ -75,9 +77,12 @@ In addition to the information shared within this readme and the commenting with
 
 # Output Files Notes
 **OUTPUT:**
-- The model output saves to in `STORE.MODEL_FINAL` which has descriptive labels for each column.
-- The scenario parameters (input and calculated) are stored in `STORE.SCENARIOS` which has labels for each column and links to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
-- The inputs to the `%EasyRun` macro are stored in `STORE.INPUTS` for easy review and inclusion in reporting by linking to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
+- `STORE.MODEL_FINAL`: The model output saves to in `STORE.MODEL_FINAL` which has descriptive labels for each column.
+- `STORE.SCENARIOS`: The scenario parameters (input and calculated) are stored in `STORE.SCENARIOS` which has labels for each column and links to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
+- `STORE.INPUTS`: The inputs to the `%EasyRun` macro are stored in `STORE.INPUTS` for easy review and inclusion in reporting by linking to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
+- `STORE.FIT_INPUT`: The ModelType="TMODEL - SEIR - FIT" stores input data in `STORE.FIT_INPUT`. Links to other files on the columns `ModelType` and `ScenarioIndex`.
+- `STORE.FIT_PRED`: The ModelType="TMODEL - SEIR - FIT" stores prediction from the fit in `STORE.FIT_PRED` Links to other files on the columns `ModelType` and `ScenarioIndex`.
+- `STORE.FIT_PARMS`: The ModelType="TMODEL - SEIR - FIT" stores parameter estimates from the fit in `STORE.FIT_PARMS` Links to other files on the columns `ModelType` and `ScenarioIndex`.
 
 **IMPORTANT NOTE:** 
 - `STORE.MODEL_FINAL` stores each scenario and each model type with 1 row per day. Make sure you are viewing the results for a single scenario and single model type by filtering on the variables `ScenarioNameUnique` and `ModelType`
@@ -88,32 +93,26 @@ This code computes SIR and SEIR models with different methods and different para
 The output file, MODEL_FINAL, uses the column ModelType to differentiate output from each of the following setups:
 - ModelType = 'DS - SIR'
     - Fits a SIR model with Data Step
-    - Initial values of &SocialDistancing contribute to BETA and then &ISOChangeDate used to step Beta down using &SocialDistancingChange at the specified date.  Similarly, &ISOChangeDateTwo and &SocialDistancingChangeTwo are and additional step down.
-    - An internal parameter, &BETA_DECAY, is used to adjust BETA each day.  It is currently set to 0.
+    - Initial values of `&SocialDistancing` contribute to `BETA` and then `&ISOChangeDate` used to step Beta down using `&SocialDistancingChange` at the specified date.  Similarly, `&ISOChangeDateTwo` and `&SocialDistancingChangeTwo` are and additional step down.
+    - An internal parameter, `&BETA_DECAY`, is used to adjust `BETA` each day.  It is currently set to 0.
 - ModelType = 'DS - SEIR'
     - Fits an SEIR model with Data Step
-    - Initial values of &SocialDistancing contribute to BETA and then &ISOChangeDate used to step Beta down using &SocialDistancingChange at the specified date.  Similarly, &ISOChangeDateTwo and &SocialDistancingChangeTwo are and additional step down.
-    - An internal parameter, &BETA_DECAY, is used to adjust BETA each day.  It is currently set to 0.
+    - Initial values of `&SocialDistancing` contribute to `BETA` and then `&ISOChangeDate` used to step Beta down using `&SocialDistancingChange` at the specified date.  Similarly, `&ISOChangeDateTwo` and `&SocialDistancingChangeTwo` are and additional step down.
+    - An internal parameter, `&BETA_DECAY`, is used to adjust `BETA` each day.  It is currently set to 0.
 - ModelType = 'TMODEL - SEIR'
     - Fits an SEIR model with PROC (T)MODEL 
-    - The BETA parameter incorporates different R0 parameters for each phase as defined by: before &ISOChangeDate, starting on &ISOChangeDateTwo, the period between these two
+    - The `BETA` parameter incorporates different `R0` parameters for each phase as defined by: before `&ISOChangeDate`, starting on `&ISOChangeDateTwo`, the period between these two
 - ModelType = 'TMODEL - SIR'
     - Fits an SEIR model with PROC (T)MODEL 
-    - The BETA parameter incorporates different R0 parameters for each phase as defined by: before &ISOChangeDate, starting on &ISOChangeDateTwo, the period between these two
-- ModelType = 'TMODEL - SEIR - OHIO FIT'
-    - This is a prototype for using a data feed of daily case counts from a geographical region.  In this prototypes case it is a region of the state of Ohio in the United States.
-    - Fits and SEIR model with PROC (T)MODEL 
-    - Uses input data to fit cumulative cases by day
-    - The fitted model is used to solve the specification of the SEIR model.  This does not yet incorporate a change in BETA due to changes in Social Distancing.
-
-In the next few days, the model specification will be arranged into parts: the core model, specification of R0 over the time period, using a data feed as demonstrated in the prototype ModelType = 'TMODEL - SEIR - OHIO FIT.'
+    - The `BETA` parameter incorporates different `R0` parameters for each phase as defined by: before `&ISOChangeDate`, starting on `&ISOChangeDateTwo`, the period between these two
+- ModelType = 'TMODEL - SEIR - FIT'
+    - This is a prototype for using a data feed of daily case counts from a geographical region.  In this prototype case it is a region of the state of Ohio in the United States.
+        - The feed is stored in `STORE.FIT_INPUT`.  You could replace the data in the file with data from your region of analysis.
+    - Fits a SEIR model with PROC (T)MODEL 
+    - Uses input data to fit cumulative cases by day and stores the predictions in `STORE.FIT_PRED` as well as the parameter estimates in `STORE.FIT_PARMS`
+    - The fitted model is used to solve the specification of the SEIR model.
 
 # Notes
 - The current locked version of the project is in `COVID_19.sas`.
 - Progress towards the next locked version is in the `/progress` folder
 - the `COVID_19.sas` file is built from modular parts in `/build/parts` into the `/build/public` folder by `/build/build.py` and then copied here
-
-# Disclaimer
-These models are only as good as their inputs. Input values for this type of model are very dynamic and may need to be evaluated across wide ranges and reevaluated as the epidemic progresses.  This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.  You need to evaluate each parameter for your population of interest.
-
-SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
