@@ -51,7 +51,7 @@ X_IMPORT: parameters.sas
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 				LAG_S = S_N; 
 				LAG_E = E_N; 
@@ -70,7 +70,7 @@ X_IMPORT: postprocess.sas
 			
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
@@ -89,3 +89,5 @@ X_IMPORT: postprocess.sas
 			RUN;
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
+
+/*X_IMPORT: model_sim_proctmodel_seir.sas*/

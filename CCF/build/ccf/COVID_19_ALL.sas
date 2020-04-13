@@ -7,7 +7,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 */
 
 /* directory path for files: COVID_19.sas (this file), libname store */
-%let homedir = /Local_Files/covid;
+%let homedir = /Local_Files/covid-19-sas/ccf;
 
 /* the storage location for the MODEL_FINAL table and the SCENARIOS table */
 libname store "&homedir.";
@@ -281,6 +281,8 @@ libname store "&homedir.";
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PRED; set STORE.FIT_PRED; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PARMS; set STORE.FIT_PARMS; where ScenarioIndex=&ScenarioIndex.; run;
         %END;
         
     /* Prepare to create request plots from input parameter plots= */
@@ -363,7 +365,7 @@ libname store "&homedir.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 				LAG_S = S_N; 
 				LAG_E = E_N; 
@@ -485,7 +487,7 @@ libname store "&homedir.";
 			
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
@@ -504,6 +506,8 @@ libname store "&homedir.";
 			RUN;
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
+
+/*X_IMPORT: model_sim_proctmodel_seir.sas*/
 
 	/*PROC TMODEL SIR APPROACH*/
 		/* these are the calculations for variables used from above:
@@ -697,7 +701,7 @@ libname store "&homedir.";
 			
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
@@ -1127,7 +1131,7 @@ libname store "&homedir.";
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
 
-	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT */
+	/* PROC TMODEL SEIR APPROACH - WITH OHIO FIT INTERVENE */
 		/* these are the calculations for variables used from above:
 			* calculated parameters used in model post-processing;
 				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
@@ -1156,12 +1160,13 @@ libname store "&homedir.";
 		*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
-			/*DOWNLOAD CSV - only if STORE.OHIO_SUMMARY does not have data for yesterday */
+
+			/* START DOWNLOAD FIT_INPUT - only if STORE.FIT_INPUT does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
-				%IF %sysfunc(exist(STORE.OHIO_SUMMARY)) %THEN %DO;
+				%IF %sysfunc(exist(STORE.FIT_INPUT)) %THEN %DO;
 					PROC SQL NOPRINT; 
-						SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.OHIO_SUMMARY;
-						SELECT MAX(DATE) into :LATEST_CASE FROM STORE.OHIO_SUMMARY; 
+						SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
+						SELECT MAX(DATE) into :LATEST_CASE FROM STORE.FIT_INPUT; 
 					QUIT;
 				%END;
 				%ELSE %DO;
@@ -1184,7 +1189,7 @@ libname store "&homedir.";
 							%END;
 						/* Prepare Ohio Data For Model - add rows for missing days (had no activity) */
 							PROC SQL NOPRINT;
-								CREATE TABLE STORE.OHIO_SUMMARY AS 
+								CREATE TABLE STORE.FIT_INPUT AS 
 									SELECT INPUT(ONSET_DATE,ANYDTDTE9.) AS DATE FORMAT=DATE9., SUM(INPUT(CASE_COUNT,COMMA5.)) AS NEW_CASE_COUNT
 									FROM WORK.OHIO_SUMMARY
 									WHERE STRIP(UPCASE(COUNTY)) IN ('ASHLAND','ASHTABULA','CARROLL','COLUMBIANA','CRAWFORD',
@@ -1192,8 +1197,8 @@ libname store "&homedir.";
 										'PORTAGE','RICHLAND','STARK','SUMMIT','TRUMBULL','TUSCARAWAS','WAYNE')
 									GROUP BY CALCULATED DATE
 									ORDER BY CALCULATED DATE;
-								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.OHIO_SUMMARY;
-								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.OHIO_SUMMARY;
+								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
+								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.FIT_INPUT;
 								DROP TABLE WORK.OHIO_SUMMARY;
 							QUIT;
 
@@ -1205,8 +1210,8 @@ libname store "&homedir.";
 								END;
 							RUN;
 
-							DATA STORE.OHIO_SUMMARY;
-								MERGE ALLDATES STORE.OHIO_SUMMARY;
+							DATA STORE.FIT_INPUT;
+								MERGE ALLDATES STORE.FIT_INPUT;
 								BY DATE;
 								CUMULATIVE_CASE_COUNT + NEW_CASE_COUNT;
 							RUN;
@@ -1215,20 +1220,22 @@ libname store "&homedir.";
 								drop table ALLDATES;
 							QUIT; 
 					%END;
-
+            /* END DOWNLOAD FIT_INPUT **/
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
-				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
-				%ELSE %DO; PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD NOPRINT; %END;
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.FIT_INPUT OUTMODEL=SEIRMOD_I NOPRINT; %END;
+				%ELSE %DO; PROC MODEL DATA = STORE.FIT_INPUT OUTMODEL=SEIRMOD_I NOPRINT; %END;
 					/* Parameters of interest */
-					PARMS R0 &R_T. I0 &I.;
+					PARMS R0 &R_T. I0 &I. RI -1 DI &ISOChangeDate.;
 					BOUNDS 1 <= R0 <= 13;
+					RESTRICT RI + R0 > 0;
 					/* Fixed values */
 					N = &Population.;
 					INF = &RecoveryDays.;
 					SIGMA = &SIGMA.;
+					STEP = CDF('NORMAL',DATE, DI, 1);
 					/* Differential equations */
 					GAMMA = 1 / INF;
-					BETA = R0 * GAMMA / N;
+					BETA = (R0 + RI*STEP) * GAMMA / N;
 					/* Differential equations */
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA * S_N * I_N;
@@ -1240,49 +1247,83 @@ libname store "&homedir.";
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
 					/* Fit the data */
-					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED LTEBOUND=1E-10
+					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=FIT_PRED LTEBOUND=1E-10 OUTEST=FIT_PARMS
 						%IF &HAVE_V151. = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;
 					OUTVARS S_N E_N I_N R_N;
 				QUIT;
 
-				%IF &PLOTS. = YES %THEN %DO;
-					/* Plot Fit of Actual v. Predicted */
-					DATA EPIPRED;
-						SET EPIPRED;
-						LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
-						FORMAT DATE DATE9.; 
-						DATE = &FIRST_CASE. + TIME -1;
-					run;
-					PROC SGPLOT DATA=EPIPRED;
-						WHERE _TYPE_  NE 'RESIDUAL';
-						TITLE "Actual v. Predicted Infections in Region";
-						SERIES X=DATE Y=CUMULATIVE_CASE_COUNT / LINEATTRS=(THICKNESS=2) GROUP=_TYPE_  MARKERS NAME="cases";
-						FORMAT CUMULATIVE_CASE_COUNT COMMA10.;
-					RUN;
-					TITLE;
-				%END;
+			/* Prepare output: fit data and parameter data */
+				DATA FIT_PRED;
+					SET FIT_PRED;
+					LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
+					FORMAT ModelType $30. DATE DATE9.; 
+					DATE = &FIRST_CASE. + TIME - 1;
+					ModelType="TMODEL - SEIR - FIT";
+					ScenarioIndex=&ScenarioIndex.;
+				run;
+				DATA FIT_PARMS;
+					SET FIT_PARMS;
+					FORMAT ModelType $30.; 
+					ModelType="TMODEL - SEIR - FIT";
+					ScenarioIndex=&ScenarioIndex.;
+				run;
+
+			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
+				PROC SQL NOPRINT;
+					SELECT R0 INTO :R0_FIT FROM FIT_PARMS;
+					SELECT "'"||PUT(DI,DATE9.)||"'"||"D" INTO :CURVEBEND1 FROM FIT_PARMS;
+					SELECT SUM(R0,RI) INTO :R0_BEND_FIT FROM FIT_PARMS;
+				QUIT;
+
+			/*Calculate observed social distancing (and other interventions) percentage*/
+				%LET SOC_DIST_FIT = %SYSEVALF(1 - &R0_BEND_FIT / &R0_FIT);
 
 			/* DATA FOR PROC TMODEL APPROACHES */
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
+					FORMAT DATE DATE9.; 
 					DO TIME = 0 TO &N_DAYS.; 
 						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
 						E_N = &E.;
 						I_N = &I. / &DiagnosedRate.;
 						R_N = &InitRecovered.;
 						R0  = &R_T.;
+						DATE = &DAY_ZERO. + TIME;
 						OUTPUT; 
 					END; 
 				RUN;
 
-			/* Create SEIR Projections based on model fit above */
-				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
-				%ELSE %DO; PROC MODEL DATA=DINIT MODEL=SEIRMOD NOPRINT; %END;
-					SOLVE CUMULATIVE_CASE_COUNT / TIME=TIME OUT=TMODEL_SEIR_FIT;
+			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
+				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
+				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
+					/* PARAMETER SETTINGS */ 
+					PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; 
+					BOUNDS 1 <= R0 <= 13;
+					RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
+					GAMMA = &GAMMA.;
+					SIGMA = &SIGMA.;
+					change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
+					change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
+					change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+					change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+					change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+					BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
+					/* DIFFERENTIAL EQUATIONS */ 
+					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
+					DERT.S_N = -BETA*S_N*I_N;
+					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
+					DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+					/* c. inflow from b. - outflow through recovery or death during illness*/
+					DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+					/* d. Recovered and death humans through "promotion" inflow from c.*/
+					DERT.R_N = GAMMA*I_N;           
+					/* SOLVE THE EQUATIONS */ 
+					SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR_FIT_I;
+				RUN;
 				QUIT;
 
-				DATA TMODEL_SEIR_FIT;
+				DATA TMODEL_SEIR_FIT_I;
 					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
-					ModelType="TMODEL - SEIR - OHIO FIT";
+					ModelType="TMODEL - SEIR - FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
@@ -1295,7 +1336,7 @@ libname store "&homedir.";
 					LAG_I = I_N; 
 					LAG_R = R_N; 
 					LAG_N = N; 
-					SET TMODEL_SEIR_FIT(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+					SET TMODEL_SEIR_FIT_I(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 					N = SUM(S_N, E_N, I_N, R_N);
 					SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -1405,21 +1446,50 @@ libname store "&homedir.";
 					DROP LAG: CUM: ;
 				RUN;
 
-				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT NOWARN FORCE; run;
+				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
 				PROC SQL; 
-					drop table TMODEL_SEIR_FIT;
+					drop table TMODEL_SEIR_FIT_I;
 					drop table DINIT;
-					drop table EPIPRED;
-					drop table SEIRMOD;
+					drop table SEIRMOD_I;
 				QUIT;
 
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
+
+			%IF &ScenarioExist ~= 0 %THEN %DO;
+				/* this is only needed to define macro varibles if the fit is being recalled.  
+					If it is being run above these will already be defined */
+					/*Capture basline R0, date of Intervention effect, R0 after intervention*/
+						PROC SQL NOPRINT;
+							SELECT R0 INTO :R0_FIT FROM FIT_PARMS;
+							SELECT "'"||PUT(DI,DATE9.)||"'"||"D" INTO :CURVEBEND1 FROM FIT_PARMS;
+							SELECT SUM(R0,RI) INTO :R0_BEND_FIT FROM FIT_PARMS;
+						QUIT;
+
+					/*Calculate observed social distancing (and other interventions) percentage*/
+						%LET SOC_DIST_FIT = %SYSEVALF(1 - &R0_BEND_FIT / &R0_FIT);
+			%END;
+
+			/* Plot Fit of Actual v. Predicted */
+			PROC SGPLOT DATA=work.FIT_PRED;
+				WHERE _TYPE_  NE 'RESIDUAL' and ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Actual v. Predicted Infections in Region";
+				TITLE2 "Initial R0: %SYSFUNC(round(&R0_FIT.,.01))";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
+				SERIES X=DATE Y=CUMULATIVE_CASE_COUNT / LINEATTRS=(THICKNESS=2) GROUP=_TYPE_  MARKERS NAME="cases";
+				FORMAT CUMULATIVE_CASE_COUNT COMMA10.;
+			RUN;
+			TITLE;TITLE2;TITLE3;
+
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - OHIO FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
-				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
+				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -1428,10 +1498,8 @@ libname store "&homedir.";
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 		%END;
-
-/*T_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas*/
 
 
     %IF &PLOTS. = YES %THEN %DO;
@@ -1461,19 +1529,102 @@ libname store "&homedir.";
 
 				/*CREATE FLAGS FOR DAYS WITH PEAK VALUES OF DIFFERENT METRICS*/
 					PROC SQL;
-						CREATE TABLE WORK.MODEL_FINAL AS
-							SELECT *,
-								CASE when HOSPITAL_OCCUPANCY = max(HOSPITAL_OCCUPANCY) then 1 else 0 END as PEAK_HOSPITAL_OCCUPANCY LABEL="Peak Value: Current Hospitalized Census",
-								CASE when ICU_OCCUPANCY = max(ICU_OCCUPANCY) then 1 else 0 END as PEAK_ICU_OCCUPANCY LABEL="Peak Value: Current Hospital ICU Census",
-								CASE when VENT_OCCUPANCY = max(VENT_OCCUPANCY) then 1 else 0 END as PEAK_VENT_OCCUPANCY LABEL="Peak Value: Current Hospital Ventilator Patients",
-								CASE when ECMO_OCCUPANCY = max(ECMO_OCCUPANCY) then 1 else 0 END as PEAK_ECMO_OCCUPANCY LABEL="Peak Value: Current Hospital ECMO Patients",
-								CASE when DIAL_OCCUPANCY = max(DIAL_OCCUPANCY) then 1 else 0 END as PEAK_DIAL_OCCUPANCY LABEL="Peak Value: Current Hospital Dialysis Patients",
-								CASE when I_N = max(I_N) then 1 else 0 END as PEAK_I_N LABEL="Peak Value: Current Infected Population",
-								CASE when FATALITY = max(FATALITY) then 1 else 0 END as PEAK_FATALITY LABEL="Peak Value: New Hospital Mortality"
-							FROM WORK.MODEL_FINAL
-							GROUP BY SCENARIONAMEUNIQUE, MODELTYPE
-							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE
-						;
+						CREATE TABLE work.MODEL_FINAL AS
+							SELECT MF.*, HOSP.PEAK_HOSPITAL_OCCUPANCY, ICU.PEAK_ICU_OCCUPANCY, VENT.PEAK_VENT_OCCUPANCY, 
+								ECMO.PEAK_ECMO_OCCUPANCY, DIAL.PEAK_DIAL_OCCUPANCY, I.PEAK_I_N, FATAL.PEAK_FATALITY
+							FROM work.MODEL_FINAL MF
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, HOSPITAL_OCCUPANCY, 1 AS PEAK_HOSPITAL_OCCUPANCY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING HOSPITAL_OCCUPANCY=MAX(HOSPITAL_OCCUPANCY)
+											) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) HOSP
+									ON MF.MODELTYPE = HOSP.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = HOSP.SCENARIONAMEUNIQUE
+										AND MF.DATE = HOSP.DATE
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, ICU_OCCUPANCY, 1 AS PEAK_ICU_OCCUPANCY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING ICU_OCCUPANCY=MAX(ICU_OCCUPANCY)
+											) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) ICU
+									ON MF.MODELTYPE = ICU.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = ICU.SCENARIONAMEUNIQUE
+										AND MF.DATE = ICU.DATE
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, VENT_OCCUPANCY, 1 AS PEAK_VENT_OCCUPANCY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING VENT_OCCUPANCY=MAX(VENT_OCCUPANCY)
+										) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) VENT
+									ON MF.MODELTYPE = VENT.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = VENT.SCENARIONAMEUNIQUE
+										AND MF.DATE = VENT.DATE
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, ECMO_OCCUPANCY, 1 AS PEAK_ECMO_OCCUPANCY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING ECMO_OCCUPANCY=MAX(ECMO_OCCUPANCY)
+										) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) ECMO
+									ON MF.MODELTYPE = ECMO.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = ECMO.SCENARIONAMEUNIQUE
+										AND MF.DATE = ECMO.DATE
+								LEFT JOIN
+									(SELECT * FROM
+										(SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, DIAL_OCCUPANCY, 1 AS PEAK_DIAL_OCCUPANCY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING DIAL_OCCUPANCY=MAX(DIAL_OCCUPANCY)
+										) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) DIAL
+									ON MF.MODELTYPE = DIAL.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = DIAL.SCENARIONAMEUNIQUE
+										AND MF.DATE = DIAL.DATE
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, I_N, 1 AS PEAK_I_N
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING I_N=MAX(I_N)
+										) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) I
+									ON MF.MODELTYPE = I.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = I.SCENARIONAMEUNIQUE
+										AND MF.DATE = I.DATE
+								LEFT JOIN
+									(SELECT *
+										FROM (SELECT MODELTYPE, SCENARIONAMEUNIQUE, DATE, FATALITY, 1 AS PEAK_FATALITY
+											FROM work.MODEL_FINAL
+											GROUP BY 1, 2
+											HAVING FATALITY=MAX(FATALITY)
+										) 
+										GROUP BY MODELTYPE, SCENARIONAMEUNIQUE
+										HAVING DATE=MIN(DATE)
+									) FATAL
+									ON MF.MODELTYPE = FATAL.MODELTYPE
+										AND MF.SCENARIONAMEUNIQUE = FATAL.SCENARIONAMEUNIQUE
+										AND MF.DATE = FATAL.DATE
+							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE;
 					QUIT;
             /* CCF specific post-processing of MODEL_FINAL */
             /*pull real COVID admits and ICU*/
@@ -1541,6 +1692,8 @@ libname store "&homedir.";
                 PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                 PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                 PROC APPEND base=store.INPUTS data=work.INPUTS; run;
+                PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
+                PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
 
 			%IF &CAS_LOAD=YES %THEN %DO;
 
@@ -1585,12 +1738,16 @@ libname store "&homedir.";
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS;
+                    drop table work.FIT_PRED;
+                    drop table work.FIT_PARMS;
                 QUIT;
 
         %END;
         %ELSE %IF &PLOTS. = YES %THEN %DO;
             PROC SQL; 
                 drop table work.MODEL_FINAL; 
+                drop table work.FIT_PRED;
+                drop table work.FIT_PARMS;
             QUIT;
         %END;
 %mend;
