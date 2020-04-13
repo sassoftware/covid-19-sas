@@ -138,7 +138,7 @@ X_IMPORT: postprocess.sas
 
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 
 			%IF &ScenarioExist ~= 0 %THEN %DO;
 				/* this is only needed to define macro varibles if the fit is being recalled.  
