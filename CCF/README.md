@@ -10,6 +10,8 @@ This code takes a set of input parameters and uses them in infectious disease mo
 # Documentation
 In addition to the information shared within this readme and the commenting within the code, you can also review the [documentation on the implementation of the models in SAS](./docs/seir-modeling).
 
+For a good understanding of the SIR and SEIR model approaches, we recommend this [very well written blog post](https://triplebyte.com/blog/modeling-infectious-diseases) from the folks at TRIPLEBYTE.
+
 # Getting Started
 - **PREPARE**
     - Download `COVID_19.sas` to your SAS environment
