@@ -64,7 +64,7 @@ X_IMPORT: postprocess.sas
 			
 		%END;
 
-		%IF &PLOTS. = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";

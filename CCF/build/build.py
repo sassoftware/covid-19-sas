@@ -2,9 +2,11 @@
 # the parts used for building are located in /parts
 # P_IMPORT: will import for public only
 # C_IMPORT: will import for ccf
+# U_IMPORT: will import for ui
 # X_IMPORT: will import for all
 #   If X then P then only P - not C
 #   If X then C then only C - not P
+#   If X then U then only U - not P or C
 # T_IMPORT: will import for test versions
 #   If X then T then only T - not P or C
 

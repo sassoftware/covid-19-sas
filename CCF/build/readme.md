@@ -8,22 +8,30 @@ The build.py file uses python to construct .SAS files for different users bases.
     - IMPORT: scenario_setup.sas
         - IMPORT: parameters.sas
     - IMPORT: model * .sas
+        - IMPORT: parameters.sas
         - IMPORT: postprocess.sas
-        - IMPORT: model_sim * .sas (in development)
-    - IMPORT: data_dictionary.sas
+        - IMPORT: fit_input.sas (on methods with fitting this manages an input source - ohio data in our case)
+    - IMPORT: output.sas
+        - IMPORT: peak_flags.sas
+        - IMPORT: CCF_post.sas
+        - IMPORT: CAS_post.sas
 - driver.sas - call macro %EasyRun
     - IMPORT: header.sas
     - IMPORT: orchestrate.sas
-    - IMPORT: CAS_post.sas
+    - IMPORT: example_macro.sas
+    - IMPORT: example_batchfile.sas
+    - IMPORT: test_cleanup.sas
 
 ### Import Types
 The build process has logic for the following types of imports.  
 - X_IMPORT: import for the CCF and Public versions of the code
 - P_IMPORT: import for the public version of the code
 - C_IMPORT: import for the CCF version of the code
+- U_IMPORT: import for the UI version of the code
 - T_IMPORT: import for the test version of the code - used to try new features before making available to users (public or ccf)
 The logic setup recursively calls parts while honoring a hierarchy of inclusion: 
 - Once a C_IMPORT part is called, all further import types are only written to C_IMPORT destinations
+- Once a U_IMPORT part is called, all further import types are only written to U_IMPORT destinations
 - Once a P_IMPORT part is called, all further import types are only written to P_IMPORT and X_IMPORT destinations
 - Once a T_IMPORT part is called, all further import type sare only written to T_IMPORT destinations
 

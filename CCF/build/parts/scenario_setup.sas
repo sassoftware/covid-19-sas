@@ -71,6 +71,8 @@ X_IMPORT: parameters.sas
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PRED; set STORE.FIT_PRED; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.FIT_PARMS; set STORE.FIT_PARMS; where ScenarioIndex=&ScenarioIndex.; run;
         %END;
         
     /* Prepare to create request plots from input parameter plots= */
