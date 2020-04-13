@@ -9,8 +9,9 @@ for code and documentation about the model implementation.
 
 ### Outputs from sample scenarios
 
-<img alt="Daily Hosp. Occ. via SEIR approach using TMODEL" src="./CCF/sample-output/dailyocc_tmodel_seir.png" width="400"/>
+Among other outputs, these analyses will create diagnostic visuals for each modeled scenario.
 
-<img alt="Act vs Pred in scenario" src="./CCF/sample-output/prd_vs_act.png" width="400"/>
-
-<img alt="Daily Hosp. Occ. all approaches" src="./CCF/sample-output/dailyocc_all.png" width="400"/>
+| All Approaches | Fitting Approaches |
+:-------------------------:|:-------------------------:
+![](./CCF/examples/example-0.png)  |  ![](./CCF/examples/example-1.png)
+![](./CCF/examples/example-3.png)  |  ![](./CCF/examples/example-2.png)
