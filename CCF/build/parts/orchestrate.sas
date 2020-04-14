@@ -1,4 +1,5 @@
 C_IMPORT: CCF_pre.sas
+D_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
@@ -121,17 +122,7 @@ C_IMPORT: CCF_pre.sas
 
 X_IMPORT: scenario_setup.sas
 
-P_IMPORT: model_proctmodel_seir.sas
-
-P_IMPORT: model_proctmodel_sir.sas
-
-X_IMPORT: model_datastep_sir.sas
-
-P_IMPORT: model_datastep_seir.sas
-
-P_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
-
-T_IMPORT: model_sim_proctmodel_seir.sas
+X_IMPORT: models.sas
 
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */

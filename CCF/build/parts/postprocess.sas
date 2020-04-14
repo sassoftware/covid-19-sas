@@ -97,7 +97,9 @@
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;

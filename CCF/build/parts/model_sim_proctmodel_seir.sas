@@ -71,9 +71,12 @@
 
 
 			DATA TMODEL_SEIR2;
-				FORMAT ModelType $30. DATE date9.;
+				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
 				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
                 LABEL   HOSPITAL_OCCUPANCY="Current Hospitalized Census"
                         ICU_OCCUPANCY="Current Hospital ICU Census"
                         VENT_OCCUPANCY="Current Hospital Ventilator Patients"

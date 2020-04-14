@@ -7,16 +7,17 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 */
 
 /* directory path for files: COVID_19.sas (this file), libname store */
-%let homedir = /Local_Files/covid-19-sas/ccf;
+    %let homedir = /Local_Files/covid-19-sas/ccf;
 
-/* the storage location for the MODEL_FINAL table and the SCENARIOS table */
-libname store "&homedir.";
+/* the storage location for the MODEL_FINAL table and other output tables - when &ScenarioSource=BATCH */
+    libname store "&homedir.";
 
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
-%LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
-%LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
-%LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
+    %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
+    %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
+/* User Interface Switches - these are used if you using the code within SAS Visual Analytics UI */
+    %LET ScenarioSource = BATCH;
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
@@ -137,21 +138,35 @@ libname store "&homedir.";
         DIAL_LOS                    =   &DIAL_LOS.;
     RUN;
 
+    %IF &ScenarioSource = UI %THEN %DO;
+        /* this session is only used for reading the SCENARIOS table in the global caslib when the UI is running the scenario */
+        %LET PULLLIB=&CASSource.;
+    %END;
+    %ELSE %DO;
+        %LET PULLLIB=store;
+    %END;
+
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
-        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
-            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
+        %IF %SYSFUNC(exist(&PULLLIB..scenarios)) %THEN %DO;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from &PULLLIB..scenarios where ScenarioSource="&ScenarioSource."; quit;
+            /* this may be the first ScenarioIndex for the ScenarioSource - catch and set to 0 */
+            %IF &ScenarioIndex_Base = . %THEN %DO; %LET ScenarioIndex_Base = 0; %END;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
     /* store all the macro variables that set up this scenario in SCENARIOS dataset */
         DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
-            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
             set INPUTS;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -183,26 +198,29 @@ libname store "&homedir.";
 
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
-            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
-        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
+        %GLOBAL ScenarioExist;
+        %IF %SYSFUNC(exist(&PULLLIB..scenarios)) %THEN %DO;
             PROC SQL noprint;
                 /* has this scenario been run before - all the same parameters and value - no more and no less */
                 select count(*) into :ScenarioExist from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
-                                group by ScenarioIndex) t1
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
-                            (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            (select * from &PULLLIB..SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
-                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
                 ; 
             QUIT;
@@ -210,33 +228,36 @@ libname store "&homedir.";
         %ELSE %DO; 
             %LET ScenarioExist = 0;
         %END;
+
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
-        %ELSE %IF &PLOTS. = YES %THEN %DO;
-            /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+        /*%ELSE %IF &PLOTS. = YES %THEN %DO;*/
+        %ELSE %DO;
+            /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select max(t2.ScenarioIndex) into :ScenarioIndex from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
-                            (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            (select * from &PULLLIB..SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
-                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
                 ;
             QUIT;
             /* pull the current scenario data to work for plots below */
-            data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
-            data work.FIT_PRED; set STORE.FIT_PRED; where ScenarioIndex=&ScenarioIndex.; run;
-            data work.FIT_PARMS; set STORE.FIT_PARMS; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
-        
+
     /* Prepare to create request plots from input parameter plots= */
         %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
         %ELSE %DO; %LET plots = NO; %END;
@@ -310,11 +331,13 @@ libname store "&homedir.";
 			QUIT;
 
 			DATA TMODEL_SEIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
+				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -426,7 +449,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -524,11 +549,13 @@ libname store "&homedir.";
 			QUIT;
 
 			DATA TMODEL_SIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;	
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
 				ModelType="TMODEL - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -640,7 +667,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -703,11 +732,13 @@ libname store "&homedir.";
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -841,7 +872,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -906,11 +939,13 @@ libname store "&homedir.";
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -1048,7 +1083,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -1124,53 +1161,55 @@ libname store "&homedir.";
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
-						FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
-						OPTION VALIDVARNAME=V7;
-						PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;
-							GETNAMES=YES;
-							DATAROW=2;
-							GUESSINGROWS=20000000;
-						RUN; 
-						/* check to make sure column 1 is county and not VAR1 - sometime the URL is pulled quickly and this gets mislabeled*/
-							%let dsid=%sysfunc(open(WORK.OHIO_SUMMARY));
-							%let countnum=%sysfunc(varnum(&dsid.,var1));
-							%let rc=%sysfunc(close(&dsid.));
-							%IF &countnum. > 0 %THEN %DO;
-								data WORK.OHIO_SUMMARY; set WORK.OHIO_SUMMARY; rename VAR1=COUNTY; run;
-							%END;
-						/* Prepare Ohio Data For Model - add rows for missing days (had no activity) */
-							PROC SQL NOPRINT;
-								CREATE TABLE STORE.FIT_INPUT AS 
-									SELECT INPUT(ONSET_DATE,ANYDTDTE9.) AS DATE FORMAT=DATE9., SUM(INPUT(CASE_COUNT,COMMA5.)) AS NEW_CASE_COUNT
-									FROM WORK.OHIO_SUMMARY
-									WHERE STRIP(UPCASE(COUNTY)) IN ('ASHLAND','ASHTABULA','CARROLL','COLUMBIANA','CRAWFORD',
-										'CUYAHOGA','ERIE','GEAUGA','HOLMES','HURON','LAKE','LORAIN','MAHONING','MEDINA',
-										'PORTAGE','RICHLAND','STARK','SUMMIT','TRUMBULL','TUSCARAWAS','WAYNE')
-									GROUP BY CALCULATED DATE
-									ORDER BY CALCULATED DATE;
-								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
-								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.FIT_INPUT;
-								DROP TABLE WORK.OHIO_SUMMARY;
-							QUIT;
+					%IF ScenarioSouce = BATCH %THEN %DO;
+						%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
+							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
+							OPTION VALIDVARNAME=V7;
+							PROC IMPORT file=OHIO OUT=WORK.OHIO_SUMMARY DBMS=CSV REPLACE;
+								GETNAMES=YES;
+								DATAROW=2;
+								GUESSINGROWS=20000000;
+							RUN; 
+							/* check to make sure column 1 is county and not VAR1 - sometime the URL is pulled quickly and this gets mislabeled*/
+								%let dsid=%sysfunc(open(WORK.OHIO_SUMMARY));
+								%let countnum=%sysfunc(varnum(&dsid.,var1));
+								%let rc=%sysfunc(close(&dsid.));
+								%IF &countnum. > 0 %THEN %DO;
+									data WORK.OHIO_SUMMARY; set WORK.OHIO_SUMMARY; rename VAR1=COUNTY; run;
+								%END;
+							/* Prepare Ohio Data For Model - add rows for missing days (had no activity) */
+								PROC SQL NOPRINT;
+									CREATE TABLE STORE.FIT_INPUT AS 
+										SELECT INPUT(ONSET_DATE,ANYDTDTE9.) AS DATE FORMAT=DATE9., SUM(INPUT(CASE_COUNT,COMMA5.)) AS NEW_CASE_COUNT
+										FROM WORK.OHIO_SUMMARY
+										WHERE STRIP(UPCASE(COUNTY)) IN ('ASHLAND','ASHTABULA','CARROLL','COLUMBIANA','CRAWFORD',
+											'CUYAHOGA','ERIE','GEAUGA','HOLMES','HURON','LAKE','LORAIN','MAHONING','MEDINA',
+											'PORTAGE','RICHLAND','STARK','SUMMIT','TRUMBULL','TUSCARAWAS','WAYNE')
+										GROUP BY CALCULATED DATE
+										ORDER BY CALCULATED DATE;
+									SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
+									SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.FIT_INPUT;
+									DROP TABLE WORK.OHIO_SUMMARY;
+								QUIT;
 
-							DATA ALLDATES;
-								FORMAT DATE DATE9.;
-								DO DATE = &FIRST_CASE. TO &LATEST_CASE.;
-									TIME = DATE - &FIRST_CASE. + 1;
-									OUTPUT;
-								END;
-							RUN;
+								DATA ALLDATES;
+									FORMAT DATE DATE9.;
+									DO DATE = &FIRST_CASE. TO &LATEST_CASE.;
+										TIME = DATE - &FIRST_CASE. + 1;
+										OUTPUT;
+									END;
+								RUN;
 
-							DATA STORE.FIT_INPUT;
-								MERGE ALLDATES STORE.FIT_INPUT;
-								BY DATE;
-								CUMULATIVE_CASE_COUNT + NEW_CASE_COUNT;
-							RUN;
+								DATA STORE.FIT_INPUT;
+									MERGE ALLDATES STORE.FIT_INPUT;
+									BY DATE;
+									CUMULATIVE_CASE_COUNT + NEW_CASE_COUNT;
+								RUN;
 
-							PROC SQL NOPRINT;
-								drop table ALLDATES;
-							QUIT; 
+								PROC SQL NOPRINT;
+									drop table ALLDATES;
+								QUIT; 
+						%END;
 					%END;
             /* END DOWNLOAD FIT_INPUT **/
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
@@ -1212,12 +1251,16 @@ libname store "&homedir.";
 					DATE = &FIRST_CASE. + TIME - 1;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioIndex=&ScenarioIndex.;
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
 					FORMAT ModelType $30.; 
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioIndex=&ScenarioIndex.;
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
@@ -1274,11 +1317,13 @@ libname store "&homedir.";
 				QUIT;
 
 				DATA TMODEL_SEIR_FIT_I;
-					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
+					FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -1390,7 +1435,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -1579,66 +1626,36 @@ libname store "&homedir.";
 							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE;
 					QUIT;
 
-                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-                PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
-                PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+                %IF &ScenarioSource = BATCH %THEN %DO;
+                
+                    PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
+                    PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
+                    PROC APPEND base=store.INPUTS data=work.INPUTS; run;
+                    PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
+                    PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
 
-			%IF &CAS_LOAD=YES %THEN %DO;
+                    PROC SQL;
+                        drop table work.MODEL_FINAL;
+                        drop table work.SCENARIOS;
+                        drop table work.INPUTS;
+                        drop table work.FIT_PRED;
+                        drop table work.FIT_PARMS;
+                    QUIT;
 
-				CAS;
+                %END;
 
-				CASLIB _ALL_ ASSIGN;
-
-				%IF &ScenarioIndex=1 %THEN %DO;
-
-					/* ScenarioIndex=1 implies a new MODEL_FINAL is being built, load it to CAS, if already in CAS then drop first */
-					PROC CASUTIL;
-						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
-						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
-						
-						DROPTABLE INCASLIB="CASUSER" CASDATA="SCENARIOS" QUIET;
-						LOAD DATA=store.SCENARIOS CASOUT="SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
-
-						DROPTABLE INCASLIB="CASUSER" CASDATA="INPUTS" QUIET;
-						LOAD DATA=store.INPUTS CASOUT="INPUTS" OUTCASLIB="CASUSER" PROMOTE;
-					QUIT;
-
-				%END;
-				%ELSE %DO;
-
-					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
-					PROC CASUTIL;
-						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
-						
-						LOAD DATA=work.SCENARIOS CASOUT="SCENARIOS" APPEND;
-						
-						LOAD DATA=work.INPUTS CASOUT="INPUTS" APPEND;
-					QUIT;
-
-				%END;
-
-
-				CAS CASAUTO TERMINATE;
-
-			%END;
-
-                PROC SQL;
+        %END;
+        /*%ELSE %IF &PLOTS. = YES %THEN %DO;*/
+        %ELSE %DO;
+            %IF &ScenarioSource = BATCH %THEN %DO;
+                PROC SQL; 
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
-                    drop table work.INPUTS;
+                    drop table work.INPUTS; 
                     drop table work.FIT_PRED;
                     drop table work.FIT_PARMS;
                 QUIT;
-
-        %END;
-        %ELSE %IF &PLOTS. = YES %THEN %DO;
-            PROC SQL; 
-                drop table work.MODEL_FINAL; 
-                drop table work.FIT_PRED;
-                drop table work.FIT_PARMS;
-            QUIT;
+            %END;
         %END;
 %mend;
 

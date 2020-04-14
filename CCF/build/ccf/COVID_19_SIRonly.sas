@@ -7,16 +7,17 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 */
 
 /* directory path for files: COVID_19.sas (this file), libname store */
-%let homedir = /Local_Files/covid-19-sas/ccf;
+    %let homedir = /Local_Files/covid-19-sas/ccf;
 
-/* the storage location for the MODEL_FINAL table and the SCENARIOS table */
-libname store "&homedir.";
+/* the storage location for the MODEL_FINAL table and other output tables - when &ScenarioSource=BATCH */
+    libname store "&homedir.";
 
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
-%LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
-%LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
-%LET CAS_LOAD = NO; /* YES implies you have SAS Viya and want to keep the output tables of this process managed in a CAS library for use in SAS Viya products (like Visual Analytics for reporting) */
+    %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
+    %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
+/* User Interface Switches - these are used if you using the code within SAS Visual Analytics UI */
+    %LET ScenarioSource = BATCH;
 /* the following is specific to CCF coding and included prior to the %EasyRun Macro */
 	libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
 	libname DL_COV teradata server=tdprod1 database=DL_COVID;
@@ -185,21 +186,35 @@ libname store "&homedir.";
         DIAL_LOS                    =   &DIAL_LOS.;
     RUN;
 
+    %IF &ScenarioSource = UI %THEN %DO;
+        /* this session is only used for reading the SCENARIOS table in the global caslib when the UI is running the scenario */
+        %LET PULLLIB=&CASSource.;
+    %END;
+    %ELSE %DO;
+        %LET PULLLIB=store;
+    %END;
+
     /* create an index, ScenarioIndex for this run by incrementing the max value of ScenarioIndex in SCENARIOS dataset */
-        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
-            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from store.scenarios; quit;
+        %IF %SYSFUNC(exist(&PULLLIB..scenarios)) %THEN %DO;
+            PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex_Base from &PULLLIB..scenarios where ScenarioSource="&ScenarioSource."; quit;
+            /* this may be the first ScenarioIndex for the ScenarioSource - catch and set to 0 */
+            %IF &ScenarioIndex_Base = . %THEN %DO; %LET ScenarioIndex_Base = 0; %END;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
     /* store all the macro variables that set up this scenario in SCENARIOS dataset */
         DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
-            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
             set INPUTS;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -231,26 +246,29 @@ libname store "&homedir.";
 
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
-            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE') then delete;
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
             ScenarioIndex = &ScenarioIndex_Base. + 1;
+            ScenarioUser="&SYSUSERID.";
+            ScenarioSource="&ScenarioSource.";
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
-        %IF %SYSFUNC(exist(store.scenarios)) %THEN %DO;
+        %GLOBAL ScenarioExist;
+        %IF %SYSFUNC(exist(&PULLLIB..scenarios)) %THEN %DO;
             PROC SQL noprint;
                 /* has this scenario been run before - all the same parameters and value - no more and no less */
                 select count(*) into :ScenarioExist from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
-                                group by ScenarioIndex) t1
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
-                            (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            (select * from &PULLLIB..SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
-                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
                 ; 
             QUIT;
@@ -258,33 +276,36 @@ libname store "&homedir.";
         %ELSE %DO; 
             %LET ScenarioExist = 0;
         %END;
+
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
-        %ELSE %IF &PLOTS. = YES %THEN %DO;
-            /* what was the last ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex */
+        /*%ELSE %IF &PLOTS. = YES %THEN %DO;*/
+        %ELSE %DO;
+            /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select max(t2.ScenarioIndex) into :ScenarioIndex from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
-                            (select * from store.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENPLOT','PLOTS')) t2
+                            (select * from &PULLLIB..SCENARIOS
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
-                        group by t1.ScenarioIndex, t2.ScenarioIndex, t1.cnt
+                        group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
                 ;
             QUIT;
             /* pull the current scenario data to work for plots below */
-            data work.MODEL_FINAL; set STORE.MODEL_FINAL; where ScenarioIndex=&ScenarioIndex.; run;
-            data work.FIT_PRED; set STORE.FIT_PRED; where ScenarioIndex=&ScenarioIndex.; run;
-            data work.FIT_PARMS; set STORE.FIT_PARMS; where ScenarioIndex=&ScenarioIndex.; run;
+            data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
-        
+
     /* Prepare to create request plots from input parameter plots= */
         %IF %UPCASE(&plots.) = YES %THEN %DO; %LET plots = YES; %END;
         %ELSE %DO; %LET plots = NO; %END;
@@ -321,11 +342,13 @@ libname store "&homedir.";
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;
@@ -459,7 +482,9 @@ libname store "&homedir.";
 						NEWINFECTED = "New Infected Population"
 						ModelType = "Model Type Used to Generate Scenario"
 						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Unique Scenario ID"
+						ScenarioIndex = "Scenario ID: Order"
+						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+						ScenarioUser = "Scenario ID: User who created Scenario"
 						ScenarioNameUnique = "Unique Scenario Name"
 						Scenarioname = "Scenario Name"
 						;
@@ -684,150 +709,40 @@ libname store "&homedir.";
                     */
                 run;
 
-                PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
-                PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
-                PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+                %IF &ScenarioSource = BATCH %THEN %DO;
+                
+                    PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
+                    PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
+                    PROC APPEND base=store.INPUTS data=work.INPUTS; run;
+                    PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
+                    PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
 
-			%IF &CAS_LOAD=YES %THEN %DO;
+                    PROC SQL;
+                        drop table work.MODEL_FINAL;
+                        drop table work.SCENARIOS;
+                        drop table work.INPUTS;
+                        drop table work.FIT_PRED;
+                        drop table work.FIT_PARMS;
+                    QUIT;
 
-				CAS;
+                %END;
 
-				CASLIB _ALL_ ASSIGN;
-
-				%IF &ScenarioIndex=1 %THEN %DO;
-
-					/* ScenarioIndex=1 implies a new MODEL_FINAL is being built, load it to CAS, if already in CAS then drop first */
-					PROC CASUTIL;
-						DROPTABLE INCASLIB="CASUSER" CASDATA="MODEL_FINAL" QUIET;
-						LOAD DATA=store.MODEL_FINAL CASOUT="MODEL_FINAL" OUTCASLIB="CASUSER" PROMOTE;
-						
-						DROPTABLE INCASLIB="CASUSER" CASDATA="SCENARIOS" QUIET;
-						LOAD DATA=store.SCENARIOS CASOUT="SCENARIOS" OUTCASLIB="CASUSER" PROMOTE;
-
-						DROPTABLE INCASLIB="CASUSER" CASDATA="INPUTS" QUIET;
-						LOAD DATA=store.INPUTS CASOUT="INPUTS" OUTCASLIB="CASUSER" PROMOTE;
-					QUIT;
-
-				%END;
-				%ELSE %DO;
-
-					/* ScenarioIndex>1 implies new scenario needs to be apended to MODEL_FINAL in CAS */
-					PROC CASUTIL;
-						LOAD DATA=work.MODEL_FINAL CASOUT="MODEL_FINAL" APPEND;
-						
-						LOAD DATA=work.SCENARIOS CASOUT="SCENARIOS" APPEND;
-						
-						LOAD DATA=work.INPUTS CASOUT="INPUTS" APPEND;
-					QUIT;
-
-				%END;
-
-
-				CAS CASAUTO TERMINATE;
-
-			%END;
-
-                PROC SQL;
+        %END;
+        /*%ELSE %IF &PLOTS. = YES %THEN %DO;*/
+        %ELSE %DO;
+            %IF &ScenarioSource = BATCH %THEN %DO;
+                PROC SQL; 
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
-                    drop table work.INPUTS;
+                    drop table work.INPUTS; 
                     drop table work.FIT_PRED;
                     drop table work.FIT_PARMS;
                 QUIT;
-
-        %END;
-        %ELSE %IF &PLOTS. = YES %THEN %DO;
-            PROC SQL; 
-                drop table work.MODEL_FINAL; 
-                drop table work.FIT_PRED;
-                drop table work.FIT_PARMS;
-            QUIT;
+            %END;
         %END;
 %mend;
 
-/* Test runs of EasyRun macro 
-	IMPORTANT NOTES: 
-		These example runs have all the positional macro variables.  
-		There are even more keyword parameters available.
-			These need to be set for your population.
-			They can be reviewed within the %EasyRun macro at the very top.
-*/
-%EasyRun(
-scenario=Scenario_DrS_00_20_run_1,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAR2020'd,
-SocialDistancingChange=0,
-ISOChangeDateTwo='06APR2020'd,
-SocialDistancingChangeTwo=0.2,
-ISOChangeDate3='20APR2020'd,
-SocialDistancingChange3=0.5,
-ISOChangeDate4='01MAY2020'd,
-SocialDistancingChange4=0.3,
-FatalityRate=0,
-plots=YES	
-);
-	
-%EasyRun(
-scenario=Scenario_DrS_00_40_run_1,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAR2020'd,
-SocialDistancingChange=0,
-ISOChangeDateTwo='06APR2020'd,
-SocialDistancingChangeTwo=0.4,
-ISOChangeDate3='20APR2020'd,
-SocialDistancingChange3=0.5,
-ISOChangeDate4='01MAY2020'd,
-SocialDistancingChange4=0.3,
-FatalityRate=0,
-plots=YES	
-);
-	
-%EasyRun(
-scenario=Scenario_DrS_00_40_run_12,
-IncubationPeriod=0,
-InitRecovered=0,
-RecoveryDays=14,
-doublingtime=5,
-KnownAdmits=10,
-Population=4390484,
-SocialDistancing=0,
-MarketSharePercent=0.29,
-Admission_Rate=0.075,
-ICUPercent=0.45,
-VentPErcent=0.35,
-ISOChangeDate='31MAY2020'd,
-SocialDistancingChange=0.25,
-ISOChangeDateTwo='06AUG2020'd,
-SocialDistancingChangeTwo=0.5,
-ISOChangeDate3='20AUG2020'd,
-SocialDistancingChange3=0.4,
-ISOChangeDate4='01SEP2020'd,
-SocialDistancingChange4=0.2,
-FatalityRate=0,
-plots=YES	
-);
+
 
 /* Scenarios can be run in batch by specifying them in a sas dataset.
     In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
