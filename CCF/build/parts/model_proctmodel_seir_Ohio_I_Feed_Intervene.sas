@@ -46,12 +46,16 @@ X_IMPORT: fit_input.sas
 					DATE = &FIRST_CASE. + TIME - 1;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioIndex=&ScenarioIndex.;
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
 					FORMAT ModelType $30.; 
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioIndex=&ScenarioIndex.;
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
@@ -108,11 +112,13 @@ X_IMPORT: fit_input.sas
 				QUIT;
 
 				DATA TMODEL_SEIR_FIT_I;
-					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
+					FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioName="&Scenario.";
 					ScenarioIndex=&ScenarioIndex.;
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+					ScenarioUser="&SYSUSERID.";
+					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality

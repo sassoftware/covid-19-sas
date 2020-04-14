@@ -24,8 +24,6 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
     - If you have the latest analytical release of SAS, 15.1, then set `line 17` to YES
         - This option swaps out `PROC MODEL` for `PROC TMODEL`
         - If you are unsure then you can run `PROC PRODUCT_STATUS; run;` in SAS and view the log for this information
-    - If you have SAS Viya and want to manage the `STORE.MODEL_FINAL` table in CAS, then set `line 18` to YES
-        - with each scenario run the `STORE.MODEL_FINAL` table the CASUSER table `MODEL_FINAL` are appended to (or created on first fun)
 - **RUN**
     - Make calls to the macro `%EasyRun`.  Example scenarios are at the end of the file.
     - Submit many scenarios in batch by using an input file.  An example file, `run_scenarios.csv`, is provided. Each row of this file will feed individual calls to the `%EasyRun` macro.
@@ -80,11 +78,11 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
 # Output Files Notes
 **OUTPUT:**
 - `STORE.MODEL_FINAL`: The model output saves to in `STORE.MODEL_FINAL` which has descriptive labels for each column.
-- `STORE.SCENARIOS`: The scenario parameters (input and calculated) are stored in `STORE.SCENARIOS` which has labels for each column and links to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
-- `STORE.INPUTS`: The inputs to the `%EasyRun` macro are stored in `STORE.INPUTS` for easy review and inclusion in reporting by linking to `STORE.MODEL_FINAL` on the column `ScenarioIndex`.
-- `STORE.FIT_INPUT`: The ModelType="TMODEL - SEIR - FIT" stores input data in `STORE.FIT_INPUT`. Links to other files on the columns `ModelType` and `ScenarioIndex`.
-- `STORE.FIT_PRED`: The ModelType="TMODEL - SEIR - FIT" stores prediction from the fit in `STORE.FIT_PRED` Links to other files on the columns `ModelType` and `ScenarioIndex`.
-- `STORE.FIT_PARMS`: The ModelType="TMODEL - SEIR - FIT" stores parameter estimates from the fit in `STORE.FIT_PARMS` Links to other files on the columns `ModelType` and `ScenarioIndex`.
+- `STORE.SCENARIOS`: The scenario parameters (input and calculated) are stored in `STORE.SCENARIOS` which has labels for each column and links to `STORE.MODEL_FINAL` on the columns: `ScenarioIndex`, `ScenarioUser`, `ScenarioSource`.
+- `STORE.INPUTS`: The inputs to the `%EasyRun` macro are stored in `STORE.INPUTS` for easy review and inclusion in reporting by linking to `STORE.MODEL_FINAL` on the columns: `ScenarioIndex`, `ScenarioUser`, `ScenarioSource`.
+- `STORE.FIT_INPUT`: The ModelType="TMODEL - SEIR - FIT" stores input data in `STORE.FIT_INPUT`.
+- `STORE.FIT_PRED`: The ModelType="TMODEL - SEIR - FIT" stores prediction from the fit in `STORE.FIT_PRED` Links to other files on the columns `ModelType` and the columns: `ScenarioIndex`, `ScenarioUser`, `ScenarioSource`.
+- `STORE.FIT_PARMS`: The ModelType="TMODEL - SEIR - FIT" stores parameter estimates from the fit in `STORE.FIT_PARMS` Links to other files on the columns `ModelType` and the columns: `ScenarioIndex`, `ScenarioUser`, `ScenarioSource`.
 
 **IMPORTANT NOTE:** 
 - `STORE.MODEL_FINAL` stores each scenario and each model type with 1 row per day. Make sure you are viewing the results for a single scenario and single model type by filtering on the variables `ScenarioNameUnique` and `ModelType`

@@ -36,6 +36,7 @@
 				FORMAT ModelType $30. DATE date9.;
 				ModelType="TMODEL - SEIR";
 				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser=&SYSUSERID.;
                 LABEL   HOSPITAL_OCCUPANCY="Lower: Current Hospitalized Census"
                         ICU_OCCUPANCY="Lower: Current Hospital ICU Census"
                         VENT_OCCUPANCY="Lower: Current Hospital Ventilator Patients"
@@ -91,6 +92,7 @@
 				FORMAT ModelType $30. DATE date9.;
 				ModelType="TMODEL - SEIR";
 				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser=&SYSUSERID.;
                 LABEL   HOSPITAL_OCCUPANCY="Upper: Current Hospitalized Census"
                         ICU_OCCUPANCY="Upper: Current Hospital ICU Census"
                         VENT_OCCUPANCY="Upper: Current Hospital Ventilator Patients"

@@ -5,11 +5,13 @@ X_IMPORT: parameters.sas
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR;
-				FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;		
+				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				DO DAY = 0 TO &N_DAYS.;

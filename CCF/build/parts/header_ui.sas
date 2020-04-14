@@ -1,0 +1,15 @@
+/* User Interface Switches - these are used if you using the code within SAS Visual Analytics UI */
+    %LET ScenarioSource = UI;
+    %LET CASSource = casuser; 
+    /* NOTES: 
+        - &ScenarioSource = UI overrides the behavior of the %EasyRun macro
+        - &CASSource is the location of the results tables you want the macro to read from in determining if a scenario has been run before: can be a libname or caslib
+        - libname STORE is still used to read only the contents of the FIT_INPUT table
+            - The UI will not attempt to update the FIT_INPUT table, only ScenarioSource = BATCH does this currently
+        - An active CAS session and CASLIB are needed for &CASSource to be available to the %EasyRun macro if you set &CASSource to a caslib
+        - At the end of execution all the output tables holding just the current scenario will be in WORK
+        - If &ScenarioIndex = 0 then the files in WORK contain a new scenario
+            - Else, the files in WORK contain a recalled, previously run scenario identified by the columns ScenarioIndex, ScenarioSource, ScenarioUser
+                - The column Scenario will contain the name entered in the UI as the name is not used in matching previous scenarios
+        - The code assumes that the files it is creating are not in the current SAS workspace.  If there are files with the same name then unexpected behavior will cause issues: appending new data to existing data without warning.
+    */
