@@ -26,9 +26,10 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             - The UI will not attempt to update the FIT_INPUT table, only ScenarioSource = BATCH does this currently
         - An active CAS session and CASLIB are needed for &CASSource to be available to the %EasyRun macro if you set &CASSource to a caslib
         - At the end of execution all the output tables holding just the current scenario will be in WORK
-        - If &ScenarioIndex = 0 then the files in WORK contain a new scenario
-            - Else, the files in WORK contain a recalled, previously run scenario identified by the columns ScenarioIndex, ScenarioSource, ScenarioUser
+        - If &ScenarioExist = 0 then the files in WORK contain a new scenario
+            - Else, %ScenarioExist > 0, the files in WORK contain a recalled, previously run scenario identified by the columns ScenarioIndex, ScenarioSource, ScenarioUser, ScenarionNameUnique
                 - The column Scenario will contain the name entered in the UI as the name is not used in matching previous scenarios
+                - these global macro variables will have recalled scenario information in this case (empty when &ScenarioExist=0): &ScenerioIndex_Recall, &ScenarioUser_Recall, &Scenario_Source_Recall, &ScenarioNameUnique_Recall
         - The code assumes that the files it is creating are not in the current SAS workspace.  If there are files with the same name then unexpected behavior will cause issues: appending new data to existing data without warning.
     */
 
@@ -173,6 +174,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
@@ -180,6 +182,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -215,6 +218,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
@@ -227,11 +231,11 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -242,6 +246,8 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             %LET ScenarioExist = 0;
         %END;
 
+    /* recall an existing scenario to SASWORK if it matched */
+        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall;
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
@@ -249,16 +255,16 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
         %ELSE %DO;
             /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -1266,6 +1272,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
@@ -1274,6 +1281,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/

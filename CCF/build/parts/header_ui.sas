@@ -8,8 +8,9 @@
             - The UI will not attempt to update the FIT_INPUT table, only ScenarioSource = BATCH does this currently
         - An active CAS session and CASLIB are needed for &CASSource to be available to the %EasyRun macro if you set &CASSource to a caslib
         - At the end of execution all the output tables holding just the current scenario will be in WORK
-        - If &ScenarioIndex = 0 then the files in WORK contain a new scenario
-            - Else, the files in WORK contain a recalled, previously run scenario identified by the columns ScenarioIndex, ScenarioSource, ScenarioUser
+        - If &ScenarioExist = 0 then the files in WORK contain a new scenario
+            - Else, %ScenarioExist > 0, the files in WORK contain a recalled, previously run scenario identified by the columns ScenarioIndex, ScenarioSource, ScenarioUser, ScenarionNameUnique
                 - The column Scenario will contain the name entered in the UI as the name is not used in matching previous scenarios
+                - these global macro variables will have recalled scenario information in this case (empty when &ScenarioExist=0): &ScenerioIndex_Recall, &ScenarioUser_Recall, &Scenario_Source_Recall, &ScenarioNameUnique_Recall
         - The code assumes that the files it is creating are not in the current SAS workspace.  If there are files with the same name then unexpected behavior will cause issues: appending new data to existing data without warning.
     */

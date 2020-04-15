@@ -1,3 +1,7 @@
+CAS;
+
+CASLIB _ALL_ ASSIGN;
+
 %EasyRun(
 scenario=Scenario_DrS_00_20_run_1,
 IncubationPeriod=0,
@@ -24,3 +28,10 @@ plots=YES
 );
 
 %PUT &ScenarioExist.; 
+%PUT &ScenarioIndex_Recall.; 
+%PUT &ScenarioSource_Recall.; 
+%PUT &ScenarioUser_Recall.;  
+%PUT &ScenarioNameUnique_Recall.; 
+
+
+CAS CASAUTO TERMINATE;

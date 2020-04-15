@@ -160,6 +160,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
@@ -167,6 +168,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -202,6 +204,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             ScenarioIndex = &ScenarioIndex_Base. + 1;
             ScenarioUser="&SYSUSERID.";
             ScenarioSource="&ScenarioSource.";
+			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */
@@ -214,11 +217,11 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -229,6 +232,8 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             %LET ScenarioExist = 0;
         %END;
 
+    /* recall an existing scenario to SASWORK if it matched */
+        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall;
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
@@ -236,16 +241,16 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
         %ELSE %DO;
             /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -1253,6 +1258,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
@@ -1261,6 +1267,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
@@ -1517,6 +1524,14 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
+								BETAChange = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange.);
+								BETAChangeTwo = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChangeTwo.);
+								BETAChange3 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange3.);
+								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange4.);
                                 DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .2; /* range of 2, increment by .1*/
                                     DO TIME = 0 TO &N_DAYS. by 1;
                                         OUTPUT; 
@@ -1530,17 +1545,17 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				*PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
-				*BOUNDS 1 <= R0 <= 13;
-				*RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
+				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
+				BOUNDS 1 <= R0 <= 13;
+				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 				*GAMMA = &GAMMA.;
 				*SIGMA = &SIGMA.;
-				*change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
-				*change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				*change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
-				*change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
-				*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
-				*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
+				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
+				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
+				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
+				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
+				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
+				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
@@ -1575,6 +1590,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 			DATA TMODEL_SEIR2;
 				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
+				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
@@ -1638,7 +1654,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                             max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
                             Date, ModelType, ScenarioIndex
                     from TMODEL_SEIR2
-                    group by Date
+                    group by Date, ModelType, ScenarioIndex
                 ;
             QUIT;
 

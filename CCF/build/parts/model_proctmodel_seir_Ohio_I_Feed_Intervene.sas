@@ -48,6 +48,7 @@ X_IMPORT: fit_input.sas
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
@@ -56,6 +57,7 @@ X_IMPORT: fit_input.sas
 					ScenarioIndex=&ScenarioIndex.;
 					ScenarioUser="&SYSUSERID.";
 					ScenarioSource="&ScenarioSource.";
+					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
