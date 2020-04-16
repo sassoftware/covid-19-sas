@@ -201,22 +201,24 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
             %IF &ScenarioIndex_Base = . %THEN %DO; %LET ScenarioIndex_Base = 0; %END;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
+        %LET ScenarioIndex = %EVAL(&ScenarioIndex_Base + 1);
+
     /* store all the macro variables that set up this scenario in SCENARIOS dataset */
         DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
             set INPUTS;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -249,10 +251,10 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+				ScenarioIndex=&ScenarioIndex.;
+				ScenarioUser="&SYSUSERID.";
+				ScenarioSource="&ScenarioSource.";
+				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */

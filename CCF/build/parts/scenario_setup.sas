@@ -13,22 +13,18 @@
             %IF &ScenarioIndex_Base = . %THEN %DO; %LET ScenarioIndex_Base = 0; %END;
         %END;
         %ELSE %DO; %LET ScenarioIndex_Base = 0; %END;
+        %LET ScenarioIndex = %EVAL(&ScenarioIndex_Base + 1);
+
     /* store all the macro variables that set up this scenario in SCENARIOS dataset */
         DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
             STAGE='INPUT';
         RUN;
         DATA INPUTS; 
             set INPUTS;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
             label ScenarioIndex="Unique Scenario ID";
         RUN;
 
@@ -38,10 +34,7 @@ X_IMPORT: parameters.sas
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
-            ScenarioIndex = &ScenarioIndex_Base. + 1;
-            ScenarioUser="&SYSUSERID.";
-            ScenarioSource="&ScenarioSource.";
-			ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
             if i then STAGE='MODEL';
         RUN;
     /* Check to see if SCENARIOS (this scenario) has already been run before in SCENARIOS dataset */

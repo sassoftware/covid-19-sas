@@ -117,10 +117,7 @@ X_IMPORT: fit_input.sas
 					FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioName="&Scenario.";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioUser="&SYSUSERID.";
-					ScenarioSource="&ScenarioSource.";
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
 					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality

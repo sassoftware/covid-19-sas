@@ -8,10 +8,7 @@ X_IMPORT: parameters.sas
 				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarioUser="&SYSUSERID.";
-				ScenarioSource="&ScenarioSource.";
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				byinc = 0.1;
