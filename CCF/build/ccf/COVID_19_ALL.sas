@@ -460,7 +460,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"
@@ -678,7 +678,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"
@@ -794,7 +794,8 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				DO DAY = 0 TO &N_DAYS.;
+				byinc = 0.1;
+				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
 						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
 						I_N = &I./&DiagnosedRate.;
@@ -804,9 +805,9 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					END;
 					ELSE DO;
 						BETA = LAG_BETA * (1- &BETA_DECAY.);
-						S_N = LAG_S -BETA * LAG_S * LAG_I;
-						I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
-						R_N = LAG_R + &GAMMA. * LAG_I;
+						S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
+						I_N = LAG_I + (BETA * LAG_S * LAG_I - &GAMMA. * LAG_I)*byinc;
+						R_N = LAG_R + (&GAMMA. * LAG_I)*byinc;
 						N = SUM(S_N, I_N, R_N);
 						SCALE = LAG_N / N;
 						IF S_N < 0 THEN S_N = 0;
@@ -826,6 +827,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
+					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -883,7 +885,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"
@@ -932,9 +934,10 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-					OUTPUT;
+						OUTPUT;
+					END;
 				END;
-				DROP LAG: BETA CUM: ;
+				DROP LAG: BETA CUM: byinc;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
@@ -1001,7 +1004,8 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				DO DAY = 0 TO &N_DAYS.;
+				byinc = 0.1;
+				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
 						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
 						E_N = &E.;
@@ -1012,10 +1016,10 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					END;
 					ELSE DO;
 						BETA = LAG_BETA * (1 - &BETA_DECAY.);
-						S_N = LAG_S -BETA * LAG_S * LAG_I;
-						E_N = LAG_E + BETA * LAG_S * LAG_I - &SIGMA. * LAG_E;
-						I_N = LAG_I + &SIGMA. * LAG_E - &GAMMA. * LAG_I;
-						R_N = LAG_R + &GAMMA. * LAG_I;
+						S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
+						E_N = LAG_E + (BETA * LAG_S * LAG_I - &SIGMA. * LAG_E)*byinc;
+						I_N = LAG_I + (&SIGMA. * LAG_E - &GAMMA. * LAG_I)*byinc;
+						R_N = LAG_R + (&GAMMA. * LAG_I)*byinc;
 						N = SUM(S_N, E_N, I_N, R_N);
 						SCALE = LAG_N / N;
 						IF S_N < 0 THEN S_N = 0;
@@ -1037,6 +1041,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
+					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1094,7 +1099,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"
@@ -1143,9 +1148,10 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 						Scenarioname = "Scenario Name"
 						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-					OUTPUT;
+						OUTPUT;
+					END;
 				END;
-				DROP LAG: BETA CUM: ;
+				DROP LAG: BETA CUM: byinc;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
@@ -1448,7 +1454,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"

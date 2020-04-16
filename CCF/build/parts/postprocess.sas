@@ -55,7 +55,7 @@
 					Market_Deceased_Today = Market_Fatality;
 					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + DAY;
+					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 					LABEL
 						ADMIT_DATE = "Date of Admission"

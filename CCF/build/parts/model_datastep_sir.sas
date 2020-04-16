@@ -14,7 +14,8 @@ X_IMPORT: parameters.sas
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
 					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
-				DO DAY = 0 TO &N_DAYS.;
+				byinc = 0.1;
+				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
 						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
 						I_N = &I./&DiagnosedRate.;
@@ -24,9 +25,9 @@ X_IMPORT: parameters.sas
 					END;
 					ELSE DO;
 						BETA = LAG_BETA * (1- &BETA_DECAY.);
-						S_N = LAG_S -BETA * LAG_S * LAG_I;
-						I_N = LAG_I + BETA * LAG_S * LAG_I - &GAMMA. * LAG_I;
-						R_N = LAG_R + &GAMMA. * LAG_I;
+						S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
+						I_N = LAG_I + (BETA * LAG_S * LAG_I - &GAMMA. * LAG_I)*byinc;
+						R_N = LAG_R + (&GAMMA. * LAG_I)*byinc;
 						N = SUM(S_N, I_N, R_N);
 						SCALE = LAG_N / N;
 						IF S_N < 0 THEN S_N = 0;
@@ -46,10 +47,12 @@ X_IMPORT: parameters.sas
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
+					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 X_IMPORT: postprocess.sas
-					OUTPUT;
+						OUTPUT;
+					END;
 				END;
-				DROP LAG: BETA CUM: ;
+				DROP LAG: BETA CUM: byinc;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
