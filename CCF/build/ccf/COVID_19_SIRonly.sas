@@ -531,8 +531,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 		%END;
 
 
-
-
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */
         PROC SQL noprint;
