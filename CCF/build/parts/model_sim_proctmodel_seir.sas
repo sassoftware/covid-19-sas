@@ -25,6 +25,11 @@
                                                 &Population. * (1 - &SocialDistancingChange4.);
                                 DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .2; /* range of 2, increment by .1*/
                                     DO TIME = 0 TO &N_DAYS. by 1;
+                                        R_T = BETA / GAMMA * &Population.;
+                                        R_T_Change = BETAChange / GAMMA * &Population.;
+                                        R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
+                                        R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
+                                        R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
                                         OUTPUT; 
                                     END;
                                 END;
@@ -36,17 +41,15 @@
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
-				BOUNDS 1 <= R0 <= 13;
-				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
-				*GAMMA = &GAMMA.;
-				*SIGMA = &SIGMA.;
-				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
+                PARMS N &Population.;
+                BOUNDS 1 <= R_T <= 13;
+				RESTRICT R_T > 0, R_T_Change > 0, R_T_Change_Two > 0, R_T_Change_3 > 0, R_T_Change_4 > 0;
+                change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
 				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
 				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
 				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
 				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
-				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
+				BETA = change_0*R_T*GAMMA/N + change_1*R_T_Change*GAMMA/N + change_2*R_T_Change_Two*GAMMA/N + change_3*R_T_Change_3*GAMMA/N + change_4*R_T_Change_4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
@@ -62,38 +65,43 @@
 			RUN;
 			QUIT;
 
-
+            /* round time to integers - precision */
             proc sql;
-                /* reorder data and round(time,1) becasue some time values are not integer? maybe nthreads artifact. */
                 create table TMODEL_SEIR as
-                    select Sigma, RECOVERYDAYS, SOCIALD, R0, S_N, E_N, I_N, R_N, round(Time,1) as Time
-                    from TMODEL_SEIR
-                    order by Sigma, RECOVERYDAYS, SOCIALD, R0, Time
-                ;
-                create table TMODEL_SEIR1 as
-                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, R0,Time
+                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, R0, round(Time,1) as Time
                     from TMODEL_SEIR
                     order by Sigma, RECOVERYDAYS, SOCIALD, R0, Time
                 ;
             quit;
 
-
-			DATA TMODEL_SEIR2;
+            /* use a skeleton from the normal post-processing to processes every scenario.
+                by statement used for separating scenarios - order by in sql above prepares this
+                note that lag function used in conditional logic can be very tricky.
+                The code below has logic to override the lag at the start of each by group.
+            */
+			DATA TMODEL_SEIR;
 				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
-                LABEL   HOSPITAL_OCCUPANCY="Current Hospitalized Census"
-                        ICU_OCCUPANCY="Current Hospital ICU Census"
-                        VENT_OCCUPANCY="Current Hospital Ventilator Patients"
-                        ECMO_OCCUPANCY="Current Hospital ECMO Patients"
-                        DIAL_OCCUPANCY="Current Hospital Dialysis Patients"
-                ;
-				RETAIN CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
-				SET TMODEL_SEIR1(RENAME=(TIME=DAY));
+				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
+				SET TMODEL_SEIR(RENAME=(TIME=DAY));
                 by Sigma RECOVERYDAYS SOCIALD R0;
+                    if first.R0 then do;
+                        counter = 1;
+                        CUMULATIVE_SUM_HOSP=0;
+                        CUMULATIVE_SUM_ICU=0;
+                        CUMULATIVE_SUM_VENT=0;
+                        CUMULATIVE_SUM_ECMO=0;
+                        CUMULATIVE_SUM_DIAL=0;
+                    end;
+                    else do;
+                        counter+1;
+                    end;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SE),-1*SE));
+                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
+
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
 					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
@@ -106,12 +114,17 @@ X_IMPORT: keys.sas
 					CUMULATIVE_SUM_VENT + VENT;
 					CUMULATIVE_SUM_ECMO + ECMO;
 					CUMULATIVE_SUM_DIAL + DIAL;
-					
+
                     CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
+                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
 					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
+                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
 					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
+                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
 					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
+                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
 					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
+                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
 
 					ARRAY FIXINGDOT _NUMERIC_;
 					DO OVER FIXINGDOT;
@@ -128,40 +141,31 @@ X_IMPORT: keys.sas
 				/* END: Common Post-Processing Across each Model Type and Approach */
                 KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD R0;
 			RUN;
-            PROC SQL;
-                create table TMODEL_SEIR3 as
-                    select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY, 
-                            min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY, 
-                            min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY, 
-                            min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY, 
-                            min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY,
-                            max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY, 
-                            max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY, 
-                            max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY, 
-                            max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY, 
-                            max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
-                            Date, ModelType, ScenarioIndex
-                    from TMODEL_SEIR2
-                    group by Date, ModelType, ScenarioIndex
-                ;
-            QUIT;
 
-
-            /* merge with lower and upper  columns with results from model in work.MODEL_FINAL*/
+            /* compute and merge the lower and upper  columns with results from model in work.MODEL_FINAL on ScenarioIndex and ModelType */
             PROC SQL;
                 create table work.MODEL_FINAL as
                     select * from
                         (select * from work.MODEL_FINAL) B 
                         left join
-                        (select * from work.TMODEL_SEIR3) U 
+                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY, 
+                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY, 
+                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY, 
+                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY, 
+                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY,
+                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY, 
+                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY, 
+                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY, 
+                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY, 
+                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
+                                Date, ModelType, ScenarioIndex
+                            from TMODEL_SEIR
+                            group by Date, ModelType, ScenarioIndex
+                        ) U 
                         on B.ModelType=U.ModelType and B.ScenarioIndex=U.ScenarioIndex and B.DATE=U.DATE
                     order by ScenarioIndex, ModelType, Date
                 ;
-                *drop table TMODEL_SEIR;
-                *drop table TMODEL_SEIR_LOWER;
-                *drop table TMODEL_SEIR_UPPER;
             QUIT;
-            data temp; set work.MODEL_FINAL; where modeltype="TMODEL - SEIR"; run;
         %END;
 
         %IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
@@ -173,14 +177,19 @@ X_IMPORT: keys.sas
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
 				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
 				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
-				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-                BAND x=Date lower=LOWER_HOSPITAL_OCCUPANCY upper=UPPER_HOSPITAL_OCCUPANCY;
-                *SERIES X=DATE Y=LOWER_HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-                *SERIES X=DATE Y=UPPER_HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				*SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				*SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				*SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
-				*SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				
+                BAND x=DATE lower=LOWER_HOSPITAL_OCCUPANCY upper=UPPER_HOSPITAL_OCCUPANCY / fillattrs=(color=blue transparency=.8) name="b1";
+                BAND x=DATE lower=LOWER_ICU_OCCUPANCY upper=UPPER_ICU_OCCUPANCY / fillattrs=(color=red transparency=.8) name="b2";
+                BAND x=DATE lower=LOWER_VENT_OCCUPANCY upper=UPPER_VENT_OCCUPANCY / fillattrs=(color=green transparency=.8) name="b3";
+                BAND x=DATE lower=LOWER_ECMO_OCCUPANCY upper=UPPER_ECMO_OCCUPANCY / fillattrs=(color=brown transparency=.8) name="b4";
+                BAND x=DATE lower=LOWER_DIAL_OCCUPANCY upper=UPPER_DIAL_OCCUPANCY / fillattrs=(color=purple transparency=.8) name="b5";
+                SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(color=blue THICKNESS=2) name="l1";
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(color=red THICKNESS=2) name="l2";
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(color=green THICKNESS=2) name="l3";
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(color=brown THICKNESS=2) name="l4";
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(color=purple THICKNESS=2) name="l5";
+                keylegend "l1" "l2" "l3" "l4" "l5";
+                
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
