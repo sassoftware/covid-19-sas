@@ -393,8 +393,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 				LAG_S = S_N; 
@@ -464,52 +462,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					LABEL
-						ADMIT_DATE = "Date of Admission"
-						DATE = "Date of Infection"
-						DAY = "Day of Pandemic"
-						HOSP = "New Hospitalized Patients"
-						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-						MARKET_HOSP = "New Region Hospitalized Patients"
-						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-						ICU = "New Hospital ICU Patients"
-						ICU_OCCUPANCY = "Current Hospital ICU Census"
-						MARKET_ICU = "New Region ICU Patients"
-						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-						VENT = "New Hospital Ventilator Patients"
-						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-						MARKET_VENT = "New Region Ventilator Patients"
-						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-						DIAL = "New Hospital Dialysis Patients"
-						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-						MARKET_DIAL = "New Region Dialysis Patients"
-						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-						ECMO = "New Hospital ECMO Patients"
-						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-						MARKET_ECMO = "New Region ECMO Patients"
-						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
-						Total_Deaths = "Cumulative Hospital Mortality"
-						Market_Deceased_Today = "New Region Mortality"
-						Market_Fatality = "New Region Mortality"
-						Market_Total_Deaths = "Cumulative Region Mortality"
-						N = "Region Population"
-						S_N = "Current Susceptible Population"
-						E_N = "Current Exposed Population"
-						I_N = "Current Infected Population"
-						R_N = "Current Recovered Population"
-						NEWINFECTED = "New Infected Population"
-						ModelType = "Model Type Used to Generate Scenario"
-						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Scenario ID: Order"
-						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-						ScenarioUser = "Scenario ID: User who created Scenario"
-						ScenarioNameUnique = "Unique Scenario Name"
-						Scenarioname = "Scenario Name"
-						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: ;
 			RUN;
@@ -664,16 +616,16 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                     select * from
                         (select * from work.TMODEL_SEIR) B 
                         left join
-                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY label="Lower Bound: Current Hospitalized Census", 
-                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY label="Lower Bound: Current Hospital ICU Census", 
-                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY label="Lower Bound: Current Hospital Ventilator Patients", 
-                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY label="Lower Bound: Current Hospital Patients", 
-                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY label="Lower Bound: Current Hospital Patients",
-                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY label="Upper Bound: Current Hospitalized Census", 
-                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY label="Upper Bound: Current Hospital ICU Census", 
-                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY label="Upper Bound: Current Hospital Ventilator Patients", 
-                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY label="Upper Bound: Current Hospital Patients", 
-                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY label="Upper Bound: Current Hospital Patients",
+                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY, 
+                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY, 
+                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY, 
+                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY, 
+                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY,
+                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY, 
+                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY, 
+                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY, 
+                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY, 
+                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
                                 Date, ModelType, ScenarioIndex
                             from TMODEL_SEIR_SIM
                             group by Date, ModelType, ScenarioIndex
@@ -803,8 +755,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 				LAG_S = S_N; 
@@ -874,52 +824,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					LABEL
-						ADMIT_DATE = "Date of Admission"
-						DATE = "Date of Infection"
-						DAY = "Day of Pandemic"
-						HOSP = "New Hospitalized Patients"
-						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-						MARKET_HOSP = "New Region Hospitalized Patients"
-						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-						ICU = "New Hospital ICU Patients"
-						ICU_OCCUPANCY = "Current Hospital ICU Census"
-						MARKET_ICU = "New Region ICU Patients"
-						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-						VENT = "New Hospital Ventilator Patients"
-						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-						MARKET_VENT = "New Region Ventilator Patients"
-						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-						DIAL = "New Hospital Dialysis Patients"
-						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-						MARKET_DIAL = "New Region Dialysis Patients"
-						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-						ECMO = "New Hospital ECMO Patients"
-						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-						MARKET_ECMO = "New Region ECMO Patients"
-						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
-						Total_Deaths = "Cumulative Hospital Mortality"
-						Market_Deceased_Today = "New Region Mortality"
-						Market_Fatality = "New Region Mortality"
-						Market_Total_Deaths = "Cumulative Region Mortality"
-						N = "Region Population"
-						S_N = "Current Susceptible Population"
-						E_N = "Current Exposed Population"
-						I_N = "Current Infected Population"
-						R_N = "Current Recovered Population"
-						NEWINFECTED = "New Infected Population"
-						ModelType = "Model Type Used to Generate Scenario"
-						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Scenario ID: Order"
-						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-						ScenarioUser = "Scenario ID: User who created Scenario"
-						ScenarioNameUnique = "Unique Scenario Name"
-						Scenarioname = "Scenario Name"
-						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM:;
 			RUN;
@@ -1070,16 +974,16 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                     select * from
                         (select * from work.TMODEL_SIR) B 
                         left join
-                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY label="Lower Bound: Current Hospitalized Census", 
-                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY label="Lower Bound: Current Hospital ICU Census", 
-                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY label="Lower Bound: Current Hospital Ventilator Patients", 
-                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY label="Lower Bound: Current Hospital Patients", 
-                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY label="Lower Bound: Current Hospital Patients",
-                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY label="Upper Bound: Current Hospitalized Census", 
-                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY label="Upper Bound: Current Hospital ICU Census", 
-                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY label="Upper Bound: Current Hospital Ventilator Patients", 
-                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY label="Upper Bound: Current Hospital Patients", 
-                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY label="Upper Bound: Current Hospital Patients",
+                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY, 
+                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY, 
+                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY, 
+                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY, 
+                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY,
+                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY, 
+                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY, 
+                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY, 
+                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY, 
+                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
                                 Date, ModelType, ScenarioIndex
                             from TMODEL_SIR_SIM
                             group by Date, ModelType, ScenarioIndex
@@ -1176,8 +1080,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				byinc = 0.1;
 				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
@@ -1275,52 +1177,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					LABEL
-						ADMIT_DATE = "Date of Admission"
-						DATE = "Date of Infection"
-						DAY = "Day of Pandemic"
-						HOSP = "New Hospitalized Patients"
-						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-						MARKET_HOSP = "New Region Hospitalized Patients"
-						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-						ICU = "New Hospital ICU Patients"
-						ICU_OCCUPANCY = "Current Hospital ICU Census"
-						MARKET_ICU = "New Region ICU Patients"
-						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-						VENT = "New Hospital Ventilator Patients"
-						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-						MARKET_VENT = "New Region Ventilator Patients"
-						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-						DIAL = "New Hospital Dialysis Patients"
-						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-						MARKET_DIAL = "New Region Dialysis Patients"
-						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-						ECMO = "New Hospital ECMO Patients"
-						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-						MARKET_ECMO = "New Region ECMO Patients"
-						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
-						Total_Deaths = "Cumulative Hospital Mortality"
-						Market_Deceased_Today = "New Region Mortality"
-						Market_Fatality = "New Region Mortality"
-						Market_Total_Deaths = "Cumulative Region Mortality"
-						N = "Region Population"
-						S_N = "Current Susceptible Population"
-						E_N = "Current Exposed Population"
-						I_N = "Current Infected Population"
-						R_N = "Current Recovered Population"
-						NEWINFECTED = "New Infected Population"
-						ModelType = "Model Type Used to Generate Scenario"
-						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Scenario ID: Order"
-						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-						ScenarioUser = "Scenario ID: User who created Scenario"
-						ScenarioNameUnique = "Unique Scenario Name"
-						Scenarioname = "Scenario Name"
-						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 						OUTPUT;
 					END;
@@ -1390,8 +1246,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				byinc = 0.1;
 				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
@@ -1485,52 +1339,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					LABEL
-						ADMIT_DATE = "Date of Admission"
-						DATE = "Date of Infection"
-						DAY = "Day of Pandemic"
-						HOSP = "New Hospitalized Patients"
-						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-						MARKET_HOSP = "New Region Hospitalized Patients"
-						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-						ICU = "New Hospital ICU Patients"
-						ICU_OCCUPANCY = "Current Hospital ICU Census"
-						MARKET_ICU = "New Region ICU Patients"
-						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-						VENT = "New Hospital Ventilator Patients"
-						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-						MARKET_VENT = "New Region Ventilator Patients"
-						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-						DIAL = "New Hospital Dialysis Patients"
-						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-						MARKET_DIAL = "New Region Dialysis Patients"
-						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-						ECMO = "New Hospital ECMO Patients"
-						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-						MARKET_ECMO = "New Region ECMO Patients"
-						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
-						Total_Deaths = "Cumulative Hospital Mortality"
-						Market_Deceased_Today = "New Region Mortality"
-						Market_Fatality = "New Region Mortality"
-						Market_Total_Deaths = "Cumulative Region Mortality"
-						N = "Region Population"
-						S_N = "Current Susceptible Population"
-						E_N = "Current Exposed Population"
-						I_N = "Current Infected Population"
-						R_N = "Current Recovered Population"
-						NEWINFECTED = "New Infected Population"
-						ModelType = "Model Type Used to Generate Scenario"
-						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Scenario ID: Order"
-						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-						ScenarioUser = "Scenario ID: User who created Scenario"
-						ScenarioNameUnique = "Unique Scenario Name"
-						Scenarioname = "Scenario Name"
-						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 						OUTPUT;
 					END;
@@ -1769,8 +1577,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 						CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 					LAG_S = S_N; 
@@ -1840,52 +1646,6 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					LABEL
-						ADMIT_DATE = "Date of Admission"
-						DATE = "Date of Infection"
-						DAY = "Day of Pandemic"
-						HOSP = "New Hospitalized Patients"
-						HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
-						MARKET_HOSP = "New Region Hospitalized Patients"
-						MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
-						ICU = "New Hospital ICU Patients"
-						ICU_OCCUPANCY = "Current Hospital ICU Census"
-						MARKET_ICU = "New Region ICU Patients"
-						MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
-						MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
-						Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
-						VENT = "New Hospital Ventilator Patients"
-						VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
-						MARKET_VENT = "New Region Ventilator Patients"
-						MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
-						DIAL = "New Hospital Dialysis Patients"
-						DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
-						MARKET_DIAL = "New Region Dialysis Patients"
-						MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
-						ECMO = "New Hospital ECMO Patients"
-						ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
-						MARKET_ECMO = "New Region ECMO Patients"
-						MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
-						Deceased_Today = "New Hospital Mortality: Fatality=Deceased_Today"
-						Fatality = "New Hospital Mortality: Fatality=Deceased_Today"
-						Total_Deaths = "Cumulative Hospital Mortality"
-						Market_Deceased_Today = "New Region Mortality"
-						Market_Fatality = "New Region Mortality"
-						Market_Total_Deaths = "Cumulative Region Mortality"
-						N = "Region Population"
-						S_N = "Current Susceptible Population"
-						E_N = "Current Exposed Population"
-						I_N = "Current Infected Population"
-						R_N = "Current Recovered Population"
-						NEWINFECTED = "New Infected Population"
-						ModelType = "Model Type Used to Generate Scenario"
-						SCALE = "Ratio of Previous Day Population to Current Day Population"
-						ScenarioIndex = "Scenario ID: Order"
-						ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-						ScenarioUser = "Scenario ID: User who created Scenario"
-						ScenarioNameUnique = "Unique Scenario Name"
-						Scenarioname = "Scenario Name"
-						;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					DROP LAG: CUM: ;
 				RUN;
@@ -2068,6 +1828,109 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 										AND MF.SCENARIONAMEUNIQUE = FATAL.SCENARIONAMEUNIQUE
 										AND MF.DATE = FATAL.DATE
 							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE;
+					QUIT;
+				/* use proc datasets to apply labels to each column of output data table
+					except INPUTS which is documented right after the %EasyRun definition
+				 */
+					PROC DATASETS LIB=WORK NOPRINT;
+						MODIFY MODEL_FINAL;
+							LABEL
+								ADMIT_DATE = "Date of Admission"
+								DATE = "Date of Infection"
+								DAY = "Day of Pandemic"
+								HOSP = "New Hospitalized Patients"
+								HOSPITAL_OCCUPANCY = "Current Hospitalized Census"
+								MARKET_HOSP = "New Region Hospitalized Patients"
+								MARKET_HOSPITAL_OCCUPANCY = "Current Region Hospitalized Census"
+								ICU = "New Hospital ICU Patients"
+								ICU_OCCUPANCY = "Current Hospital ICU Census"
+								MARKET_ICU = "New Region ICU Patients"
+								MARKET_ICU_OCCUPANCY = "Current Region ICU Census"
+								MedSurgOccupancy = "Current Hospital Medical and Surgical Census (non-ICU)"
+								Market_MedSurg_Occupancy = "Current Region Medical and Surgical Census (non-ICU)"
+								VENT = "New Hospital Ventilator Patients"
+								VENT_OCCUPANCY = "Current Hospital Ventilator Patients"
+								MARKET_VENT = "New Region Ventilator Patients"
+								MARKET_VENT_OCCUPANCY = "Current Region Ventilator Patients"
+								DIAL = "New Hospital Dialysis Patients"
+								DIAL_OCCUPANCY = "Current Hospital Dialysis Patients"
+								MARKET_DIAL = "New Region Dialysis Patients"
+								MARKET_DIAL_OCCUPANCY = "Current Region Dialysis Patients"
+								ECMO = "New Hospital ECMO Patients"
+								ECMO_OCCUPANCY = "Current Hospital ECMO Patients"
+								MARKET_ECMO = "New Region ECMO Patients"
+								MARKET_ECMO_OCCUPANCY = "Current Region ECMO Patients"
+								Deceased_Today = "New Hospital Mortality"
+								Fatality = "New Hospital Mortality"
+								Total_Deaths = "Cumulative Hospital Mortality"
+								Market_Deceased_Today = "New Region Mortality"
+								Market_Fatality = "New Region Mortality"
+								Market_Total_Deaths = "Cumulative Region Mortality"
+								N = "Region Population"
+								S_N = "Current Susceptible Population"
+								E_N = "Current Exposed Population"
+								I_N = "Current Infected Population"
+								R_N = "Current Recovered Population"
+								NEWINFECTED = "New Infected Population"
+								ModelType = "Model Type Used to Generate Scenario"
+								SCALE = "Ratio of Previous Day Population to Current Day Population"
+								ScenarioIndex = "Scenario ID: Order"
+								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+								ScenarioUser = "Scenario ID: User who created Scenario"
+								ScenarioNameUnique = "Unique Scenario Name"
+								Scenarioname = "Scenario Name"
+								LOWER_HOSPITAL_OCCUPANCY="Lower Bound: Current Hospitalized Census"
+								LOWER_ICU_OCCUPANCY="Lower Bound: Current Hospital ICU Census"
+								LOWER_VENT_OCCUPANCY="Lower Bound: Current Hospital Ventilator Patients"
+								LOWER_ECMO_OCCUPANCY="Lower Bound: Current Hospital ECMO Patients"
+								LOWER_DIAL_OCCUPANCY="Lower Bound: Current Hospital Dialysis Patients"
+								UPPER_HOSPITAL_OCCUPANCY="Upper Bound: Current Hospitalized Census"
+								UPPER_ICU_OCCUPANCY="Upper Bound: Current Hospital ICU Census"
+								UPPER_VENT_OCCUPANCY="Upper Bound: Current Hospital Ventilator Patients"
+								UPPER_ECMO_OCCUPANCY="Upper Bound: Current Hospital ECMO Patients"
+								UPPER_DIAL_OCCUPANCY="Upper Bound: Current Hospital Dialysis Patients"
+								PEAK_HOSPITAL_OCCUPANCY = "Day Peak Hospital Occupancy First Occurs"
+								PEAK_ICU_OCCUPANCY = "Day Peak ICU Occupancy First Occurs"
+								PEAK_VENT_OCCUPANCY = "Day Peak Ventilator Patients First Occurs"
+								PEAK_ECMO_OCCUPANCY = "Day Peak ECMO Patients First Occurs"
+								PEAK_DIAL_OCCUPANCY = "Day Peak Dialysis Patients First Occurs"
+								PEAK_I_N = "Day Peak Current Infected Population First Occurs"
+								PEAK_FATALITY = "Day Peak New Hospital Mortality First Occurs"
+								;
+							MODIFY SCENARIOS;
+							LABEL
+								scope = "Source Macro for variable"
+								name = "Name of the macro variable"
+								offset = "Offset for long character macro variables (>200 characters)"
+								value = "The value of macro variable name"
+								ScenarioIndex = "Scenario ID: Order"
+								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+								ScenarioUser = "Scenario ID: User who created Scenario"
+								ScenarioNameUnique = "Unique Scenario Name"
+								Stage = "INPUT for input variables - MODEL for all variables"
+								;
+							MODIFY INPUTS;
+							LABEL
+								ScenarioIndex = "Scenario ID: Order"
+								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+								ScenarioUser = "Scenario ID: User who created Scenario"
+								ScenarioNameUnique = "Unique Scenario Name"
+								;
+							MODIFY FIT_PRED;
+							LABEL
+								ScenarioIndex = "Scenario ID: Order"
+								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+								ScenarioUser = "Scenario ID: User who created Scenario"
+								ScenarioNameUnique = "Unique Scenario Name"
+								;
+							MODIFY FIT_PARMS;
+							LABEL
+								ScenarioIndex = "Scenario ID: Order"
+								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+								ScenarioUser = "Scenario ID: User who created Scenario"
+								ScenarioNameUnique = "Unique Scenario Name"
+								;
+					RUN;
 					QUIT;
             /* CCF specific post-processing of MODEL_FINAL */
             /*pull real COVID admits and ICU*/

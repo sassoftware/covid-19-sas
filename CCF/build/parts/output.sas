@@ -3,6 +3,8 @@
 
 X_IMPORT: peak_flags2.sas
 
+X_IMPORT: data_dictionary.sas
+
 C_IMPORT: CCF_post.sas
 D_IMPORT: CCF_post.sas
 

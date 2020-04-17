@@ -9,8 +9,6 @@ X_IMPORT: parameters.sas
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				byinc = 0.1;
 				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;

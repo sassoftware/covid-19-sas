@@ -141,16 +141,16 @@ X_IMPORT: keys.sas
                     select * from
                         (select * from work.TMODEL_SIR) B 
                         left join
-                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY label="Lower Bound: Current Hospitalized Census", 
-                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY label="Lower Bound: Current Hospital ICU Census", 
-                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY label="Lower Bound: Current Hospital Ventilator Patients", 
-                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY label="Lower Bound: Current Hospital Patients", 
-                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY label="Lower Bound: Current Hospital Patients",
-                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY label="Upper Bound: Current Hospitalized Census", 
-                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY label="Upper Bound: Current Hospital ICU Census", 
-                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY label="Upper Bound: Current Hospital Ventilator Patients", 
-                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY label="Upper Bound: Current Hospital Patients", 
-                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY label="Upper Bound: Current Hospital Patients",
+                        (select min(HOSPITAL_OCCUPANCY) as LOWER_HOSPITAL_OCCUPANCY, 
+                                min(ICU_OCCUPANCY) as LOWER_ICU_OCCUPANCY, 
+                                min(VENT_OCCUPANCY) as LOWER_VENT_OCCUPANCY, 
+                                min(ECMO_OCCUPANCY) as LOWER_ECMO_OCCUPANCY, 
+                                min(DIAL_OCCUPANCY) as LOWER_DIAL_OCCUPANCY,
+                                max(HOSPITAL_OCCUPANCY) as UPPER_HOSPITAL_OCCUPANCY, 
+                                max(ICU_OCCUPANCY) as UPPER_ICU_OCCUPANCY, 
+                                max(VENT_OCCUPANCY) as UPPER_VENT_OCCUPANCY, 
+                                max(ECMO_OCCUPANCY) as UPPER_ECMO_OCCUPANCY, 
+                                max(DIAL_OCCUPANCY) as UPPER_DIAL_OCCUPANCY,
                                 Date, ModelType, ScenarioIndex
                             from TMODEL_SIR_SIM
                             group by Date, ModelType, ScenarioIndex
