@@ -117,9 +117,10 @@ The output file, MODEL_FINAL, uses the column ModelType to differentiate output 
 - Progress towards the next locked version is in the `/progress` folder
 - the `COVID_19.sas` file is built from modular parts in `/build/parts` into the `/build/public` folder by `/build/build.py` and then copied here
 
-# Example Visuals
+# Example Scenario Visuals
 With the option `plots=yes`, the `COVID_19.sas` program will create diagnostic visuals for each scenario. Some example of these visuals follow.  The output data is also available in SAS Visual Analytics with user interface to drive the running of scenarios is in the works.
 | All Approaches | Fitting Approaches |
 :-------------------------:|:-------------------------:
 ![](./examples/example-0.png)  |  ![](./examples/example-1.png)
-![](./examples/example-3.png)  |  ![](./examples/example-2.png)
+![](./examples/example-4.png)  |  ![](./examples/example-2.png)
+![](./examples/example-3.png)  |  

@@ -1,4 +1,4 @@
-    /* TMODEL APPROACH FOR SEIR - adds SIMULATION APPROACH TO BOUNDS*/
+    /* TMODEL APPROACH FOR SEIR - adds SIMULATION APPROACH TO UNCERTAINTY BOUNDS */
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
@@ -165,13 +165,15 @@ X_IMPORT: keys.sas
                         on B.ModelType=U.ModelType and B.ScenarioIndex=U.ScenarioIndex and B.DATE=U.DATE
                     order by ScenarioIndex, ModelType, Date
                 ;
+                drop table TMODEL_SEIR;
+                drop table DINIT;
             QUIT;
         %END;
 
         %IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
