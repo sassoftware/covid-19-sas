@@ -4,6 +4,7 @@
 # C_IMPORT: will import for ccf
 # D_IMPORT: will import for ccfall
 # U_IMPORT: will import for ui
+# V_IMPORT: will import for ui_public
 # X_IMPORT: will import for all
 #   If X then P then only P - not C or U
 #   If X then C then only C - not P or U
@@ -19,6 +20,7 @@ c=open('./ccf/COVID_19_SIRonly.sas','w')
 d=open('./ccf/COVID_19_ALL.sas','w')
 t=open('./COVID_19_test.sas','w')
 u=open('./UI/COVID_19.sas','w')
+v=open('./UI_public/COVID_19.sas','w')
 
 def subpart(file,type):
     with open('./parts/'+file) as part:
@@ -30,12 +32,6 @@ def subpart(file,type):
                     file = piece[10:]
                 print(file)
                 subpart(file,type)
-                #if type=='P': subpart(file,'P')
-                #elif type=='C': subpart(file,'C')
-                #elif type=='D': subpart(file,'D')
-                #elif type=='T': subpart(file,'T')
-                #elif type=='U': subpart(file,'U')
-                #elif type=='X': subpart(file,'X')
             elif piece.startswith('P_IMPORT: '):
                 if '\n' in piece:
                     file = piece[10:len(piece)-1]
@@ -71,12 +67,20 @@ def subpart(file,type):
                     file = piece[10:]
                 print(file)
                 subpart(file,'U')
+            elif piece.startswith('V_IMPORT: '):
+                if '\n' in piece:
+                    file = piece[10:len(piece)-1]
+                else:
+                    file = piece[10:]
+                print(file)
+                subpart(file,'V')
             elif type=='X':
                 p.write(piece)
                 c.write(piece)
                 d.write(piece)
                 t.write(piece)
                 u.write(piece)
+                v.write(piece)
             elif type=='P':
                 p.write(piece)
             elif type=='C':
@@ -87,6 +91,8 @@ def subpart(file,type):
                 t.write(piece)
             elif type=='U':
                 u.write(piece)
+            elif type=='V':
+                v.write(piece)
 
 subpart('driver.sas','X')
 
@@ -95,6 +101,7 @@ c.close()
 d.close()
 t.close()
 u.close()
+v.close()
 
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')
 copyfile('./public/run_scenarios.csv', '../run_scenarios.csv')
