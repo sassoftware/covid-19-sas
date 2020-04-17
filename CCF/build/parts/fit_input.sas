@@ -9,7 +9,7 @@
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF ScenarioSouce = BATCH %THEN %DO;
+					%IF &ScenarioSource. = BATCH %THEN %DO;
 						%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
 							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 							OPTION VALIDVARNAME=V7;

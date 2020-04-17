@@ -7,9 +7,9 @@
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = IFN(&SIGMA<0.3,0,&SIGMA-.3) to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .05; 
+                    DO SIGMA = IFN(&SIGMA<0.3,0,&SIGMA-.3) to &SIGMA+.3 by .2; /* range of .3, increment by .1 */
+                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 2; /* range of 5, increment by 1*/
+                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .1; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -21,7 +21,7 @@
                                                 &Population. * (1 - &SocialDistancingChange3.);
 								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - &SocialDistancingChange4.);
-                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .2; /* range of 2, increment by .1*/
+                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .25; /* range of 2, increment by .1*/
                                     DO TIME = 0 TO &N_DAYS. by 1;
                                         R_T = BETA / GAMMA * &Population.;
                                         R_T_Change = BETAChange / GAMMA * &Population.;
@@ -36,7 +36,7 @@
                     END;  
 				RUN;
 
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
+			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
                 PARMS N &Population.;

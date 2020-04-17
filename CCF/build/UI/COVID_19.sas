@@ -14,7 +14,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
     %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
-    %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
+    %LET HAVE_V151 = YES; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
 /* User Interface Switches - these are used if you using the code within SAS Visual Analytics UI */
     %LET ScenarioSource = UI;
@@ -441,9 +441,9 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = IFN(&SIGMA<0.3,0,&SIGMA-.3) to &SIGMA+.3 by .1; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .05; 
+                    DO SIGMA = IFN(&SIGMA<0.3,0,&SIGMA-.3) to &SIGMA+.3 by .2; /* range of .3, increment by .1 */
+                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 2; /* range of 5, increment by 1*/
+                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .1; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -455,7 +455,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                                                 &Population. * (1 - &SocialDistancingChange3.);
 								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - &SocialDistancingChange4.);
-                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .2; /* range of 2, increment by .1*/
+                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .25; /* range of 2, increment by .1*/
                                     DO TIME = 0 TO &N_DAYS. by 1;
                                         R_T = BETA / GAMMA * &Population.;
                                         R_T_Change = BETAChange / GAMMA * &Population.;
@@ -470,7 +470,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                     END;  
 				RUN;
 
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
+			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
                 PARMS N &Population.;
@@ -803,8 +803,8 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 1; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .05; 
+                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 2; /* range of 5, increment by 1*/
+                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .1; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -816,7 +816,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                                                 &Population. * (1 - &SocialDistancingChange3.);
 								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - &SocialDistancingChange4.);
-                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .2; /* range of 2, increment by .1*/
+                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .25; /* range of 2, increment by .1*/
                                     DO TIME = 0 TO &N_DAYS. by 1;
                                         R_T = BETA / GAMMA * &Population.;
                                         R_T_Change = BETAChange / GAMMA * &Population.;
@@ -830,7 +830,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
                         END; 
 				RUN;
 
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT performance nthreads=4 bypriority=1 partpriority=0; %END;
+			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
                 PARMS N &Population.;
@@ -1378,7 +1378,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 				%ELSE %DO;
 					%LET LATEST_CASE=0;
 				%END;
-					%IF ScenarioSouce = BATCH %THEN %DO;
+					%IF &ScenarioSource. = BATCH %THEN %DO;
 						%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
 							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 							OPTION VALIDVARNAME=V7;
