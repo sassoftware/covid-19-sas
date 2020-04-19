@@ -32,48 +32,13 @@ def subpart(file,type):
                     file = piece[10:]
                 print(file)
                 subpart(file,type)
-            elif piece.startswith('P_IMPORT: '):
+            elif piece.startswith('_IMPORT: ',1):
                 if '\n' in piece:
                     file = piece[10:len(piece)-1]
                 else:
                     file = piece[10:]
                 print(file)
-                subpart(file,'P')
-            elif piece.startswith('C_IMPORT: '):
-                if '\n' in piece:
-                    file = piece[10:len(piece)-1]
-                else:
-                    file = piece[10:]
-                print(file)
-                subpart(file,'C')
-            elif piece.startswith('D_IMPORT: '):
-                if '\n' in piece:
-                    file = piece[10:len(piece)-1]
-                else:
-                    file = piece[10:]
-                print(file)
-                subpart(file,'D')
-            elif piece.startswith('T_IMPORT: '):
-                if '\n' in piece:
-                    file = piece[10:len(piece)-1]
-                else:
-                    file = piece[10:]
-                print(file)
-                subpart(file,'T')
-            elif piece.startswith('U_IMPORT: '):
-                if '\n' in piece:
-                    file = piece[10:len(piece)-1]
-                else:
-                    file = piece[10:]
-                print(file)
-                subpart(file,'U')
-            elif piece.startswith('V_IMPORT: '):
-                if '\n' in piece:
-                    file = piece[10:len(piece)-1]
-                else:
-                    file = piece[10:]
-                print(file)
-                subpart(file,'V')
+                subpart(file,piece[0:1])
             elif type=='X':
                 p.write(piece)
                 c.write(piece)
@@ -81,18 +46,9 @@ def subpart(file,type):
                 t.write(piece)
                 u.write(piece)
                 v.write(piece)
-            elif type=='P':
-                p.write(piece)
-            elif type=='C':
-                c.write(piece)
-            elif type=='D':
-                d.write(piece)
-            elif type=='T':
-                t.write(piece)
-            elif type=='U':
-                u.write(piece)
-            elif type=='V':
-                v.write(piece)
+            else:
+                # p.write(piece) - make generic so variable named type is the prefix (case matters)
+                exec(type.lower()+'.write(piece)')
 
 subpart('driver.sas','X')
 
