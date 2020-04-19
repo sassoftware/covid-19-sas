@@ -43,11 +43,17 @@ X_IMPORT: keys.sas
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-X_IMPORT: postprocess.sas
+						DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
 						OUTPUT;
 					END;
 				END;
-				DROP LAG: BETA CUM: byinc;
+				DROP LAG: BETA byinc;
+			RUN;
+
+			DATA DS_SIR;
+				SET DS_SIR;
+X_IMPORT: postprocess.sas
+				DROP CUM:;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;

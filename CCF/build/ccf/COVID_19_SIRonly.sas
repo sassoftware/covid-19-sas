@@ -391,6 +391,15 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
+						DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
+						OUTPUT;
+					END;
+				END;
+				DROP LAG: BETA byinc;
+			RUN;
+
+			DATA DS_SIR;
+				SET DS_SIR;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -451,10 +460,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-						OUTPUT;
-					END;
-				END;
-				DROP LAG: BETA CUM: byinc;
+				DROP CUM:;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
