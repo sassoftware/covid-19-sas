@@ -114,7 +114,7 @@ X_IMPORT: fit_input.sas
 				QUIT;
 
 				DATA TMODEL_SEIR_FIT_I;
-					FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
+					FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 					ModelType="TMODEL - SEIR - FIT";
 					ScenarioName="&Scenario.";
 X_IMPORT: keys.sas

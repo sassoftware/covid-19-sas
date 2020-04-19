@@ -350,7 +350,7 @@ SAS and Cleveland Clinic are not responsible for any misuse of these techniques.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR;
-				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
