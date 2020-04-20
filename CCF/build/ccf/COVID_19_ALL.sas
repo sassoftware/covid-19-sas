@@ -2034,8 +2034,8 @@ You need to evaluate each parameter for your population of interest.
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS; 
-                    drop table work.FIT_PRED;
-                    drop table work.FIT_PARMS;
+                        drop table work.FIT_PRED;
+                        drop table work.FIT_PARMS;
                 QUIT;
             %END;
         %END;

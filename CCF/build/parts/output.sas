@@ -13,15 +13,21 @@ D_IMPORT: CCF_post.sas
                     PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                     PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                     PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                    PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                    PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+P_IMPORT: fit_recall_append.sas
+D_IMPORT: fit_recall_append.sas
+T_IMPORT: fit_recall_append.sas
+U_IMPORT: fit_recall_append.sas
+
 
                     PROC SQL;
                         drop table work.MODEL_FINAL;
                         drop table work.SCENARIOS;
                         drop table work.INPUTS;
-                        drop table work.FIT_PRED;
-                        drop table work.FIT_PARMS;
+P_IMPORT: fit_recall_drop.sas
+D_IMPORT: fit_recall_drop.sas
+T_IMPORT: fit_recall_drop.sas
+U_IMPORT: fit_recall_drop.sas
+
                     QUIT;
 
                 %END;
@@ -34,8 +40,11 @@ D_IMPORT: CCF_post.sas
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS; 
-                    drop table work.FIT_PRED;
-                    drop table work.FIT_PARMS;
+P_IMPORT: fit_recall_drop.sas
+D_IMPORT: fit_recall_drop.sas
+T_IMPORT: fit_recall_drop.sas
+U_IMPORT: fit_recall_drop.sas
+
                 QUIT;
             %END;
         %END;

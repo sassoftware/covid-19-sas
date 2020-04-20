@@ -309,8 +309,7 @@ You need to evaluate each parameter for your population of interest.
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+
             %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
 
@@ -701,20 +700,7 @@ You need to evaluate each parameter for your population of interest.
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
 								;
-							MODIFY FIT_PRED;
-							LABEL
-								ScenarioIndex = "Scenario ID: Order"
-								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-								ScenarioUser = "Scenario ID: User who created Scenario"
-								ScenarioNameUnique = "Unique Scenario Name"
-								;
-							MODIFY FIT_PARMS;
-							LABEL
-								ScenarioIndex = "Scenario ID: Order"
-								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-								ScenarioUser = "Scenario ID: User who created Scenario"
-								ScenarioNameUnique = "Unique Scenario Name"
-								;
+
 					RUN;
 					QUIT;
             /* CCF specific post-processing of MODEL_FINAL */
@@ -785,15 +771,13 @@ You need to evaluate each parameter for your population of interest.
                     PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                     PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                     PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                    PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                    PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+
 
                     PROC SQL;
                         drop table work.MODEL_FINAL;
                         drop table work.SCENARIOS;
                         drop table work.INPUTS;
-                        drop table work.FIT_PRED;
-                        drop table work.FIT_PARMS;
+
                     QUIT;
 
                 %END;
@@ -806,8 +790,7 @@ You need to evaluate each parameter for your population of interest.
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS; 
-                    drop table work.FIT_PRED;
-                    drop table work.FIT_PARMS;
+
                 QUIT;
             %END;
         %END;
