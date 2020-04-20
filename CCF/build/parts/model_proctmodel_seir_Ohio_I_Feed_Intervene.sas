@@ -45,19 +45,13 @@ X_IMPORT: fit_input.sas
 					FORMAT ModelType $30. DATE DATE9.; 
 					DATE = &FIRST_CASE. + TIME - 1;
 					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioUser="&SYSUSERID.";
-					ScenarioSource="&ScenarioSource.";
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
 					FORMAT ModelType $30.; 
 					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioUser="&SYSUSERID.";
-					ScenarioSource="&ScenarioSource.";
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+X_IMPORT: keys.sas
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
