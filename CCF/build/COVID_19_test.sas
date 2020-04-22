@@ -307,9 +307,12 @@ You need to evaluate each parameter for your population of interest.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-0.4) to &SIGMA+0.4 by 0.2; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+                    DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
+					IF SIGMA >= 0 THEN DO;
+                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+						IF RECOVERYDAYS >= 0 THEN DO;
+                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+							IF SOCIALD >= 0 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -330,8 +333,11 @@ You need to evaluate each parameter for your population of interest.
                                     OUTPUT; 
                                 END;
                             END;
+							END;
                         END;
-                    END;  
+						END;
+                    END;
+					END; 
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -361,6 +367,7 @@ You need to evaluate each parameter for your population of interest.
 			RUN;
 			QUIT;
 
+			/* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SEIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
@@ -377,7 +384,7 @@ You need to evaluate each parameter for your population of interest.
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -635,8 +642,10 @@ You need to evaluate each parameter for your population of interest.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+						IF RECOVERYDAYS >= 0 THEN DO;
+                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+							IF SOCIALD >= 0 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -657,7 +666,9 @@ You need to evaluate each parameter for your population of interest.
                                         OUTPUT; 
                                     END;
                             END;
-                        END; 
+							END;
+                        END;
+						END;
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -685,7 +696,7 @@ You need to evaluate each parameter for your population of interest.
 			RUN;
 			QUIT;  
 
-            /* use the center point of the ranges for the request scenario inputs */
+            /* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
 				ModelType="TMODEL - SIR";
@@ -961,9 +972,12 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-				 DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-0.4) to &SIGMA+0.4 by 0.2; /* range of .3, increment by .1 */
-					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+				 DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
+				 IF SIGMA >= 0 THEN DO;
+                    DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+					IF RECOVERYDAYS >= 0 THEN DO;
+                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+						IF SOCIALD >= 0 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -1008,10 +1022,10 @@ You need to evaluate each parameter for your population of interest.
 								LAG_R = R_N;
 								LAG_N = N;
 								DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
-								IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
-								ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
-								ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
-								ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
+								IF date = &ISOChangeDate. THEN BETA = BETAChange;
+								ELSE IF date = &ISOChangeDateTwo. THEN BETA = BETAChangeTwo;
+								ELSE IF date = &ISOChangeDate3. THEN BETA = BETAChange3;
+								ELSE IF date = &ISOChangeDate4. THEN BETA = BETAChange4;
 								LAG_BETA = BETA;
 								IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 									DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
@@ -1019,14 +1033,17 @@ You need to evaluate each parameter for your population of interest.
 								END;
 							END;
 						END;
-					END; 
+						END;
+					END;
+					END;
+				END;
 				END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1236,7 +1253,7 @@ You need to evaluate each parameter for your population of interest.
 		%END;
 
 	/* DATA STEP APPROACH FOR SIR */
-		/* these are the calculations for variablez used from above:
+		/* these are the calculations for variables used from above:
 			* calculated parameters used in model post-processing;
 				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
@@ -1273,8 +1290,10 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+					DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2; 
+					IF RECOVERYDAYS >= 0 THEN DO;
+                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1; 
+						IF SOCIALD >= 0 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -1326,14 +1345,16 @@ You need to evaluate each parameter for your population of interest.
 								END;
 							END;
 						END;
-					END; 
+						END;
+					END;
+					END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
 			DATA DS_SIR;
 				SET DS_SIR_SIM;
-				WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;

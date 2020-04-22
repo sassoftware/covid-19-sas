@@ -1,5 +1,5 @@
 	/* DATA STEP APPROACH FOR SIR */
-		/* these are the calculations for variablez used from above:
+		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
 		/* If this is a new scenario then run it */
@@ -10,8 +10,10 @@ X_IMPORT: parameters.sas
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
-					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+					DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2; 
+					IF RECOVERYDAYS >= 0 THEN DO;
+                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1; 
+						IF SOCIALD >= 0 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -63,14 +65,16 @@ X_IMPORT: keys.sas
 								END;
 							END;
 						END;
-					END; 
+						END;
+					END;
+					END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
 			DATA DS_SIR;
 				SET DS_SIR_SIM;
-				WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 X_IMPORT: postprocess.sas
 				DROP CUM: RECOVERYDAYS SOCIALD;
 			RUN;

@@ -321,7 +321,7 @@ You need to evaluate each parameter for your population of interest.
 
 
 	/* DATA STEP APPROACH FOR SIR */
-		/* these are the calculations for variablez used from above:
+		/* these are the calculations for variables used from above:
 			* calculated parameters used in model post-processing;
 				%LET HOSP_RATE = %SYSEVALF(&Admission_Rate. * &DiagnosedRate.);
 				%LET ICU_RATE = %SYSEVALF(&ICUPercent. * &DiagnosedRate.);
@@ -358,8 +358,10 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+					DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2; 
+					IF RECOVERYDAYS >= 0 THEN DO;
+                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1; 
+						IF SOCIALD >= 0 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -411,14 +413,16 @@ You need to evaluate each parameter for your population of interest.
 								END;
 							END;
 						END;
-					END; 
+						END;
+					END;
+					END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
 			DATA DS_SIR;
 				SET DS_SIR_SIM;
-				WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;

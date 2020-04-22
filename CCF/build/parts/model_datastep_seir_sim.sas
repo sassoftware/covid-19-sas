@@ -10,9 +10,12 @@ X_IMPORT: parameters.sas
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
-				 DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-0.4) to &SIGMA+0.4 by 0.2; /* range of .3, increment by .1 */
-					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+				 DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
+				 IF SIGMA >= 0 THEN DO;
+                    DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+					IF RECOVERYDAYS >= 0 THEN DO;
+                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+						IF SOCIALD >= 0 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -57,10 +60,10 @@ X_IMPORT: keys.sas
 								LAG_R = R_N;
 								LAG_N = N;
 								DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
-								IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
-								ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
-								ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
-								ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
+								IF date = &ISOChangeDate. THEN BETA = BETAChange;
+								ELSE IF date = &ISOChangeDateTwo. THEN BETA = BETAChangeTwo;
+								ELSE IF date = &ISOChangeDate3. THEN BETA = BETAChange3;
+								ELSE IF date = &ISOChangeDate4. THEN BETA = BETAChange4;
 								LAG_BETA = BETA;
 								IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 									DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
@@ -68,14 +71,17 @@ X_IMPORT: keys.sas
 								END;
 							END;
 						END;
-					END; 
+						END;
+					END;
+					END;
+				END;
 				END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 X_IMPORT: postprocess.sas
 				DROP CUM: SIGMA RECOVERYDAYS SOCIALD;
 			RUN;

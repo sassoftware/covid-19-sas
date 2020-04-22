@@ -12,8 +12,10 @@ X_IMPORT: parameters.sas
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+						IF RECOVERYDAYS >= 0 THEN DO;
+                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+							IF SOCIALD >= 0 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -34,7 +36,9 @@ X_IMPORT: parameters.sas
                                         OUTPUT; 
                                     END;
                             END;
-                        END; 
+							END;
+                        END;
+						END;
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -62,7 +66,7 @@ X_IMPORT: parameters.sas
 			RUN;
 			QUIT;  
 
-            /* use the center point of the ranges for the request scenario inputs */
+            /* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
 				ModelType="TMODEL - SIR";

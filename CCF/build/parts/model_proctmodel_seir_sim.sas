@@ -12,9 +12,12 @@ X_IMPORT: parameters.sas
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-0.4) to &SIGMA+0.4 by 0.2; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+                    DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
+					IF SIGMA >= 0 THEN DO;
+                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+						IF RECOVERYDAYS >= 0 THEN DO;
+                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+							IF SOCIALD >= 0 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -35,8 +38,11 @@ X_IMPORT: parameters.sas
                                     OUTPUT; 
                                 END;
                             END;
+							END;
                         END;
-                    END;  
+						END;
+                    END;
+					END; 
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -66,6 +72,7 @@ X_IMPORT: parameters.sas
 			RUN;
 			QUIT;
 
+			/* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SEIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
 				ModelType="TMODEL - SEIR";
@@ -79,7 +86,7 @@ X_IMPORT: keys.sas
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 X_IMPORT: postprocess.sas
