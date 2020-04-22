@@ -7,11 +7,12 @@ This work is currently defaulting to values for the population studied in the Cl
 You need to evaluate each parameter for your population of interest.
 */
 
-/* directory path for files: COVID_19.sas (this file), libname store */
-    %let homedir = /Local_Files/covid-19-sas/ccf;
+P_IMPORT: header_store.sas
+C_IMPORT: header_store.sas
+D_IMPORT: header_store.sas
+T_IMPORT: header_store.sas
+U_IMPORT: header_store.sas
 
-/* the storage location for the MODEL_FINAL table and other output tables - when &ScenarioSource=BATCH */
-    libname store "&homedir.";
 
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
     %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
