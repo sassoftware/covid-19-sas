@@ -680,38 +680,64 @@ You need to evaluate each parameter for your population of interest.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
-				DATA DINIT(Label="Initial Conditions of Simulation"); 
-					DO TIME = 0 TO &N_DAYS.; 
-						S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-						E_N = &E.;
-						I_N = &I. / &DiagnosedRate.;
-						R_N = &InitRecovered.;
-						R0  = &R_T.;
-						OUTPUT; 
-					END; 
+				DATA DINIT(Label="Initial Conditions of Simulation");  
+                    S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
+                    E_N = &E.;
+                    I_N = &I. / &DiagnosedRate.;
+                    R_N = &InitRecovered.;
+                    *R0  = &R_T.;
+                    /* prevent range below zero on each loop */
+                        DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
+                            DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
+                                GAMMA = 1 / RECOVERYDAYS;
+                                BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - SOCIALD);
+								BETAChange = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange.);
+								BETAChangeTwo = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChangeTwo.);
+								BETAChange3 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange3.);
+								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - &SocialDistancingChange4.);
+                                    DO TIME = 0 TO &N_DAYS. by 1;
+                                        R_T = BETA / GAMMA * &Population.;
+                                        R_T_Change = BETAChange / GAMMA * &Population.;
+                                        R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
+                                        R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
+                                        R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
+                                        OUTPUT; 
+                                    END;
+                            END;
+                        END; 
 				RUN;
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; %END;
+
+			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* PARAMETER SETTINGS */ 
-				PARMS N &Population. R0 &R_T. R0_c1 &R_T_Change. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.;
-				BOUNDS 1 <= R0 <= 13;
-				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
-				GAMMA = &GAMMA.;
-				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
+                PARMS N &Population.;
+                BOUNDS 1 <= R_T <= 13;
+				RESTRICT R_T > 0, R_T_Change > 0, R_T_Change_Two > 0, R_T_Change_3 > 0, R_T_Change_4 > 0;
+                change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
 				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
 				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
 				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
 				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
-				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
+				BETA = change_0*R_T*GAMMA/N + change_1*R_T_Change*GAMMA/N + change_2*R_T_Change_Two*GAMMA/N + change_3*R_T_Change_3*GAMMA/N + change_4*R_T_Change_4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
-				DERT.S_N = -BETA*S_N*I_N; 				
-				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;   
+				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
+				DERT.S_N = -BETA*S_N*I_N;
+				/* c. inflow from b. - outflow through recovery or death during illness*/
+				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;
+				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
-				SOLVE S_N I_N R_N / OUT = TMODEL_SIR; 
+				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
+                by RECOVERYDAYS SOCIALD;
 			RUN;
-			QUIT;
+			QUIT;  
 
+            /* use the center point of the ranges for the request scenario inputs */
 			DATA TMODEL_SIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
 				ModelType="TMODEL - SIR";
@@ -727,7 +753,8 @@ You need to evaluate each parameter for your population of interest.
 				LAG_I = I_N; 
 				LAG_R = R_N; 
 				LAG_N = N; 
-				SET TMODEL_SIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+                WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -793,65 +820,6 @@ You need to evaluate each parameter for your population of interest.
 				DROP LAG: CUM:;
 			RUN;
 
-        /* TMODEL APPROACH FOR SIR - adds SIMULATION APPROACH TO UNCERTAINTY BOUNDS */
-			/*DATA FOR PROC TMODEL APPROACHES*/
-				DATA DINIT(Label="Initial Conditions of Simulation");  
-                    S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-                    E_N = &E.;
-                    I_N = &I. / &DiagnosedRate.;
-                    R_N = &InitRecovered.;
-                    *R0  = &R_T.;
-                    /* prevent range below zero on each loop */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .1; 
-                                GAMMA = 1 / RECOVERYDAYS;
-                                BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - SOCIALD);
-								BETAChange = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - &SocialDistancingChange.);
-								BETAChangeTwo = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - &SocialDistancingChangeTwo.);
-								BETAChange3 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - &SocialDistancingChange3.);
-								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - &SocialDistancingChange4.);
-                                    DO TIME = 0 TO &N_DAYS. by 1;
-                                        R_T = BETA / GAMMA * &Population.;
-                                        R_T_Change = BETAChange / GAMMA * &Population.;
-                                        R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
-                                        R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
-                                        R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
-                                        OUTPUT; 
-                                    END;
-                            END;
-                        END; 
-				RUN;
-
-			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
-			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* PARAMETER SETTINGS */ 
-                PARMS N &Population.;
-                BOUNDS 1 <= R_T <= 13;
-				RESTRICT R_T > 0, R_T_Change > 0, R_T_Change_Two > 0, R_T_Change_3 > 0, R_T_Change_4 > 0;
-                change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
-				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
-				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
-				change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));
-				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
-				BETA = change_0*R_T*GAMMA/N + change_1*R_T_Change*GAMMA/N + change_2*R_T_Change_Two*GAMMA/N + change_3*R_T_Change_3*GAMMA/N + change_4*R_T_Change_4*GAMMA/N;
-				/* DIFFERENTIAL EQUATIONS */ 
-				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
-				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;
-				/* d. Recovered and death humans through "promotion" inflow from c.*/
-				DERT.R_N = GAMMA*I_N;           
-				/* SOLVE THE EQUATIONS */ 
-				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
-                by RECOVERYDAYS SOCIALD;
-			RUN;
-			QUIT;
-
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SIR_SIM as
@@ -859,7 +827,7 @@ You need to evaluate each parameter for your population of interest.
                     from TMODEL_SIR_SIM
                     order by RECOVERYDAYS, SOCIALD, Time
                 ;
-            quit;          
+            quit; 
 
             /* use a skeleton from the normal post-processing to processes every scenario.
                 by statement used for separating scenarios - order by in sql above prepares this
@@ -956,6 +924,7 @@ You need to evaluate each parameter for your population of interest.
                 ;
                 drop table TMODEL_SIR_SIM;
             QUIT;
+
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
 			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 			

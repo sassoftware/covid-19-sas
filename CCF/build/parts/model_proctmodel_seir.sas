@@ -62,7 +62,7 @@ X_IMPORT: postprocess.sas
 				DROP LAG: CUM: ;
 			RUN;
 
-X_IMPORT: sim_model_proctmodel_seir.sas
+X_IMPORT: model_proctmodel_seir_sim.sas
 
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
 			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
