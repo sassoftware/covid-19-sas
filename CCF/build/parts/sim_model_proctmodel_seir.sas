@@ -21,15 +21,13 @@
                                                 &Population. * (1 - &SocialDistancingChange3.);
 								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - &SocialDistancingChange4.);
-                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .25; /* range of 2, increment by .1*/
-                                    DO TIME = 0 TO &N_DAYS. by 1;
-                                        R_T = BETA / GAMMA * &Population.;
-                                        R_T_Change = BETAChange / GAMMA * &Population.;
-                                        R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
-                                        R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
-                                        R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
-                                        OUTPUT; 
-                                    END;
+                                DO TIME = 0 TO &N_DAYS. by 1;
+                                    R_T = BETA / GAMMA * &Population.;
+                                    R_T_Change = BETAChange / GAMMA * &Population.;
+                                    R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
+                                    R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
+                                    R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
+                                    OUTPUT; 
                                 END;
                             END;
                         END;
@@ -59,16 +57,16 @@
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by Sigma RECOVERYDAYS SOCIALD R0;
+                by Sigma RECOVERYDAYS SOCIALD;
 			RUN;
 			QUIT;
 
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, R0, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by Sigma, RECOVERYDAYS, SOCIALD, R0, Time
+                    order by Sigma, RECOVERYDAYS, SOCIALD, Time
                 ;
             quit;
 
@@ -84,8 +82,8 @@
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by Sigma RECOVERYDAYS SOCIALD R0;
-                    if first.R0 then do;
+                by Sigma RECOVERYDAYS SOCIALD;
+                    if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
@@ -137,7 +135,7 @@ X_IMPORT: keys.sas
 					
 					DATE = &DAY_ZERO. + DAY;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD R0;
+                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD;
 			RUN;
 
             PROC SQL noprint;

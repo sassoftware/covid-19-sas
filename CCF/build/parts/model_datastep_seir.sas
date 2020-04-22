@@ -41,6 +41,7 @@ X_IMPORT: keys.sas
 					LAG_I = I_N;
 					LAG_R = R_N;
 					LAG_N = N;
+					DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
 					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
