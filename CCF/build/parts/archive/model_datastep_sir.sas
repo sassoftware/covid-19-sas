@@ -5,12 +5,10 @@ X_IMPORT: parameters.sas
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR;
-				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SIR";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
-				LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-					ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
 				byinc = 0.1;
 				DO DAY = 0 TO &N_DAYS. by byinc;
 					IF DAY = 0 THEN DO;
@@ -39,17 +37,24 @@ X_IMPORT: keys.sas
 					LAG_I = I_N;
 					LAG_R = R_N;
 					LAG_N = N;
+					DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
 					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-X_IMPORT: postprocess.sas
+						DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
 						OUTPUT;
 					END;
 				END;
-				DROP LAG: BETA CUM: byinc;
+				DROP LAG: BETA byinc;
+			RUN;
+
+			DATA DS_SIR;
+				SET DS_SIR;
+X_IMPORT: postprocess.sas
+				DROP CUM:;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;

@@ -1,4 +1,4 @@
-	/*PROC TMODEL SIR APPROACH*/
+	/*PROC TMODEL SEIR APPROACH*/
 		/* these are the calculations for variables used from above:
 X_IMPORT: parameters.sas
 		*/
@@ -22,6 +22,7 @@ X_IMPORT: parameters.sas
 				BOUNDS 1 <= R0 <= 13;
 				RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 				GAMMA = &GAMMA.;
+				SIGMA = &SIGMA.;
 				change_0 = (TIME < (&ISOChangeDate. - &DAY_ZERO.));
 				change_1 = ((TIME >= (&ISOChangeDate. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));   
 				change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
@@ -29,44 +30,49 @@ X_IMPORT: parameters.sas
 				change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         
 				BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;
 				/* DIFFERENTIAL EQUATIONS */ 
-				DERT.S_N = -BETA*S_N*I_N; 				
-				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;   
+				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
+				DERT.S_N = -BETA*S_N*I_N;
+				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
+				DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+				/* c. inflow from b. - outflow through recovery or death during illness*/
+				DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
-				SOLVE S_N I_N R_N / OUT = TMODEL_SIR; 
+				SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR; 
 			RUN;
 			QUIT;
 
-			DATA TMODEL_SIR;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
-				ModelType="TMODEL - SIR";
+			DATA TMODEL_SEIR;
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
+				ModelType="TMODEL - SEIR";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
-				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 				LAG_S = S_N; 
-				E_N = &E.; LAG_E = E_N;  /* placeholder for post-processing of SIR model */
+				LAG_E = E_N; 
 				LAG_I = I_N; 
 				LAG_R = R_N; 
 				LAG_N = N; 
-				SET TMODEL_SIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+				SET TMODEL_SEIR(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 X_IMPORT: postprocess.sas
-				DROP LAG: CUM:;
+				DROP LAG: CUM: ;
 			RUN;
 
-X_IMPORT: sim_model_proctmodel_sir.sas
+X_IMPORT: model_proctmodel_seir_sim.sas
 
-			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
-			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
+			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
+			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 			
 		%END;
 
 		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
+				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
@@ -83,14 +89,14 @@ X_IMPORT: sim_model_proctmodel_sir.sas
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
-				TITLE "Daily Occupancy - PROC TMODEL SIR Approach With Uncertainty Bounds";
+				where ModelType='TMODEL - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
 				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
 				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
 				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
-					
+				
                 BAND x=DATE lower=LOWER_HOSPITAL_OCCUPANCY upper=UPPER_HOSPITAL_OCCUPANCY / fillattrs=(color=blue transparency=.8) name="b1";
                 BAND x=DATE lower=LOWER_ICU_OCCUPANCY upper=UPPER_ICU_OCCUPANCY / fillattrs=(color=red transparency=.8) name="b2";
                 BAND x=DATE lower=LOWER_VENT_OCCUPANCY upper=UPPER_VENT_OCCUPANCY / fillattrs=(color=green transparency=.8) name="b3";

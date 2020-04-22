@@ -44,20 +44,14 @@ X_IMPORT: fit_input.sas
 					LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
 					FORMAT ModelType $30. DATE DATE9.; 
 					DATE = &FIRST_CASE. + TIME - 1;
-					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioUser="&SYSUSERID.";
-					ScenarioSource="&ScenarioSource.";
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
+X_IMPORT: keys.sas
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
 					FORMAT ModelType $30.; 
-					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioUser="&SYSUSERID.";
-					ScenarioSource="&ScenarioSource.";
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
+X_IMPORT: keys.sas
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
@@ -114,8 +108,8 @@ X_IMPORT: fit_input.sas
 				QUIT;
 
 				DATA TMODEL_SEIR_FIT_I;
-					FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
-					ModelType="TMODEL - SEIR - FIT";
+					FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
 					ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -159,7 +153,7 @@ X_IMPORT: postprocess.sas
 
 			/* Plot Fit of Actual v. Predicted */
 			PROC SGPLOT DATA=work.FIT_PRED;
-				WHERE _TYPE_  NE 'RESIDUAL' and ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				WHERE _TYPE_  NE 'RESIDUAL' and ModelType='SEIR with PROC (T)MODEL-Fit R0' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Actual v. Predicted Infections in Region";
 				TITLE2 "Initial R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
@@ -169,7 +163,7 @@ X_IMPORT: postprocess.sas
 			TITLE;TITLE2;TITLE3;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SEIR with PROC (T)MODEL-Fit R0' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";

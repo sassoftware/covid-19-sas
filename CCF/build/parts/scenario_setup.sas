@@ -88,8 +88,11 @@ X_IMPORT: keys.sas
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+P_IMPORT: fit_recall_pull.sas
+D_IMPORT: fit_recall_pull.sas
+T_IMPORT: fit_recall_pull.sas
+U_IMPORT: fit_recall_pull.sas
+
             %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
 

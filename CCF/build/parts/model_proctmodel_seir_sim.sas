@@ -1,4 +1,9 @@
-        /* TMODEL APPROACH FOR SEIR - adds SIMULATION APPROACH TO UNCERTAINTY BOUNDS */
+	/*PROC TMODEL SEIR APPROACH*/
+		/* these are the calculations for variables used from above:
+X_IMPORT: parameters.sas
+		*/
+		/* If this is a new scenario then run it */
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
 			/*DATA FOR PROC TMODEL APPROACHES*/
 				DATA DINIT(Label="Initial Conditions of Simulation");  
                     S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
@@ -7,9 +12,12 @@
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = IFN(&SIGMA<0.3,0,&SIGMA-.3) to &SIGMA+.3 by .2; /* range of .3, increment by .1 */
-                        DO RECOVERYDAYS = IFN(&RecoveryDays<5,0,&RecoveryDays.-5) to &RecoveryDays.+5 by 2; /* range of 5, increment by 1*/
-                            DO SOCIALD = IFN(&SocialDistancing<.1,0,&SocialDistancing.-.1) to &SocialDistancing.+.1 by .1; 
+                    DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
+					IF SIGMA >= 0 THEN DO;
+                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
+						IF RECOVERYDAYS >= 0 THEN DO;
+                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
+							IF SOCIALD >= 0 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -21,19 +29,20 @@
                                                 &Population. * (1 - &SocialDistancingChange3.);
 								BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - &SocialDistancingChange4.);
-                                DO R0 = IFN((BETA / GAMMA * &Population.)-2<2,0,(BETA / GAMMA * &Population.)-2) to (BETA / GAMMA * &Population.)+2 by .25; /* range of 2, increment by .1*/
-                                    DO TIME = 0 TO &N_DAYS. by 1;
-                                        R_T = BETA / GAMMA * &Population.;
-                                        R_T_Change = BETAChange / GAMMA * &Population.;
-                                        R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
-                                        R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
-                                        R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
-                                        OUTPUT; 
-                                    END;
+                                DO TIME = 0 TO &N_DAYS. by 1;
+                                    R_T = BETA / GAMMA * &Population.;
+                                    R_T_Change = BETAChange / GAMMA * &Population.;
+                                    R_T_Change_Two = BETAChangeTwo / GAMMA * &Population.;
+                                    R_T_Change_3 = BETAChange3 / GAMMA * &Population.;
+                                    R_T_Change_4 = BETAChange4 / GAMMA * &Population.;
+                                    OUTPUT; 
                                 END;
                             END;
+							END;
                         END;
-                    END;  
+						END;
+                    END;
+					END; 
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -59,16 +68,37 @@
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by Sigma RECOVERYDAYS SOCIALD R0;
+                by Sigma RECOVERYDAYS SOCIALD;
 			RUN;
 			QUIT;
+
+			/* use the center point of the ranges for the requested scenario inputs */
+			DATA TMODEL_SEIR;
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
+				ModelType="SEIR with PROC (T)MODEL";
+				ScenarioName="&Scenario.";
+X_IMPORT: keys.sas
+				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
+					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
+				LAG_S = S_N; 
+				LAG_E = E_N; 
+				LAG_I = I_N; 
+				LAG_R = R_N; 
+				LAG_N = N; 
+				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+				N = SUM(S_N, E_N, I_N, R_N);
+				SCALE = LAG_N / N;
+X_IMPORT: postprocess.sas
+				DROP LAG: CUM: ;
+			RUN;
 
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, R0, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by Sigma, RECOVERYDAYS, SOCIALD, R0, Time
+                    order by Sigma, RECOVERYDAYS, SOCIALD, Time
                 ;
             quit;
 
@@ -79,13 +109,13 @@
             */
 			DATA TMODEL_SEIR_SIM;
 				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
-				ModelType="TMODEL - SEIR";
+				ModelType="SEIR with PROC (T)MODEL";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by Sigma RECOVERYDAYS SOCIALD R0;
-                    if first.R0 then do;
+                by Sigma RECOVERYDAYS SOCIALD;
+                    if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
@@ -137,7 +167,7 @@ X_IMPORT: keys.sas
 					
 					DATE = &DAY_ZERO. + DAY;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD R0;
+                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD;
 			RUN;
 
             PROC SQL noprint;
@@ -164,3 +194,54 @@ X_IMPORT: keys.sas
                 ;
                 drop table TMODEL_SEIR_SIM;
             QUIT;
+
+			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
+			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
+			
+		%END;
+
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
+			PROC SGPLOT DATA=work.MODEL_FINAL;
+				where ModelType='SEIR with PROC (T)MODEL' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
+				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
+
+			PROC SGPLOT DATA=work.MODEL_FINAL;
+				where ModelType='SEIR with PROC (T)MODEL' and ScenarioIndex=&ScenarioIndex.;
+				TITLE "Daily Occupancy - PROC TMODEL SEIR Approach With Uncertainty Bounds";
+				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
+				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
+				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
+				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
+				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
+				
+                BAND x=DATE lower=LOWER_HOSPITAL_OCCUPANCY upper=UPPER_HOSPITAL_OCCUPANCY / fillattrs=(color=blue transparency=.8) name="b1";
+                BAND x=DATE lower=LOWER_ICU_OCCUPANCY upper=UPPER_ICU_OCCUPANCY / fillattrs=(color=red transparency=.8) name="b2";
+                BAND x=DATE lower=LOWER_VENT_OCCUPANCY upper=UPPER_VENT_OCCUPANCY / fillattrs=(color=green transparency=.8) name="b3";
+                BAND x=DATE lower=LOWER_ECMO_OCCUPANCY upper=UPPER_ECMO_OCCUPANCY / fillattrs=(color=brown transparency=.8) name="b4";
+                BAND x=DATE lower=LOWER_DIAL_OCCUPANCY upper=UPPER_DIAL_OCCUPANCY / fillattrs=(color=purple transparency=.8) name="b5";
+                SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(color=blue THICKNESS=2) name="l1";
+				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(color=red THICKNESS=2) name="l2";
+				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(color=green THICKNESS=2) name="l3";
+				SERIES X=DATE Y=ECMO_OCCUPANCY / LINEATTRS=(color=brown THICKNESS=2) name="l4";
+				SERIES X=DATE Y=DIAL_OCCUPANCY / LINEATTRS=(color=purple THICKNESS=2) name="l5";
+                keylegend "l1" "l2" "l3" "l4" "l5";
+                
+				XAXIS LABEL="Date";
+				YAXIS LABEL="Daily Occupancy";
+			RUN;
+			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
+		%END;

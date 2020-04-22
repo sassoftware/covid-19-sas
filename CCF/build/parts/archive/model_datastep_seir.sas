@@ -5,7 +5,7 @@ X_IMPORT: parameters.sas
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR;
-				FORMAT ModelType $30.DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
 				ModelType="DS - SEIR";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
@@ -41,17 +41,24 @@ X_IMPORT: keys.sas
 					LAG_I = I_N;
 					LAG_R = R_N;
 					LAG_N = N;
+					DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
 					IF date = &ISOChangeDate. THEN BETA = &BETAChange.;
 					ELSE IF date = &ISOChangeDateTwo. THEN BETA = &BETAChangeTwo.;
 					ELSE IF date = &ISOChangeDate3. THEN BETA = &BETAChange3.;
 					ELSE IF date = &ISOChangeDate4. THEN BETA = &BETAChange4.;
 					LAG_BETA = BETA;
 					IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-X_IMPORT: postprocess.sas
+						DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
 						OUTPUT;
 					END;
 				END;
-				DROP LAG: BETA CUM: byinc;
+				DROP LAG: BETA byinc;
+			RUN;
+
+			DATA DS_SEIR;
+				SET DS_SEIR;
+X_IMPORT: postprocess.sas
+				DROP CUM:;
 			RUN;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
