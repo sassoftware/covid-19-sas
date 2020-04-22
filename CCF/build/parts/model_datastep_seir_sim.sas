@@ -10,7 +10,7 @@ X_IMPORT: parameters.sas
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
-				 DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-.4) to &SIGMA+.4 by .2; /* range of .3, increment by .1 */
+				 DO SIGMA = IFN(&SIGMA<0.4,0,&SIGMA-0.4) to &SIGMA+0.4 by 0.2; /* range of .3, increment by .1 */
 					DO RECOVERYDAYS = IFN(&RecoveryDays<4,0,&RecoveryDays.-4) to &RecoveryDays.+4 by 2; /* range of 5, increment by 1*/
 						DO SOCIALD = IFN(&SocialDistancing<.2,0,&SocialDistancing.-.2) to &SocialDistancing.+.2 by .1; 
 							GAMMA = 1 / RECOVERYDAYS;
@@ -75,7 +75,7 @@ X_IMPORT: keys.sas
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
 X_IMPORT: postprocess.sas
 				DROP CUM: SIGMA RECOVERYDAYS SOCIALD;
 			RUN;
