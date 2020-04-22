@@ -351,7 +351,7 @@ You need to evaluate each parameter for your population of interest.
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR_SIM;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
-				ModelType="DS - SIR";
+				ModelType="SIR with Data Step";
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
@@ -587,7 +587,7 @@ You need to evaluate each parameter for your population of interest.
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
@@ -605,7 +605,7 @@ You need to evaluate each parameter for your population of interest.
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='DS - SIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";

@@ -69,7 +69,7 @@ X_IMPORT: parameters.sas
             /* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SIR;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
-				ModelType="TMODEL - SIR";
+				ModelType="SIR with PROC (T)MODEL";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
@@ -103,7 +103,7 @@ X_IMPORT: postprocess.sas
             */
 			DATA TMODEL_SIR_SIM;
 				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
-				ModelType="TMODEL - SIR";
+				ModelType="SIR with PROC (T)MODEL";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
@@ -196,7 +196,7 @@ X_IMPORT: keys.sas
 
 		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SIR with PROC (T)MODEL' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
@@ -214,7 +214,7 @@ X_IMPORT: keys.sas
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SIR with PROC (T)MODEL' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";

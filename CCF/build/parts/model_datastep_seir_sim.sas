@@ -6,7 +6,7 @@ X_IMPORT: parameters.sas
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR_SIM;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
-				ModelType="DS - SEIR";
+				ModelType="SEIR with Data Step";
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
@@ -184,7 +184,7 @@ X_IMPORT: keys.sas
 
 		%IF &PLOTS. = YES %THEN %DO;
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SEIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
@@ -202,7 +202,7 @@ X_IMPORT: keys.sas
 			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='DS - SEIR' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SEIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
