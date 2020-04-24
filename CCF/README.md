@@ -37,43 +37,43 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
 **INPUT:**
 - The description of the input parameters for the `%EasyRun` Macro follow the macro definition in `COVID_19.sas` and are detailed in the table below:
 
-| Input Parameter | Description | Example Input | Type of Parameter |
-| --- | --- | --- | --- |
-| Scenario | Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID | Scenario_DrS_00_20_run_1 (spaces are ok) | positional |
-| IncubationPeriod | Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right | 0 | positional |
-| InitRecovered | Initial number of Recovered patients, assumed to have immunity to future infection | 0 | positional |
-| RecoveryDays | Number of days a patient is considered infectious (the amount of time it takes to recover or die) | 14 | positional |
-| doublingtime | Baseline Infection Doubling Time without social distancing | 5 | positional |
-| Population | Number of people in region of interest, assumed to be well mixed and independent of other populations | 4690484 | positional |
-| KnownAdmits | Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections | 10 | positional |
-| SocialDistancing | Baseline Social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
-| ISOChangeDate | Date of first change from baseline in social distancing parameter | '13MAR2020'd | positional |
-| SocialDistancingChange | Second value of social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
-| ISOChangeDateTwo | Date of second change in social distancing parameter | '06APR2020'd | positional |
-| SocialDistancingChangeTwo | Third value of social distancing (% reduction in social contact compared to normal activity) | 0.4 | positional |
-| ISOChangeDate3 | Date of third change in social distancing parameter | '20APR2020'd | positional |
-| SocialDistancingChange3 | Forth value of social distancing (% reduction in social contact compared to normal activity) | 0.5 | positional |
-| ISOChangeDateTwo | Date of fourth change in social distancing parameter | '01May2020'd | positional |
-| SocialDistancingChangeTwo | Fifth value of social distancing (% reduction in social contact compared to normal activity) | 0.3 | positional |
-| MarketSharePercent | Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest | 0.29 | positional |
-| Admission_Rate | Percentage of Infected patients in the region who will be hospitalized | 0.075 | positional |
-| ICUPercent | Percentage of hospitalized patients who will require ICU | 0.45 | positional |
-| VentPErcent | Percentage of hospitalized patients who will require Ventilators | 0.35 | positional |
-| FatalityRate | Percentage of hospitalized patients who will die | 0 | positional |
-| plots | YES/NO display plots in output | YES | keyword |
-| N_DAYS | Number of days to project | 365 | keyword |
-| DiagnosedRate | Factor to adjust admission_rate contributing to via MarketSharePercent I (see calculation for I) | 1.0 | keyword |
-| E | Initial Number of Exposed (infected but not yet infectious) | 0 | keyword |
-| SIGMA | Rate of latent individuals Exposed and transported to the infectious stage during each time period | 0.90 | keyword |
-| DAY_ZERO | Date of the first COVID-19 case | '13MAR2020'd | keyword |
-| BETA_DECAY | Factor (%) used for daily reduction of Beta | 0.0 | keyword |
-| ECMO_RATE | Default percent of total admissions that need ECMO | 0.03 | keyword |
-| DIAL_RATE | Default percent of admissions that need Dialysis | 0.05 | keyword |
-| HOSP_LOS | Average Hospital Length of Stay | 7 | keyword |
-| ICU_LOS | Average ICU Length of Stay | 9 | keyword |
-| VENT_LOS | Average Vent Length of Stay | 10 | keyword |
-| ECMO_LOS | Average ECMO Length of Stay | 6 | keyword |
-| DIAL_LOS | Average DIAL Length of Stay | 11 | keyword |
+| Input Parameter | Label | Description | Example Input | Type of Parameter |
+| --- | --- | --- | --- | --- |
+| Scenario                  | Scenario Name | Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID | Scenario_DrS_00_20_run_1 (spaces are ok) | positional |
+| IncubationPeriod          | Average Days between Infection and Hospitalization | Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right | 0 | positional |
+| InitRecovered             | Number of Recovered (Immune) Patients on Day 0 | Initial number of Recovered patients, assumed to have immunity to future infection | 0 | positional |
+| RecoveryDays              | Average Days Infectious | Number of days a patient is considered infectious (the amount of time it takes to recover or die) | 14 | positional |
+| doublingtime              | Baseline Infection Doubling Time (No Social Distancing) | Baseline Infection Doubling Time without social distancing | 5 | positional |
+| Population                | Regional Population | Number of people in region of interest, assumed to be well mixed and independent of other populations | 4690484 | positional |
+| KnownAdmits               | Number of Admitted Patients in Hospital of Interest on Day 0 | Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections | 10 | positional |
+| SocialDistancing          | Initial Social Distancing (% Reduction from Normal) | Baseline Social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
+| ISOChangeDate             | Date of First Change in Social Distancing | Date of first change from baseline in social distancing parameter | '13MAR2020'd | positional |
+| SocialDistancingChange    | Second Social Distancing (% Reduction from Normal) | Second value of social distancing (% reduction in social contact compared to normal activity) | 0 | positional |
+| ISOChangeDateTwo          | Date of Second Change in Social Distancing | Date of second change in social distancing parameter | '06APR2020'd | positional |
+| SocialDistancingChangeTwo | Third Social Distancing (% Reduction from Normal) | Third value of social distancing (% reduction in social contact compared to normal activity) | 0.4 | positional |
+| ISOChangeDate3            | Date of Third Change in Social Distancing | Date of third change in social distancing parameter | '20APR2020'd | positional |
+| SocialDistancingChange3   | Fourth Social Distancing (% Reduction from Normal) | Forth value of social distancing (% reduction in social contact compared to normal activity) | 0.5 | positional |
+| ISOChangeDateTwo          | Date of Fourth Change in Social Distancing | Date of fourth change in social distancing parameter | '01May2020'd | positional |
+| SocialDistancingChangeTwo | Fifth Social Distancing (% Reduction from Normal) | Fifth value of social distancing (% reduction in social contact compared to normal activity) | 0.3 | positional |
+| MarketSharePercent        | Anticipated Share (%) of Regional Hospitalized Patients | Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest | 0.29 | positional |
+| Admission_Rate            | Percentage of Infected Patients Requiring Hospitalization | Percentage of Infected patients in the region who will be hospitalized | 0.075 | positional |
+| ICUPercent                | Percentage of Hospitalized Patients Requiring ICU | Percentage of hospitalized patients who will require ICU | 0.45 | positional |
+| VentPErcent               | Percentage of Hospitalized Patients Requiring Ventilators | Percentage of hospitalized patients who will require Ventilators | 0.35 | positional |
+| FatalityRate              | Percentage of Hospitalized Patients Requiring ECMO | Percentage of hospitalized patients who will die | 0 | positional |
+| plots                     | Percentage of Hospitalized Patients Requiring Dialysis | YES/NO display plots in output | YES | keyword |
+| N_DAYS                    | Percentage of Hospitalized Patients who will Die | Number of days to project | 365 | keyword |
+| DiagnosedRate             | Display Plots (Yes/No) | Factor to adjust admission_rate contributing to via MarketSharePercent I (see calculation for I) | 1.0 | keyword |
+| E                         | Number of Days to Project | Initial Number of Exposed (infected but not yet infectious) | 0 | keyword |
+| SIGMA                     | Hospitalization Rate Reduction (%) for Underdiagnosis | Rate of latent individuals Exposed and transported to the infectious stage during each time period | 0.90 | keyword |
+| DAY_ZERO                  | Number of Exposed Patients on Day 0 | Date of the first COVID-19 case | '13MAR2020'd | keyword |
+| BETA_DECAY                | Days Exposed before Infected | Factor (%) used for daily reduction of Beta | 0.0 | keyword |
+| ECMO_RATE                 | Date of the First COVID-19 Case | Default percent of total admissions that need ECMO | 0.03 | keyword |
+| DIAL_RATE                 | Daily Reduction (%) of Beta | Default percent of admissions that need Dialysis | 0.05 | keyword |
+| HOSP_LOS                  | Average Hospital Length of Stay | Average Hospital Length of Stay | 7 | keyword |
+| ICU_LOS                   | Average ICU Length of Stay | Average ICU Length of Stay | 9 | keyword |
+| VENT_LOS                  | Average Ventilator Length of Stay | Average Vent Length of Stay | 10 | keyword |
+| ECMO_LOS                  | Average ECMO Length of Stay | Average ECMO Length of Stay | 6 | keyword |
+| DIAL_LOS                  | Average Dialysis Length of Stay | Average DIAL Length of Stay | 11 | keyword |
 
 # Output Files Notes
 **OUTPUT:**
