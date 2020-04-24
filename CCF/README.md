@@ -34,7 +34,7 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
     - Change the input parameters to match the population you are working with.  If their is a wide range of scenarios you want to run then use the run_scenarios.csv method to easily submit all the combinations.
 
 # Explore the Inputs, Outputs and Details in the Wiki
-[Explore the wiki](https://github.com/sassoftware/covid-19-sas/wiki)
+[Explore the wiki](https://github.com/sassoftware/covid-19-sas/wiki/CCF%3A-Home)
 
 # Development Notes
 - The current locked version of the project is in `COVID_19.sas`.
