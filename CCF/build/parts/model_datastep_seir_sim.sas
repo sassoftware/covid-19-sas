@@ -10,8 +10,8 @@ X_IMPORT: parameters.sas
 				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
-				 DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
-				 IF SIGMA >= 0 THEN DO;
+				DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
+					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
                     DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
 					IF RECOVERYDAYS >= 0 THEN DO;
                         DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
@@ -40,8 +40,8 @@ X_IMPORT: keys.sas
 								ELSE DO;
 									BETA = LAG_BETA * (1 - &BETA_DECAY.);
 									S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
-									E_N = LAG_E + (BETA * LAG_S * LAG_I - &SIGMA. * LAG_E)*byinc;
-									I_N = LAG_I + (&SIGMA. * LAG_E - GAMMA * LAG_I)*byinc;
+									E_N = LAG_E + (BETA * LAG_S * LAG_I - SIGMAINV * LAG_E)*byinc;
+									I_N = LAG_I + (SIGMAINV * LAG_E - GAMMA * LAG_I)*byinc;
 									R_N = LAG_R + (GAMMA * LAG_I)*byinc;
 									N = SUM(S_N, E_N, I_N, R_N);
 									SCALE = LAG_N / N;
@@ -75,15 +75,14 @@ X_IMPORT: keys.sas
 					END;
 					END;
 				END;
-				END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+				WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 X_IMPORT: postprocess.sas
-				DROP CUM: SIGMA RECOVERYDAYS SOCIALD;
+				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 
 		/* calculate key output measures for all scenarios as input to uncertainty bounds */
@@ -96,7 +95,7 @@ X_IMPORT: postprocess.sas
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SEIR_SIM;
-                by SIGMA RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -148,7 +147,7 @@ X_IMPORT: keys.sas
 					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
 					
 				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMA RECOVERYDAYS SOCIALD;
+                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 
 		/* merge scenario data with uncertain bounds */

@@ -12,8 +12,8 @@ X_IMPORT: parameters.sas
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
-					IF SIGMA >= 0 THEN DO;
+                    DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
+						SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
                         DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
 						IF RECOVERYDAYS >= 0 THEN DO;
                             DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
@@ -41,7 +41,6 @@ X_IMPORT: parameters.sas
 							END;
                         END;
 						END;
-                    END;
 					END; 
 				RUN;
 
@@ -61,14 +60,14 @@ X_IMPORT: parameters.sas
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
 				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+				DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+				DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by Sigma RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 			QUIT;
 
@@ -86,7 +85,7 @@ X_IMPORT: keys.sas
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+                WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 X_IMPORT: postprocess.sas
@@ -96,9 +95,9 @@ X_IMPORT: postprocess.sas
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by Sigma, RECOVERYDAYS, SOCIALD, Time
+                    order by SIGMAfraction, RECOVERYDAYS, SOCIALD, Time
                 ;
             quit;
 
@@ -114,7 +113,7 @@ X_IMPORT: postprocess.sas
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by Sigma RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;

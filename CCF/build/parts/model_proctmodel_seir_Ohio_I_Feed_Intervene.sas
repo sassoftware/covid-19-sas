@@ -17,7 +17,7 @@ X_IMPORT: fit_input.sas
 					/* Fixed values */
 					N = &Population.;
 					INF = &RecoveryDays.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					STEP = CDF('NORMAL',DATE, DI, 1);
 					/* Differential equations */
 					GAMMA = 1 / INF;
@@ -26,9 +26,9 @@ X_IMPORT: fit_input.sas
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA * S_N * I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
+					DERT.E_N = BETA * S_N * I_N - SIGMAINV * E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
+					DERT.I_N = SIGMAINV * E_N - GAMMA * I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
@@ -86,7 +86,7 @@ X_IMPORT: keys.sas
 					BOUNDS 1 <= R0 <= 13;
 					RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 					GAMMA = &GAMMA.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
 					change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
 					change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
@@ -97,9 +97,9 @@ X_IMPORT: keys.sas
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+					DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+					DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA*I_N;           
 					/* SOLVE THE EQUATIONS */ 

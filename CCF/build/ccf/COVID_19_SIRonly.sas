@@ -134,8 +134,6 @@ You need to evaluate each parameter for your population of interest.
             Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
             ICUPercent                  =   "Percentage of Hospitalized Patients Requiring ICU"
             VentPErcent                 =   "Percentage of Hospitalized Patients Requiring Ventilators"
-            ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
-            DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             FatalityRate                =   "Percentage of Hospitalized Patients who will Die"
             plots                       =   "Display Plots (Yes/No)"
             N_DAYS                      =   "Number of Days to Project"
@@ -144,6 +142,8 @@ You need to evaluate each parameter for your population of interest.
             SIGMA                       =   "Days Exposed before Infected"
             DAY_ZERO                    =   "Date of the First COVID-19 Case"
             BETA_DECAY                  =   "Daily Reduction (%) of Beta"
+            ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
+            DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             HOSP_LOS                    =   "Average Hospital Length of Stay"
             ICU_LOS                     =   "Average ICU Length of Stay"
             VENT_LOS                    =   "Average Ventilator Length of Stay"
@@ -233,6 +233,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -331,6 +333,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 

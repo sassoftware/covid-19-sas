@@ -134,8 +134,6 @@ You need to evaluate each parameter for your population of interest.
             Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
             ICUPercent                  =   "Percentage of Hospitalized Patients Requiring ICU"
             VentPErcent                 =   "Percentage of Hospitalized Patients Requiring Ventilators"
-            ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
-            DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             FatalityRate                =   "Percentage of Hospitalized Patients who will Die"
             plots                       =   "Display Plots (Yes/No)"
             N_DAYS                      =   "Number of Days to Project"
@@ -144,6 +142,8 @@ You need to evaluate each parameter for your population of interest.
             SIGMA                       =   "Days Exposed before Infected"
             DAY_ZERO                    =   "Date of the First COVID-19 Case"
             BETA_DECAY                  =   "Daily Reduction (%) of Beta"
+            ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
+            DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             HOSP_LOS                    =   "Average Hospital Length of Stay"
             ICU_LOS                     =   "Average ICU Length of Stay"
             VENT_LOS                    =   "Average Ventilator Length of Stay"
@@ -233,6 +233,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -329,6 +331,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -355,8 +359,8 @@ You need to evaluate each parameter for your population of interest.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
-					IF SIGMA >= 0 THEN DO;
+                    DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
+						SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
                         DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
 						IF RECOVERYDAYS >= 0 THEN DO;
                             DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
@@ -384,7 +388,6 @@ You need to evaluate each parameter for your population of interest.
 							END;
                         END;
 						END;
-                    END;
 					END; 
 				RUN;
 
@@ -404,14 +407,14 @@ You need to evaluate each parameter for your population of interest.
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
 				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+				DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+				DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by Sigma RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 			QUIT;
 
@@ -432,7 +435,7 @@ You need to evaluate each parameter for your population of interest.
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+                WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -501,9 +504,9 @@ You need to evaluate each parameter for your population of interest.
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, Sigma, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by Sigma, RECOVERYDAYS, SOCIALD, Time
+                    order by SIGMAfraction, RECOVERYDAYS, SOCIALD, Time
                 ;
             quit;
 
@@ -522,7 +525,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by Sigma RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -664,6 +667,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -993,6 +998,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -1020,8 +1027,8 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-				 DO SIGMA = &SIGMA-0.4 TO &SIGMA+0.4 BY 0.2;
-				 IF SIGMA >= 0 THEN DO;
+				DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
+					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
                     DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
 					IF RECOVERYDAYS >= 0 THEN DO;
                         DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
@@ -1050,8 +1057,8 @@ You need to evaluate each parameter for your population of interest.
 								ELSE DO;
 									BETA = LAG_BETA * (1 - &BETA_DECAY.);
 									S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
-									E_N = LAG_E + (BETA * LAG_S * LAG_I - &SIGMA. * LAG_E)*byinc;
-									I_N = LAG_I + (&SIGMA. * LAG_E - GAMMA * LAG_I)*byinc;
+									E_N = LAG_E + (BETA * LAG_S * LAG_I - SIGMAINV * LAG_E)*byinc;
+									I_N = LAG_I + (SIGMAINV * LAG_E - GAMMA * LAG_I)*byinc;
 									R_N = LAG_R + (GAMMA * LAG_I)*byinc;
 									N = SUM(S_N, E_N, I_N, R_N);
 									SCALE = LAG_N / N;
@@ -1085,13 +1092,12 @@ You need to evaluate each parameter for your population of interest.
 					END;
 					END;
 				END;
-				END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE round(SIGMA,.1)=round(&Sigma.,.1) and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+				WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1152,7 +1158,7 @@ You need to evaluate each parameter for your population of interest.
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: SIGMA RECOVERYDAYS SOCIALD;
+				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 
 		/* calculate key output measures for all scenarios as input to uncertainty bounds */
@@ -1168,7 +1174,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SEIR_SIM;
-                by SIGMA RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYS SOCIALD;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -1220,7 +1226,7 @@ You need to evaluate each parameter for your population of interest.
 					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
 					
 				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMA RECOVERYDAYS SOCIALD;
+                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
 
 		/* merge scenario data with uncertain bounds */
@@ -1311,6 +1317,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -1622,6 +1630,8 @@ You need to evaluate each parameter for your population of interest.
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
@@ -1713,7 +1723,7 @@ You need to evaluate each parameter for your population of interest.
 					/* Fixed values */
 					N = &Population.;
 					INF = &RecoveryDays.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					STEP = CDF('NORMAL',DATE, DI, 1);
 					/* Differential equations */
 					GAMMA = 1 / INF;
@@ -1722,9 +1732,9 @@ You need to evaluate each parameter for your population of interest.
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA * S_N * I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
+					DERT.E_N = BETA * S_N * I_N - SIGMAINV * E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
+					DERT.I_N = SIGMAINV * E_N - GAMMA * I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
@@ -1788,7 +1798,7 @@ You need to evaluate each parameter for your population of interest.
 					BOUNDS 1 <= R0 <= 13;
 					RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 					GAMMA = &GAMMA.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
 					change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
 					change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
@@ -1799,9 +1809,9 @@ You need to evaluate each parameter for your population of interest.
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+					DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+					DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA*I_N;           
 					/* SOLVE THE EQUATIONS */ 
