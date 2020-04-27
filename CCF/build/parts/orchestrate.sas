@@ -1,4 +1,5 @@
 C_IMPORT: CCF_pre.sas
+D_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,ISOChangeDateTwo,SocialDistancingChangeTwo,
@@ -46,41 +47,41 @@ C_IMPORT: CCF_pre.sas
             DIAL_LOS                    BEST12.
         ;
         LABEL
-            Scenario                    =   "Scenario Name to be stored as a character variable, combined with automatically-generated ScenarioIndex to create a unique ID"
-            IncubationPeriod            =   "Number of days by which to offset hospitalization from infection, effectively shifting utilization curves to the right"
-            InitRecovered               =   "Initial number of Recovered patients, assumed to have immunity to future infection"
-            RecoveryDays                =   "Number of days a patient is considered infectious (the amount of time it takes to recover or die)"
-            doublingtime                =   "Baseline Infection Doubling Time without social distancing"
-            Population                  =   "Number of people in region of interest, assumed to be well mixed and independent of other populations"
-            KnownAdmits                 =   "Number of COVID-19 patients at hospital of interest at Day 0, used to calculate the assumed number of Day 0 Infections"
-            SocialDistancing            =   "Baseline Social distancing (% reduction in social contact compared to normal activity)"
-            ISOChangeDate               =   "Date of first change from baseline in social distancing parameter"
-            SocialDistancingChange      =   "Second value of social distancing (% reduction in social contact compared to normal activity)"
-            ISOChangeDateTwo            =   "Date of second change in social distancing parameter"
-            SocialDistancingChangeTwo   =   "Third value of social distancing (% reduction in social contact compared to normal activity)"
-            ISOChangeDate3              =   "Date of third change in social distancing parameter"
-            SocialDistancingChange3     =   "Fourth value of social distancing (% reduction in social contact compared to normal activity)"
-            ISOChangeDate4              =   "Date of fourth change in social distancing parameter"
-            SocialDistancingChange4     =   "Fifth value of social distancing (% reduction in social contact compared to normal activity)"
-            MarketSharePercent          =   "Anticipated share (%) of hospitalized COVID-19 patients in region that will be admitted to hospital of interest"
-            Admission_Rate              =   "Percentage of Infected patients in the region who will be hospitalized"
-            ICUPercent                  =   "Percentage of hospitalized patients who will require ICU"
-            VentPErcent                 =   "Percentage of hospitalized patients who will require Ventilators"
-            FatalityRate                =   "Percentage of hospitalized patients who will die"
-            plots                       =   "YES/NO display plots in output"
-            N_DAYS                      =   "Number of days to project"
-            DiagnosedRate               =   "Factor to adjust admission_rate contributing to via MarketSharePercent I (see calculation for I)"
-            E                           =   "Initial Number of Exposed (infected but not yet infectious)"
-            SIGMA                       =   "Rate of latent individuals Exposed and transported to the infectious stage during each time period"
-            DAY_ZERO                    =   "Date of the first COVID-19 case"
-            BETA_DECAY                  =   "Factor (%) used for daily reduction of Beta"
-            ECMO_RATE                   =   "Default percent of total admissions that need ECMO"
-            DIAL_RATE                   =   "Default percent of admissions that need Dialysis"
+            Scenario                    =   "Scenario Name"
+            IncubationPeriod            =   "Average Days between Infection and Hospitalization"
+            InitRecovered               =   "Number of Recovered (Immune) Patients on Day 0"
+            RecoveryDays                =   "Average Days Infectious"
+            doublingtime                =   "Baseline Infection Doubling Time (No Social Distancing)"
+            Population                  =   "Regional Population"
+            KnownAdmits                 =   "Number of Admitted Patients in Hospital of Interest on Day 0"
+            SocialDistancing            =   "Initial Social Distancing (% Reduction from Normal)"
+            ISOChangeDate               =   "Date of First Change in Social Distancing"
+            SocialDistancingChange      =   "Second Social Distancing (% Reduction from Normal)"
+            ISOChangeDateTwo            =   "Date of Second Change in Social Distancing"
+            SocialDistancingChangeTwo   =   "Third Social Distancing (% Reduction from Normal)"
+            ISOChangeDate3              =   "Date of Third Change in Social Distancing"
+            SocialDistancingChange3     =   "Fourth Social Distancing (% Reduction from Normal)"
+            ISOChangeDate4              =   "Date of Fourth Change in Social Distancing"
+            SocialDistancingChange4     =   "Fifth Social Distancing (% Reduction from Normal)"
+            MarketSharePercent          =   "Anticipated Share (%) of Regional Hospitalized Patients"
+            Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
+            ICUPercent                  =   "Percentage of Hospitalized Patients Requiring ICU"
+            VentPErcent                 =   "Percentage of Hospitalized Patients Requiring Ventilators"
+            FatalityRate                =   "Percentage of Hospitalized Patients who will Die"
+            plots                       =   "Display Plots (Yes/No)"
+            N_DAYS                      =   "Number of Days to Project"
+            DiagnosedRate               =   "Hospitalization Rate Reduction (%) for Underdiagnosis"
+            E                           =   "Number of Exposed Patients on Day 0"
+            SIGMA                       =   "Days Exposed before Infected"
+            DAY_ZERO                    =   "Date of the First COVID-19 Case"
+            BETA_DECAY                  =   "Daily Reduction (%) of Beta"
+            ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
+            DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             HOSP_LOS                    =   "Average Hospital Length of Stay"
             ICU_LOS                     =   "Average ICU Length of Stay"
-            VENT_LOS                    =   "Average Vent Length of Stay"
+            VENT_LOS                    =   "Average Ventilator Length of Stay"
             ECMO_LOS                    =   "Average ECMO Length of Stay"
-            DIAL_LOS                    =   "Average DIAL Length of Stay"
+            DIAL_LOS                    =   "Average Dialysis Length of Stay"
         ;
         Scenario                    =   "&Scenario.";
         IncubationPeriod            =   &IncubationPeriod.;
@@ -121,17 +122,7 @@ C_IMPORT: CCF_pre.sas
 
 X_IMPORT: scenario_setup.sas
 
-P_IMPORT: model_proctmodel_seir.sas
-
-P_IMPORT: model_proctmodel_sir.sas
-
-X_IMPORT: model_datastep_sir.sas
-
-P_IMPORT: model_datastep_seir.sas
-
-P_IMPORT: model_proctmodel_seir_Ohio_I_Feed_Intervene.sas
-
-T_IMPORT: model_sim_proctmodel_seir.sas
+X_IMPORT: models.sas
 
     %IF &PLOTS. = YES %THEN %DO;
         /* if multiple models for a single scenarioIndex then plot them */

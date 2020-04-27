@@ -7,6 +7,8 @@
 											&MarketSharePercent. / 
 												(&Admission_Rate. * &DiagnosedRate.));
 				%LET GAMMA = %SYSEVALF(1 / &RecoveryDays.);
+				%IF &SIGMA. <= 0 %THEN %LET SIGMA = 0.00000001;
+					%LET SIGMAINV = %SYSEVALF(1 / &SIGMA.);
 				%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &SocialDistancing.));
 				%LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 

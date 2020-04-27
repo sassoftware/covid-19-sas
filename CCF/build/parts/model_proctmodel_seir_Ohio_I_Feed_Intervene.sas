@@ -17,7 +17,7 @@ X_IMPORT: fit_input.sas
 					/* Fixed values */
 					N = &Population.;
 					INF = &RecoveryDays.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					STEP = CDF('NORMAL',DATE, DI, 1);
 					/* Differential equations */
 					GAMMA = 1 / INF;
@@ -26,9 +26,9 @@ X_IMPORT: fit_input.sas
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA * S_N * I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
+					DERT.E_N = BETA * S_N * I_N - SIGMAINV * E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
+					DERT.I_N = SIGMAINV * E_N - GAMMA * I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA * I_N;
 					CUMULATIVE_CASE_COUNT = I_N + R_N;
@@ -44,14 +44,14 @@ X_IMPORT: fit_input.sas
 					LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
 					FORMAT ModelType $30. DATE DATE9.; 
 					DATE = &FIRST_CASE. + TIME - 1;
-					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
+X_IMPORT: keys.sas
 				run;
 				DATA FIT_PARMS;
 					SET FIT_PARMS;
 					FORMAT ModelType $30.; 
-					ModelType="TMODEL - SEIR - FIT";
-					ScenarioIndex=&ScenarioIndex.;
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
+X_IMPORT: keys.sas
 				run;
 
 			/*Capture basline R0, date of Intervention effect, R0 after intervention*/
@@ -86,7 +86,7 @@ X_IMPORT: fit_input.sas
 					BOUNDS 1 <= R0 <= 13;
 					RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;
 					GAMMA = &GAMMA.;
-					SIGMA = &SIGMA.;
+					SIGMAINV = &SIGMAINV.;
 					change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));
 					change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  
 					change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));
@@ -97,9 +97,9 @@ X_IMPORT: fit_input.sas
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-					DERT.E_N = BETA*S_N*I_N - SIGMA*E_N;
+					DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
-					DERT.I_N = SIGMA*E_N - GAMMA*I_N;
+					DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 					/* d. Recovered and death humans through "promotion" inflow from c.*/
 					DERT.R_N = GAMMA*I_N;           
 					/* SOLVE THE EQUATIONS */ 
@@ -108,13 +108,10 @@ X_IMPORT: fit_input.sas
 				QUIT;
 
 				DATA TMODEL_SEIR_FIT_I;
-					FORMAT ModelType $30. Scenarioname $30. DATE ADMIT_DATE DATE9.;
-					ModelType="TMODEL - SEIR - FIT";
+					FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;
+					ModelType="SEIR with PROC (T)MODEL-Fit R0";
 					ScenarioName="&Scenario.";
-					ScenarioIndex=&ScenarioIndex.;
-					ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,')');
-					LABEL HOSPITAL_OCCUPANCY="Hospital Occupancy" ICU_OCCUPANCY="ICU Occupancy" VENT_OCCUPANCY="Ventilator Utilization"
-						ECMO_OCCUPANCY="ECMO Utilization" DIAL_OCCUPANCY="Dialysis Utilization";
+X_IMPORT: keys.sas
 					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 						CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
 					LAG_S = S_N; 
@@ -156,7 +153,7 @@ X_IMPORT: postprocess.sas
 
 			/* Plot Fit of Actual v. Predicted */
 			PROC SGPLOT DATA=work.FIT_PRED;
-				WHERE _TYPE_  NE 'RESIDUAL' and ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				WHERE _TYPE_  NE 'RESIDUAL' and ModelType='SEIR with PROC (T)MODEL-Fit R0' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Actual v. Predicted Infections in Region";
 				TITLE2 "Initial R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
@@ -166,7 +163,7 @@ X_IMPORT: postprocess.sas
 			TITLE;TITLE2;TITLE3;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
-				where ModelType='TMODEL - SEIR - FIT' and ScenarioIndex=&ScenarioIndex.;
+				where ModelType='SEIR with PROC (T)MODEL-Fit R0' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - PROC TMODEL SEIR Fit Approach";
 				TITLE2 "Scenario: &Scenario., Initial Observed R0: %SYSFUNC(round(&R0_FIT.,.01))";
 				TITLE3 "Adjusted Observed R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Observed Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";
