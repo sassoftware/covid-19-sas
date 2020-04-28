@@ -457,7 +457,7 @@ You need to evaluate each parameter for your population of interest.
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM: ;
+				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */
@@ -788,7 +788,7 @@ You need to evaluate each parameter for your population of interest.
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM:;
+				DROP LAG: CUM: RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */

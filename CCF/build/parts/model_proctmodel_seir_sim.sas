@@ -89,7 +89,7 @@ X_IMPORT: keys.sas
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 X_IMPORT: postprocess.sas
-				DROP LAG: CUM: ;
+				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */
