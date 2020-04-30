@@ -2156,6 +2156,12 @@ You need to evaluate each parameter for your population of interest.
 								PEAK_DIAL_OCCUPANCY = "Peak Starts: Hospital Census - Dialysis"
 								PEAK_I_N = "Peak Starts: Current Infected Population"
 								PEAK_FATALITY = "Peak Starts: New Hospital Mortality"
+								ISOChangeEvent = "Event labels for Dates of Change"
+								EventY_HOSPITAL_OCCUPANCY = "Y for plotting ISOChangeEvent with HOSPITAL_OCCUPANCY"
+								EventY_ICU_OCCUPANCY = "Y for plotting ISOChangeEvent with ICU_OCCUPANCY"
+								EventY_VENT_OCCUPANCY = "Y for plotting ISOChangeEvent with VENT_OCCUPANCY"
+								EventY_ECMO_OCCUPANCY = "Y for plotting ISOChangeEvent with ECMO_OCCUPANCY"
+								EventY_DIAL_OCCUPANCY = "Y for plotting ISOChangeEvent with DIAL_OCCUPANCY"
 								;
 							MODIFY SCENARIOS;
 							LABEL
