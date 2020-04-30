@@ -3,7 +3,7 @@
 X_IMPORT: parameters.sas
 		*/
 		/* If this is a new scenario then run it */
-    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
 
 X_IMPORT: fit_input.sas
 
@@ -81,38 +81,42 @@ X_IMPORT: keys.sas
 			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
+/* PARAMETER SETTINGS */ 
+/*PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; */
+/*BOUNDS 1 <= R0 <= 13;*/
+/*RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;*/
+/*GAMMA = &GAMMA.;*/
+/*SIGMAINV = &SIGMAINV.;*/
+/*change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));*/
+/*change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  */
+/*change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));*/
+/*change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));*/
+/*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         */
+/*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;*/
 					/* PARAMETER SETTINGS */ 
 					%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					PARMS N &Population. R0 &R0_FIT R0_c1 &R0_BEND_FIT %DO j = 2 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
 					BOUNDS 1 <= R0 <= 13;
-					RESTRICT R0 > 0, R0_c1 >0 %DO j = 2 %TO &jmax; , R0_c&j > 0 %END;;
+					RESTRICT R0 > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
 					GAMMA = &GAMMA.;
 					SIGMAINV = &SIGMAINV.;
-					%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
-					%ELSE %DO;
-						%DO j = 1 %TO &jmax;
-							%IF &j = 1 %THEN %DO; 
-								change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
-							%END;
-							%IF &j = &jmax %THEN %DO;
-								%IF &j = 1 %THEN %DO;
-									change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
-								%END;
-								%ELSE %DO;
-									change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
-								%END;
+					change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
+					%IF &jmax > 1 %THEN %DO;
+						%DO j = 1 %TO &jmax - 1;
+							%let j2 = %eval(&j + 1);
+							%IF &j = 1 %THEN %DO;
+								change_&j = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate2 - &DAY_ZERO.)));
 							%END;
 							%ELSE %DO;
-								%IF &j = 1 %THEN %DO;
-									change_&j = ((TIME >= (&CURVEBEND1 - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
-								%END;
-								%ELSE %DO;
-									change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
-								%END;
+								change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 							%END;
 						%END;
-						BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
+						change_&jmax = (TIME >= (&&ISOChangeDate&jmax - &DAY_ZERO));
 					%END;
+					%ELSE %DO;
+						change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
+					%END;
+					BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
@@ -155,7 +159,7 @@ X_IMPORT: postprocess.sas
 
 		%END;
 
-		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
 
 			%IF &ScenarioExist ~= 0 %THEN %DO;
 				/* this is only needed to define macro varibles if the fit is being recalled.  

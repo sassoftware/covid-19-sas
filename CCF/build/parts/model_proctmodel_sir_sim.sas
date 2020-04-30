@@ -44,6 +44,7 @@ X_IMPORT: parameters.sas
 				%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
 				%ELSE %DO;
 					%DO j = 1 %TO &jmax;
+						%LET j2 = %eval(&j + 1);
 						%IF &j = 1 %THEN %DO; 
 							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
@@ -51,7 +52,7 @@ X_IMPORT: parameters.sas
 							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
 						%ELSE %DO;
-							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 						%END;
 					%END;
 					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R_T_Change&j*GAMMA/N %END;; 

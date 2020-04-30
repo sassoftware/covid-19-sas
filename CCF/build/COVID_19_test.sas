@@ -23,7 +23,7 @@ You need to evaluate each parameter for your population of interest.
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,SocialDistancingChange,
                 MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
-                plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=0.90,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
+                plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=3,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
                 ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
 
     DATA INPUTS;
@@ -172,18 +172,20 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 				
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
@@ -245,8 +247,10 @@ You need to evaluate each parameter for your population of interest.
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
+                data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+                data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
+            %END;
             %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
 
@@ -271,18 +275,20 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 						*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
@@ -329,6 +335,7 @@ You need to evaluate each parameter for your population of interest.
 				%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
 				%ELSE %DO;
 					%DO j = 1 %TO &jmax;
+						%LET j2 = %eval(&j + 1);
 						%IF &j = 1 %THEN %DO; 
 							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
@@ -336,7 +343,7 @@ You need to evaluate each parameter for your population of interest.
 							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
 						%ELSE %DO;
-							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 						%END;
 					%END;
 					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R_T_Change&j*GAMMA/N %END;; 
@@ -605,18 +612,20 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 						*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
@@ -660,6 +669,7 @@ You need to evaluate each parameter for your population of interest.
 				%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
 				%ELSE %DO;
 					%DO j = 1 %TO &jmax;
+						%LET j2 = %eval(&j + 1);
 						%IF &j = 1 %THEN %DO; 
 							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
@@ -667,7 +677,7 @@ You need to evaluate each parameter for your population of interest.
 							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
 						%END;
 						%ELSE %DO;
-							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 						%END;
 					%END;
 					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R_T_Change&j*GAMMA/N %END;; 
@@ -934,18 +944,20 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 						*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
@@ -1247,18 +1259,20 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 						*/
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
@@ -1554,21 +1568,23 @@ You need to evaluate each parameter for your population of interest.
 												&Population. * (1 - &SocialDistancing.));
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
-				%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-					%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-					%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-											&Population. * (1 - &&SocialDistancingChange&j));
-					%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
-					%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-				%END; 
-
-				%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
+					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%); 
-					%END;
+						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+					%END; 
+				%END;
+				%ELSE %DO;
+					%LET sdchangetitle=No Adjustment to R0 over time;
+				%END;
 						*/
 		/* If this is a new scenario then run it */
-    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES %THEN %DO;
+    	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
 
 			/* START DOWNLOAD FIT_INPUT - only if STORE.FIT_INPUT does not have data for yesterday */
 				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
@@ -1712,38 +1728,42 @@ You need to evaluate each parameter for your population of interest.
 			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
+/* PARAMETER SETTINGS */ 
+/*PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; */
+/*BOUNDS 1 <= R0 <= 13;*/
+/*RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;*/
+/*GAMMA = &GAMMA.;*/
+/*SIGMAINV = &SIGMAINV.;*/
+/*change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));*/
+/*change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  */
+/*change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));*/
+/*change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));*/
+/*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         */
+/*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;*/
 					/* PARAMETER SETTINGS */ 
 					%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					PARMS N &Population. R0 &R0_FIT R0_c1 &R0_BEND_FIT %DO j = 2 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
 					BOUNDS 1 <= R0 <= 13;
-					RESTRICT R0 > 0, R0_c1 >0 %DO j = 2 %TO &jmax; , R0_c&j > 0 %END;;
+					RESTRICT R0 > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
 					GAMMA = &GAMMA.;
 					SIGMAINV = &SIGMAINV.;
-					%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
-					%ELSE %DO;
-						%DO j = 1 %TO &jmax;
-							%IF &j = 1 %THEN %DO; 
-								change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
-							%END;
-							%IF &j = &jmax %THEN %DO;
-								%IF &j = 1 %THEN %DO;
-									change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
-								%END;
-								%ELSE %DO;
-									change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
-								%END;
+					change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
+					%IF &jmax > 1 %THEN %DO;
+						%DO j = 1 %TO &jmax - 1;
+							%let j2 = %eval(&j + 1);
+							%IF &j = 1 %THEN %DO;
+								change_&j = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate2 - &DAY_ZERO.)));
 							%END;
 							%ELSE %DO;
-								%IF &j = 1 %THEN %DO;
-									change_&j = ((TIME >= (&CURVEBEND1 - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
-								%END;
-								%ELSE %DO;
-									change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < %sysevalf(%superq(ISOChangeDate%eval(&j+1)) - &DAY_ZERO.)));
-								%END;
+								change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 							%END;
 						%END;
-						BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
+						change_&jmax = (TIME >= (&&ISOChangeDate&jmax - &DAY_ZERO));
 					%END;
+					%ELSE %DO;
+						change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
+					%END;
+					BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
@@ -1848,7 +1868,7 @@ You need to evaluate each parameter for your population of interest.
 
 		%END;
 
-		%IF &PLOTS. = YES AND &HAVE_SASETS = YES %THEN %DO;
+		%IF &PLOTS. = YES AND &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
 
 			%IF &ScenarioExist ~= 0 %THEN %DO;
 				/* this is only needed to define macro varibles if the fit is being recalled.  
@@ -2100,20 +2120,22 @@ You need to evaluate each parameter for your population of interest.
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
 								;
-							MODIFY FIT_PRED;
-							LABEL
-								ScenarioIndex = "Scenario ID: Order"
-								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-								ScenarioUser = "Scenario ID: User who created Scenario"
-								ScenarioNameUnique = "Unique Scenario Name"
-								;
-							MODIFY FIT_PARMS;
-							LABEL
-								ScenarioIndex = "Scenario ID: Order"
-								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-								ScenarioUser = "Scenario ID: User who created Scenario"
-								ScenarioNameUnique = "Unique Scenario Name"
-								;
+							%IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
+								MODIFY FIT_PRED;
+								LABEL
+									ScenarioIndex = "Scenario ID: Order"
+									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+									ScenarioUser = "Scenario ID: User who created Scenario"
+									ScenarioNameUnique = "Unique Scenario Name"
+									;
+								MODIFY FIT_PARMS;
+								LABEL
+									ScenarioIndex = "Scenario ID: Order"
+									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
+									ScenarioUser = "Scenario ID: User who created Scenario"
+									ScenarioNameUnique = "Unique Scenario Name"
+									;
+							%END;
 					RUN;
 					QUIT;
 
@@ -2122,15 +2144,19 @@ You need to evaluate each parameter for your population of interest.
                     PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                     PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                     PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                    PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                    PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+                    %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
+                        PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
+                        PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
+                    %END;
 
                     PROC SQL;
                         drop table work.MODEL_FINAL;
                         drop table work.SCENARIOS;
                         drop table work.INPUTS;
-                        drop table work.FIT_PRED;
-                        drop table work.FIT_PARMS;
+                        %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
+                            drop table work.FIT_PRED;
+                            drop table work.FIT_PARMS;
+                        %END;
                     QUIT;
 
                 %END;
@@ -2143,8 +2169,10 @@ You need to evaluate each parameter for your population of interest.
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
                     drop table work.INPUTS; 
-                        drop table work.FIT_PRED;
-                        drop table work.FIT_PARMS;
+                        %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
+                            drop table work.FIT_PRED;
+                            drop table work.FIT_PARMS;
+                        %END;
                 QUIT;
             %END;
         %END;
