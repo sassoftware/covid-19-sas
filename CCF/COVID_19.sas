@@ -1741,29 +1741,21 @@ You need to evaluate each parameter for your population of interest.
 /*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         */
 /*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;*/
 					/* PARAMETER SETTINGS */ 
+					/* this parameterization assumes: &CURVEBEND1 happens before ISOChangeDate1 - it works if this is not true but does not apply SocialDistancingChange1 to the period between */
 					%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
-					PARMS N &Population. R0 &R0_FIT R0_c1 &R0_BEND_FIT %DO j = 2 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
+					PARMS N &Population. R0 &R0_FIT R0_c1f &R0_BEND_FIT %DO j = 1 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
 					BOUNDS 1 <= R0 <= 13;
-					RESTRICT R0 > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
+					RESTRICT R0 > 0, R0_c1f > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
 					GAMMA = &GAMMA.;
 					SIGMAINV = &SIGMAINV.;
 					change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
-					%IF &jmax > 1 %THEN %DO;
+					change_1f = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate1 - &DAY_ZERO.)));
 						%DO j = 1 %TO &jmax - 1;
 							%let j2 = %eval(&j + 1);
-							%IF &j = 1 %THEN %DO;
-								change_&j = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate2 - &DAY_ZERO.)));
-							%END;
-							%ELSE %DO;
-								change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
-							%END;
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 						%END;
 						change_&jmax = (TIME >= (&&ISOChangeDate&jmax - &DAY_ZERO));
-					%END;
-					%ELSE %DO;
-						change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
-					%END;
-					BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
+					BETA = change_0*R0*GAMMA/N + change_1f*R0_c1f*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
@@ -2204,3 +2196,159 @@ FatalityRate=0,
 plots=YES	
 );
 	
+%EasyRun(
+scenario=Scenario_DrS_00_40_run_1,
+IncubationPeriod=0,
+InitRecovered=0,
+RecoveryDays=14,
+doublingtime=5,
+KnownAdmits=10,
+Population=4390484,
+SocialDistancing=0,
+MarketSharePercent=0.29,
+Admission_Rate=0.075,
+ICUPercent=0.45,
+VentPErcent=0.35,
+ISOChangeDate='31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,
+SocialDistancingChange=0:0.4:0.5:0.3,
+FatalityRate=0,
+plots=YES	
+);
+	
+%EasyRun(
+scenario=Scenario_DrS_00_40_run_12,
+IncubationPeriod=0,
+InitRecovered=0,
+RecoveryDays=14,
+doublingtime=5,
+KnownAdmits=10,
+Population=4390484,
+SocialDistancing=0,
+MarketSharePercent=0.29,
+Admission_Rate=0.075,
+ICUPercent=0.45,
+VentPErcent=0.35,
+ISOChangeDate='31MAY2020'd:'06AUG2020'd:'20AUG2020'd:'01SEP2020'd,
+SocialDistancingChange=0.25:0.5:0.4:0.2,
+FatalityRate=0,
+plots=YES	
+);
+
+/* Scenarios can be run in batch by specifying them in a sas dataset.
+    In the example below, this dataset is created by reading scenarios from an csv file: run_scenarios.csv
+    An example run_scenarios.csv file is provided with this code.
+
+	IMPORTANT NOTES: 
+		The example run_scenarios.csv file has columns for all the positional macro variables.  
+		There are even more keyword parameters available.
+			These need to be set for your population.
+			They can be reviewed within the %EasyRun macro at the very top.
+		THEN:
+			you can set fixed values for the keyword parameters in the %EasyRun definition call
+			OR
+			you can add columns for the keyword parameters to this input file
+
+	You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
+*/
+%macro run_scenarios(ds);
+	/* import file */
+	/* proc import changes ISOChangeDate to a date format and only pulls first date in list - switch to manual data step with infile
+	PROC IMPORT DATAFILE="&homedir./&ds."
+		DBMS=CSV
+		OUT=run_scenarios
+		REPLACE;
+		GETNAMES=YES;
+	RUN;
+	*/
+	/* manual data step import with infile - note this will miss new columns added to the run_scenarios.csv unless it is updated */
+	data WORK.RUN_SCENARIOS;
+		infile "&homedir./run_scenarios.csv" delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2 ;
+		informat scenario $25. ;
+		informat IncubationPeriod best32. ;
+		informat InitRecovered best32. ;
+		informat RecoveryDays best32. ;
+		informat doublingtime best32. ;
+		informat KnownAdmits best32. ;
+		informat Population best32. ;
+		informat SocialDistancing best32. ;
+		informat MarketSharePercent best32. ;
+		informat Admission_Rate best32. ;
+		informat ICUPercent best32. ;
+		informat VentPErcent best32. ;
+		informat ISOChangeDate $200. ;
+		informat SocialDistancingChange $16. ;
+		informat FatalityRate best32. ;
+		informat plots $3. ;
+		format scenario $25. ;
+		format IncubationPeriod best12. ;
+		format InitRecovered best12. ;
+		format RecoveryDays best12. ;
+		format doublingtime best12. ;
+		format KnownAdmits best12. ;
+		format Population best12. ;
+		format SocialDistancing best12. ;
+		format MarketSharePercent best12. ;
+		format Admission_Rate best12. ;
+		format ICUPercent best12. ;
+		format VentPErcent best12. ;
+		format ISOChangeDate $200. ;
+		format SocialDistancingChange $16. ;
+		format FatalityRate best12. ;
+		format plots $3. ;
+		input
+					scenario  $
+					IncubationPeriod
+					InitRecovered
+					RecoveryDays
+					doublingtime
+					KnownAdmits
+					Population
+					SocialDistancing
+					MarketSharePercent
+					Admission_Rate
+					ICUPercent
+					VentPErcent
+					ISOChangeDate $
+					SocialDistancingChange  $
+					FatalityRate
+					plots  $
+		;
+	run;
+	/* extract column names into space delimited string stored in macro variable &names */
+	PROC SQL noprint;
+		select name into :names separated by ' '
+	  		from dictionary.columns
+	  		where memname = 'RUN_SCENARIOS';
+		select name into :dnames separated by ' '
+	  		from dictionary.columns
+	  		where memname = 'RUN_SCENARIOS' and substr(format,1,4)='DATE';
+	QUIT;
+	/* change date variables to character and of the form 'ddmmmyyyy'd */
+	%IF %SYMEXIST(dnames) %THEN %DO i = 1 %TO %sysfunc(countw(&dnames.));
+		%LET dname = %scan(&dnames,&i);
+		data run_scenarios(drop=x);
+			set run_scenarios(rename=(&dname.=x));
+			&dname.="'"||put(x,date9.)||"'d";
+		run;
+	%END;
+	/* build a call to %EasyRun for each row in run_scenarios */
+	%GLOBAL cexecute;
+	%DO i=1 %TO %sysfunc(countw(&names.));
+		%LET next_name = %scan(&names, &i);
+		%IF &i = 1 %THEN %DO;
+			%LET cexecute = "&next_name.=",&next_name.; 
+		%END;
+		%ELSE %DO;
+			%LET cexecute = &cexecute ,", &next_name.=",&next_name;
+		%END;
+	%END;
+%mend;
+
+%run_scenarios(run_scenarios.csv);
+	/* use the &cexecute variable and the run_scenario dataset to run all the scenarios with call execute */
+	data _null_;
+		set run_scenarios;
+		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
+	run;
+
+

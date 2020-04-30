@@ -1741,29 +1741,21 @@ You need to evaluate each parameter for your population of interest.
 /*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         */
 /*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;*/
 					/* PARAMETER SETTINGS */ 
+					/* this parameterization assumes: &CURVEBEND1 happens before ISOChangeDate1 - it works if this is not true but does not apply SocialDistancingChange1 to the period between */
 					%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
-					PARMS N &Population. R0 &R0_FIT R0_c1 &R0_BEND_FIT %DO j = 2 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
+					PARMS N &Population. R0 &R0_FIT R0_c1f &R0_BEND_FIT %DO j = 1 %TO &jmax.; R0_c&j &&R_T_Change&j %END;;
 					BOUNDS 1 <= R0 <= 13;
-					RESTRICT R0 > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
+					RESTRICT R0 > 0, R0_c1f > 0 %DO j = 1 %TO &jmax; , R0_c&j > 0 %END;;
 					GAMMA = &GAMMA.;
 					SIGMAINV = &SIGMAINV.;
 					change_0 = (TIME < (&CURVEBEND1 - &DAY_ZERO));
-					%IF &jmax > 1 %THEN %DO;
+					change_1f = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate1 - &DAY_ZERO.)));
 						%DO j = 1 %TO &jmax - 1;
 							%let j2 = %eval(&j + 1);
-							%IF &j = 1 %THEN %DO;
-								change_&j = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate2 - &DAY_ZERO.)));
-							%END;
-							%ELSE %DO;
-								change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
-							%END;
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
 						%END;
 						change_&jmax = (TIME >= (&&ISOChangeDate&jmax - &DAY_ZERO));
-					%END;
-					%ELSE %DO;
-						change_1 = (TIME >= (&CURVEBEND1 - &DAY_ZERO));
-					%END;
-					BETA = change_0*R0*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
+					BETA = change_0*R0*GAMMA/N + change_1f*R0_c1f*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R0_c&j*GAMMA/N %END;; 
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
