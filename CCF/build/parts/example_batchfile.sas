@@ -17,12 +17,68 @@
 */
 %macro run_scenarios(ds);
 	/* import file */
+	/* proc import changes ISOChangeDate to a date format and only pulls first date in list - switch to manual data step with infile
 	PROC IMPORT DATAFILE="&homedir./&ds."
 		DBMS=CSV
 		OUT=run_scenarios
 		REPLACE;
 		GETNAMES=YES;
 	RUN;
+	*/
+	/* manual data step import with infile - note this will miss new columns added to the run_scenarios.csv unless it is updated */
+	data WORK.RUN_SCENARIOS;
+		infile "&homedir./run_scenarios.csv" delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2 ;
+		informat scenario $25. ;
+		informat IncubationPeriod best32. ;
+		informat InitRecovered best32. ;
+		informat RecoveryDays best32. ;
+		informat doublingtime best32. ;
+		informat KnownAdmits best32. ;
+		informat Population best32. ;
+		informat SocialDistancing best32. ;
+		informat MarketSharePercent best32. ;
+		informat Admission_Rate best32. ;
+		informat ICUPercent best32. ;
+		informat VentPErcent best32. ;
+		informat ISOChangeDate $200. ;
+		informat SocialDistancingChange $16. ;
+		informat FatalityRate best32. ;
+		informat plots $3. ;
+		format scenario $25. ;
+		format IncubationPeriod best12. ;
+		format InitRecovered best12. ;
+		format RecoveryDays best12. ;
+		format doublingtime best12. ;
+		format KnownAdmits best12. ;
+		format Population best12. ;
+		format SocialDistancing best12. ;
+		format MarketSharePercent best12. ;
+		format Admission_Rate best12. ;
+		format ICUPercent best12. ;
+		format VentPErcent best12. ;
+		format ISOChangeDate $200. ;
+		format SocialDistancingChange $16. ;
+		format FatalityRate best12. ;
+		format plots $3. ;
+		input
+					scenario  $
+					IncubationPeriod
+					InitRecovered
+					RecoveryDays
+					doublingtime
+					KnownAdmits
+					Population
+					SocialDistancing
+					MarketSharePercent
+					Admission_Rate
+					ICUPercent
+					VentPErcent
+					ISOChangeDate $
+					SocialDistancingChange  $
+					FatalityRate
+					plots  $
+		;
+	run;
 	/* extract column names into space delimited string stored in macro variable &names */
 	PROC SQL noprint;
 		select name into :names separated by ' '
@@ -33,7 +89,7 @@
 	  		where memname = 'RUN_SCENARIOS' and substr(format,1,4)='DATE';
 	QUIT;
 	/* change date variables to character and of the form 'ddmmmyyyy'd */
-	%DO i = 1 %TO %sysfunc(countw(&dnames.));
+	%IF %SYMEXIST(dnames) %THEN %DO i = 1 %TO %sysfunc(countw(&dnames.));
 		%LET dname = %scan(&dnames,&i);
 		data run_scenarios(drop=x);
 			set run_scenarios(rename=(&dname.=x));
@@ -59,3 +115,5 @@
 		set run_scenarios;
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
+
+

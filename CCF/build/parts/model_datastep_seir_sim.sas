@@ -19,14 +19,10 @@ X_IMPORT: keys.sas
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
-							BETAChange = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-											&Population. * (1 - &SocialDistancingChange.);
-							BETAChangeTwo = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-											&Population. * (1 - &SocialDistancingChangeTwo.);
-							BETAChange3 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-											&Population. * (1 - &SocialDistancingChange3.);
-							BETAChange4 = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-											&Population. * (1 - &SocialDistancingChange4.);
+							%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+								BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+												&Population. * (1 - &&SocialDistancingChange&j);
+							%END;				
 							byinc = 0.1;
 							DO DAY = 0 TO &N_DAYS. by byinc;
 								IF DAY = 0 THEN DO;
@@ -60,10 +56,13 @@ X_IMPORT: keys.sas
 								LAG_R = R_N;
 								LAG_N = N;
 								DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
-								IF date = &ISOChangeDate. THEN BETA = BETAChange;
-								ELSE IF date = &ISOChangeDateTwo. THEN BETA = BETAChangeTwo;
-								ELSE IF date = &ISOChangeDate3. THEN BETA = BETAChange3;
-								ELSE IF date = &ISOChangeDate4. THEN BETA = BETAChange4;
+								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+									%IF j = 1 %THEN %DO;
+										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
+									%END; %ELSE %DO;
+										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
+									%END;
+								%END;
 								LAG_BETA = BETA;
 								IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 									DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
@@ -186,10 +185,7 @@ X_IMPORT: keys.sas
 				where ModelType='SEIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
-				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
+				TITLE3 "&sdchangetitle.";
 				SERIES X=DATE Y=HOSPITAL_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=ICU_OCCUPANCY / LINEATTRS=(THICKNESS=2);
 				SERIES X=DATE Y=VENT_OCCUPANCY / LINEATTRS=(THICKNESS=2);
@@ -198,16 +194,13 @@ X_IMPORT: keys.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
+			TITLE; TITLE2; TITLE3;
 
 			PROC SGPLOT DATA=work.MODEL_FINAL;
 				where ModelType='SEIR with Data Step' and ScenarioIndex=&ScenarioIndex.;
 				TITLE "Daily Occupancy - Data Step SEIR Approach With Uncertainty Bounds";
 				TITLE2 "Scenario: &Scenario., Initial R0: %SYSFUNC(round(&R_T.,.01)) with Initial Social Distancing of %SYSEVALF(&SocialDistancing.*100)%";
-				TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate., date10.), date9.): %SYSFUNC(round(&R_T_Change.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange.*100)%";
-				TITLE4 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDateTwo., date10.), date9.): %SYSFUNC(round(&R_T_Change_Two.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChangeTwo.*100)%";
-				TITLE5 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate3., date10.), date9.): %SYSFUNC(round(&R_T_Change_3.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange3.*100)%";
-				TITLE6 "Adjusted R0 after %sysfunc(INPUTN(&ISOChangeDate4., date10.), date9.): %SYSFUNC(round(&R_T_Change_4.,.01)) with Adjusted Social Distancing of %SYSEVALF(&SocialDistancingChange4.*100)%";
+				TITLE3 "&sdchangetitle.";
 					
                 BAND x=DATE lower=LOWER_HOSPITAL_OCCUPANCY upper=UPPER_HOSPITAL_OCCUPANCY / fillattrs=(color=blue transparency=.8) name="b1";
                 BAND x=DATE lower=LOWER_ICU_OCCUPANCY upper=UPPER_ICU_OCCUPANCY / fillattrs=(color=red transparency=.8) name="b2";
@@ -224,5 +217,5 @@ X_IMPORT: keys.sas
 				XAXIS LABEL="Date";
 				YAXIS LABEL="Daily Occupancy";
 			RUN;
-			TITLE; TITLE2; TITLE3; TITLE4; TITLE5; TITLE6;
+			TITLE; TITLE2; TITLE3;
 		%END;
