@@ -69,7 +69,7 @@ You need to evaluate each parameter for your population of interest.
 	QUIT;
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
-                SocialDistancing,ISOChangeDate,SocialDistancingChange,
+                SocialDistancing,ISOChangeDate,ISOChangeEvent,SocialDistancingChange,
                 MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
                 plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=3,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
                 ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
@@ -85,6 +85,7 @@ You need to evaluate each parameter for your population of interest.
             KnownAdmits                 BEST12.    
             SocialDistancing            BEST12.    
             ISOChangeDate               $200.    
+            ISOChangeEvent              $200.
             SocialDistancingChange      $50.     
             MarketSharePercent          BEST12.    
             Admission_Rate              BEST12.    
@@ -116,6 +117,7 @@ You need to evaluate each parameter for your population of interest.
             KnownAdmits                 =   "Number of Admitted Patients in Hospital of Interest on Day 0"
             SocialDistancing            =   "Initial Social Distancing (% Reduction from Normal)"
             ISOChangeDate               =   "Dates of Change in Social Distancing"
+            ISOChangeEvent              =   "Event label associated with ISOChangeDate"
             SocialDistancingChange      =   "Social Distancing Change (% Reduction from Normal)"
             MarketSharePercent          =   "Anticipated Share (%) of Regional Hospitalized Patients"
             Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
@@ -146,6 +148,7 @@ You need to evaluate each parameter for your population of interest.
         KnownAdmits                 =   &KnownAdmits.;
         SocialDistancing            =   &SocialDistancing.;
         ISOChangeDate               =   "&ISOChangeDate.";
+        ISOChangeEvent              =   "&ISOChangeEvent.";
         SocialDistancingChange      =   "&SocialDistancingChange.";
         MarketSharePercent          =   &MarketSharePercent.;
         Admission_Rate              =   &Admission_Rate.;
@@ -221,14 +224,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -324,14 +328,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -490,6 +495,17 @@ You need to evaluate each parameter for your population of interest.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
 			RUN;
@@ -661,14 +677,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -822,6 +839,17 @@ You need to evaluate each parameter for your population of interest.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
 			RUN;
@@ -993,14 +1021,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -1147,6 +1176,17 @@ You need to evaluate each parameter for your population of interest.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD;
 			RUN;
@@ -1308,14 +1348,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -1456,6 +1497,17 @@ You need to evaluate each parameter for your population of interest.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP CUM: RECOVERYDAYS SOCIALD;
 			RUN;
@@ -1617,14 +1669,15 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
 					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * (1 - &&SocialDistancingChange&j));
 						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
-						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
+						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
 				%ELSE %DO;
@@ -1895,6 +1948,17 @@ You need to evaluate each parameter for your population of interest.
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					DROP LAG: CUM: ;
 				RUN;
@@ -2324,6 +2388,7 @@ You need to evaluate each parameter for your population of interest.
 		informat ICUPercent best32. ;
 		informat VentPErcent best32. ;
 		informat ISOChangeDate $200. ;
+		informat ISOChangeEvent $200. ;
 		informat SocialDistancingChange $16. ;
 		informat FatalityRate best32. ;
 		informat plots $3. ;
@@ -2340,6 +2405,7 @@ You need to evaluate each parameter for your population of interest.
 		format ICUPercent best12. ;
 		format VentPErcent best12. ;
 		format ISOChangeDate $200. ;
+		format ISOChangeEvent $200. ;
 		format SocialDistancingChange $16. ;
 		format FatalityRate best12. ;
 		format plots $3. ;
@@ -2357,6 +2423,7 @@ You need to evaluate each parameter for your population of interest.
 					ICUPercent
 					VentPErcent
 					ISOChangeDate $
+					ISOChangeEvent $
 					SocialDistancingChange  $
 					FatalityRate
 					plots  $

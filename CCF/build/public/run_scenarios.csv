@@ -1,4 +1,4 @@
-﻿scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,KnownAdmits,Population,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,ISOChangeDate,SocialDistancingChange,FatalityRate,plots
-Scenario_DrS_00_20_run_1,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,0:0.2:0.5:0.3,0,YES
-Scenario_DrS_00_40_run_1,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,0:0.4:0.5:0.3,0,YES
-Scenario_DrS_00_40_run_12,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAY2020'd:'06AUG2020'd:'20AUG2020'd:'01SEP2020'd,0.25:0.5:0.4:0.2,0,YES
+﻿scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,KnownAdmits,Population,SocialDistancing,MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,ISOChangeDate,ISOChangeEvent,SocialDistancingChange,FatalityRate,plots
+Scenario_DrS_00_20_run_1,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,Social Distance:Essential Businesses:Shelter In Place:Reopen,0:0.2:0.5:0.3,0,YES
+Scenario_DrS_00_40_run_1,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,Social Distance:Essential Businesses:Shelter In Place:Reopen,0:0.4:0.5:0.3,0,YES
+Scenario_DrS_00_40_run_12,0,0,14,5,10,4390484,0,0.29,0.075,0.45,0.35,'31MAY2020'd:'06AUG2020'd:'20AUG2020'd:'01SEP2020'd,Social Distance:Essential Businesses:Shelter In Place:Reopen,0.25:0.5:0.4:0.2,0,YES

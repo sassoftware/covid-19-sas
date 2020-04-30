@@ -2,7 +2,7 @@ C_IMPORT: CCF_pre.sas
 D_IMPORT: CCF_pre.sas
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
-                SocialDistancing,ISOChangeDate,SocialDistancingChange,
+                SocialDistancing,ISOChangeDate,ISOChangeEvent,SocialDistancingChange,
                 MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
                 plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=3,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
                 ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
@@ -18,6 +18,7 @@ D_IMPORT: CCF_pre.sas
             KnownAdmits                 BEST12.    
             SocialDistancing            BEST12.    
             ISOChangeDate               $200.    
+            ISOChangeEvent              $200.
             SocialDistancingChange      $50.     
             MarketSharePercent          BEST12.    
             Admission_Rate              BEST12.    
@@ -49,6 +50,7 @@ D_IMPORT: CCF_pre.sas
             KnownAdmits                 =   "Number of Admitted Patients in Hospital of Interest on Day 0"
             SocialDistancing            =   "Initial Social Distancing (% Reduction from Normal)"
             ISOChangeDate               =   "Dates of Change in Social Distancing"
+            ISOChangeEvent              =   "Event label associated with ISOChangeDate"
             SocialDistancingChange      =   "Social Distancing Change (% Reduction from Normal)"
             MarketSharePercent          =   "Anticipated Share (%) of Regional Hospitalized Patients"
             Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
@@ -79,6 +81,7 @@ D_IMPORT: CCF_pre.sas
         KnownAdmits                 =   &KnownAdmits.;
         SocialDistancing            =   &SocialDistancing.;
         ISOChangeDate               =   "&ISOChangeDate.";
+        ISOChangeEvent              =   "&ISOChangeEvent.";
         SocialDistancingChange      =   "&SocialDistancingChange.";
         MarketSharePercent          =   &MarketSharePercent.;
         Admission_Rate              =   &Admission_Rate.;

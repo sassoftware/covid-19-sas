@@ -41,6 +41,7 @@
 		informat ICUPercent best32. ;
 		informat VentPErcent best32. ;
 		informat ISOChangeDate $200. ;
+		informat ISOChangeEvent $200. ;
 		informat SocialDistancingChange $16. ;
 		informat FatalityRate best32. ;
 		informat plots $3. ;
@@ -57,6 +58,7 @@
 		format ICUPercent best12. ;
 		format VentPErcent best12. ;
 		format ISOChangeDate $200. ;
+		format ISOChangeEvent $200. ;
 		format SocialDistancingChange $16. ;
 		format FatalityRate best12. ;
 		format plots $3. ;
@@ -74,6 +76,7 @@
 					ICUPercent
 					VentPErcent
 					ISOChangeDate $
+					ISOChangeEvent $
 					SocialDistancingChange  $
 					FatalityRate
 					plots  $

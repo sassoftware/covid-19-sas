@@ -57,4 +57,15 @@
 					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
 					DATE = &DAY_ZERO. + round(DAY,1);
 					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					FORMAT ISOChangeEvent $30.;
+					%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+						IF DATE = &&ISOChangeDate&j THEN DO;
+							ISOChangeEvent = "&&ISOChangeEvent&j";
+							EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
+							EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
+							EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
+							EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
+							EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+						END;
+					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
