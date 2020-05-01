@@ -5,6 +5,7 @@
 									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 									ScenarioUser = "Scenario ID: User who created Scenario"
 									ScenarioNameUnique = "Unique Scenario Name"
+									Scenarioname = "Scenario Name Short"
 									;
 								MODIFY FIT_PARMS;
 								LABEL
@@ -12,5 +13,6 @@
 									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 									ScenarioUser = "Scenario ID: User who created Scenario"
 									ScenarioNameUnique = "Unique Scenario Name"
+									Scenarioname = "Scenario Name Short"
 									;
 							%END;

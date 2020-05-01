@@ -5,9 +5,8 @@ X_IMPORT: parameters.sas
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR_SIM;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
 				ModelType="SIR with Data Step";
-				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
 					DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2; 

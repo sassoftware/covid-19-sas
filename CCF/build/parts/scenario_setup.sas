@@ -47,11 +47,11 @@ X_IMPORT: keys.sas
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -63,7 +63,7 @@ X_IMPORT: keys.sas
         %END;
 
     /* recall an existing scenario to SASWORK if it matched */
-        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall;
+        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall ScenarioName_recall;
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
@@ -71,16 +71,16 @@ X_IMPORT: keys.sas
         %ELSE %DO;
             /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique, t2.ScenarioName into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall, :ScenarioName_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique, t2.ScenarioName
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)

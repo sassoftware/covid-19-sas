@@ -192,6 +192,8 @@ You need to evaluate each parameter for your population of interest.
         DATA SCENARIOS;
             set sashelp.vmacro(where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB') then delete;
+				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
+				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
@@ -200,6 +202,8 @@ You need to evaluate each parameter for your population of interest.
         RUN;
         DATA INPUTS; 
             set INPUTS;
+				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
+				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
@@ -242,6 +246,8 @@ You need to evaluate each parameter for your population of interest.
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
             if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB','SDCHANGETITLE','J') then delete;
+				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
+				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
@@ -258,11 +264,11 @@ You need to evaluate each parameter for your population of interest.
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex, ScenarioSource, ScenarioUser) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -274,7 +280,7 @@ You need to evaluate each parameter for your population of interest.
         %END;
 
     /* recall an existing scenario to SASWORK if it matched */
-        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall;
+        %GLOBAL ScenarioIndex_recall ScenarioSource_recall ScenarioUser_recall ScenarioNameUnique_recall ScenarioName_recall;
         %IF &ScenarioExist = 0 %THEN %DO;
             PROC SQL noprint; select max(ScenarioIndex) into :ScenarioIndex from work.SCENARIOS; QUIT;
         %END;
@@ -282,16 +288,16 @@ You need to evaluate each parameter for your population of interest.
         %ELSE %DO;
             /* what was a ScenarioIndex value that matched the requested scenario - store that in ScenarioIndex_recall ... */
             PROC SQL noprint; /* can this be combined with the similar code above that counts matching scenarios? */
-				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall from
-                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique
+				select t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique, t2.ScenarioName into :ScenarioIndex_recall, :ScenarioSource_recall, :ScenarioUser_recall, :ScenarioNameUnique_recall, :ScenarioName_recall from
+                    (select t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t2.ScenarioNameUnique, t2.ScenarioName
                         from 
                             (select *, count(*) as cnt 
                                 from work.SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')
                                 group by ScenarioIndex) t1
                             join
                             (select * from &PULLLIB..SCENARIOS
-                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONNAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
+                                where name not in ('SCENARIO','SCENARIOINDEX_BASE','SCENARIONAMEUNIQUE','SCENARIOINDEX','SCENARIOSOURCE','SCENARIOUSER','SCENPLOT','PLOTS')) t2
                             on t1.name=t2.name and t1.value=t2.value and t1.STAGE=t2.STAGE
                         group by t1.ScenarioIndex, t2.ScenarioIndex, t2.ScenarioSource, t2.ScenarioUser, t1.cnt
                         having count(*) = t1.cnt)
@@ -346,8 +352,9 @@ You need to evaluate each parameter for your population of interest.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR_SIM;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;		
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
 				ModelType="SIR with Data Step";
+				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
@@ -509,6 +516,8 @@ You need to evaluate each parameter for your population of interest.
                 The code below has logic to override the lag at the start of each by group.
             */
 			DATA DS_SIR_SIM;
+				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
+				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
@@ -847,6 +856,7 @@ You need to evaluate each parameter for your population of interest.
 								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
+								Scenarioname = "Scenario Name Short"
 								Stage = "INPUT for input variables - MODEL for all variables"
 								;
 							MODIFY INPUTS;
@@ -855,6 +865,7 @@ You need to evaluate each parameter for your population of interest.
 								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
+								Scenarioname = "Scenario Name Short"
 								;
 
 					RUN;

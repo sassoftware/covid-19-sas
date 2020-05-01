@@ -72,9 +72,8 @@ X_IMPORT: parameters.sas
 
             /* use the center point of the ranges for the requested scenario inputs */
 			DATA TMODEL_SIR;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9. Scenarioname $30. ScenarioNameUnique $100.;	
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;	
 				ModelType="SIR with PROC (T)MODEL";
-				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
 					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
@@ -106,9 +105,8 @@ X_IMPORT: postprocess.sas
                 The code below has logic to override the lag at the start of each by group.
             */
 			DATA TMODEL_SIR_SIM;
-				FORMAT ModelType $30. DATE date9. Scenarioname $30. ScenarioNameUnique $100.;
+				FORMAT ModelType $30. DATE date9.;
 				ModelType="SIR with PROC (T)MODEL";
-				ScenarioName="&Scenario.";
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY));

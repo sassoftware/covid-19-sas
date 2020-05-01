@@ -82,6 +82,7 @@
 								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
+								Scenarioname = "Scenario Name Short"
 								Stage = "INPUT for input variables - MODEL for all variables"
 								;
 							MODIFY INPUTS;
@@ -90,6 +91,7 @@
 								ScenarioSource = "Scenario ID: Source (BATCH or UI)"
 								ScenarioUser = "Scenario ID: User who created Scenario"
 								ScenarioNameUnique = "Unique Scenario Name"
+								Scenarioname = "Scenario Name Short"
 								;
 P_IMPORT: fit_recall_label.sas
 D_IMPORT: fit_recall_label.sas
