@@ -19,6 +19,8 @@ These programs also work within [SAS University Edition](https://www.sas.com/en_
   You can see examples of the code and some sample visualizations in [the NYT-COVID19-SAS notebook](NYT-COVID19-SAS.ipynb). (This notebook can be added to SAS University Edition, which supports Jupyter Lab.  You can also enable the [SAS kernel for your own SAS environment](https://blogs.sas.com/content/sasdummy/2016/04/24/how-to-run-sas-programs-in-jupyter-notebook/).)
 * [import-data-jhu.sas](./import-data-jhu.sas) - This program uses PROC HTTP to fetch the daily CSV files from [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19). It uses PROC IMPORT to read the data a single SAS data set, covering all countries/regions over all of the days with data. Subsequent steps are used to clean/normalize the data for easier reporting. The main outputs include: a data set with all countries and regions/states and daily data with running totals of cases/deaths, and a data set summarized to the country level with "days to double" rate for cases/deaths.
 
+  See examples of how to use this code in [the JHU-COVID19-SAS notebook](JHU-COVID19-SAS.ipynb). This code also shows how to use US Census map data to visualize the data geographically.
+
 ## Credits
 
 Jeff Stander, Pritesh Desai, Falko Schulz, Anand Chitale, and Robert Collins contributed to these SAS scripts. Adapted for GitHub sharing
