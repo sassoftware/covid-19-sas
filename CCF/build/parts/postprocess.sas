@@ -62,20 +62,13 @@
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */

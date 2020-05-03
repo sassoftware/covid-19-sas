@@ -507,21 +507,14 @@ You need to evaluate each parameter for your population of interest.
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
@@ -863,21 +856,14 @@ You need to evaluate each parameter for your population of interest.
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP LAG: CUM: RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
@@ -1212,21 +1198,14 @@ You need to evaluate each parameter for your population of interest.
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD;
@@ -1546,21 +1525,14 @@ You need to evaluate each parameter for your population of interest.
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 				DROP CUM: RECOVERYDAYS SOCIALD;
@@ -2014,21 +1986,14 @@ You need to evaluate each parameter for your population of interest.
 						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
 							IF DATE = &&ISOChangeDate&j THEN DO;
 								ISOChangeEvent = "&&ISOChangeEvent&j";
-								EventY_HOSPITAL_OCCUPANCY = round(1.1*HOSPITAL_OCCUPANCY,1);
-								EventY_ICU_OCCUPANCY = round(1.1*ICU_OCCUPANCY,1);
-								EventY_VENT_OCCUPANCY = round(1.1*VENT_OCCUPANCY,1);
-								EventY_ECMO_OCCUPANCY = round(1.1*ECMO_OCCUPANCY,1);
-								EventY_DIAL_OCCUPANCY = round(1.1*DIAL_OCCUPANCY,1);
+								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+								EventY_Multiplier = 1.1+MOD(&j,2)/10;
 							END;
 						%END;
 					%END;
 					%ELSE %DO;
 						ISOChangeEvent = '';
-						EventY_HOSPITAL_OCCUPANCY = .;
-						EventY_ICU_OCCUPANCY = . ;
-						EventY_ECMO_OCCUPANCY = . ;
-						EventY_VENT_OCCUPANCY = . ;
-						EventY_DIAL_OCCUPANCY = . ;
+						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
 					DROP LAG: CUM: ;
@@ -2110,7 +2075,7 @@ You need to evaluate each parameter for your population of interest.
         %IF &ScenarioExist = 0 %THEN %DO;
 
 				/*CREATE FLAGS FOR DAYS WITH PEAK VALUES OF DIFFERENT METRICS*/
-					PROC SQL;
+					PROC SQL noprint;
 						CREATE TABLE work.MODEL_FINAL AS
 							SELECT MF.*, HOSP.PEAK_HOSPITAL_OCCUPANCY, ICU.PEAK_ICU_OCCUPANCY, VENT.PEAK_VENT_OCCUPANCY, 
 								ECMO.PEAK_ECMO_OCCUPANCY, DIAL.PEAK_DIAL_OCCUPANCY, I.PEAK_I_N, FATAL.PEAK_FATALITY
@@ -2207,6 +2172,42 @@ You need to evaluate each parameter for your population of interest.
 										AND MF.SCENARIONAMEUNIQUE = FATAL.SCENARIONAMEUNIQUE
 										AND MF.DATE = FATAL.DATE
 							ORDER BY SCENARIONAMEUNIQUE, MODELTYPE, DATE;
+
+							/* add EVENTY columns for ploting labels in ISOChangeEvent */
+							select name into :varlist separated by ', '
+								from dictionary.columns
+								where UPCASE(LIBNAME)="WORK" and upcase(memname)="MODEL_FINAL" and upcase(name) ne 'EVENTY_MULTIPLIER';
+							create table work.MODEL_FINAL as
+								select * from
+									(select &varlist from work.MODEL_FINAL) m1
+									left join
+									(
+										select t1.ScenarioNameUnique, t1.ModelType, t1.Date,
+												round(t1.EventY_Multiplier * t2.HOSPITAL_OCCUPANCY,1) as EventY_HOSPITAL_OCCUPANCY,
+												round(t1.EventY_Multiplier * t3.ICU_OCCUPANCY,1) as EventY_ICU_OCCUPANCY,
+												round(t1.EventY_Multiplier * t4.DIAL_OCCUPANCY,1) as EventY_DIAL_OCCUPANCY,
+												round(t1.EventY_Multiplier * t5.ECMO_OCCUPANCY,1) as EventY_ECMO_OCCUPANCY,
+												round(t1.EventY_Multiplier * t6.VENT_OCCUPANCY,1) as EventY_VENT_OCCUPANCY
+										from
+											(select ScenarioNameUnique, ModelType, Date, EventY_Multiplier from work.MODEL_FINAL) t1
+											left join
+											(select ScenarioNameUnique, ModelType, HOSPITAL_OCCUPANCY from work.Model_FINAL where PEAK_HOSPITAL_OCCUPANCY) t2
+											on t1.ScenarioNameUnique=t2.ScenarioNameUnique and t1.ModelType=t2.ModelType
+											left join
+											(select ScenarioNameUnique, ModelType, ICU_OCCUPANCY from work.Model_FINAL where PEAK_ICU_OCCUPANCY) t3
+											on t1.ScenarioNameUnique=t3.ScenarioNameUnique and t1.ModelType=t3.ModelType
+											left join
+											(select ScenarioNameUnique, ModelType, DIAL_OCCUPANCY from work.Model_FINAL where PEAK_DIAL_OCCUPANCY) t4
+											on t1.ScenarioNameUnique=t4.ScenarioNameUnique and t1.ModelType=t4.ModelType
+											left join
+											(select ScenarioNameUnique, ModelType, ECMO_OCCUPANCY from work.Model_FINAL where PEAK_ECMO_OCCUPANCY) t5
+											on t1.ScenarioNameUnique=t5.ScenarioNameUnique and t1.ModelType=t5.ModelType
+											left join
+											(select ScenarioNameUnique, ModelType, VENT_OCCUPANCY from work.Model_FINAL where PEAK_VENT_OCCUPANCY) t6
+											on t1.ScenarioNameUnique=t6.ScenarioNameUnique and t1.ModelType=t6.ModelType
+									) m2
+								on m1.ScenarioNameUnique=m2.ScenarioNameUnique and m1.ModelType=m2.ModelType and m1.DATE=m2.DATE
+							;
 					QUIT;
 				/* use proc datasets to apply labels to each column of output data table
 					except INPUTS which is documented right after the %EasyRun definition
