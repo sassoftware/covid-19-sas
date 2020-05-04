@@ -12,12 +12,16 @@ X_IMPORT: parameters.sas
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
-						SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
-                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
-						IF RECOVERYDAYS >= 0 THEN DO;
-                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
-							IF SOCIALD >= 0 THEN DO; 
+                    DO SIGMAfraction = 0.8 TO 1.2 BY 0.1;
+					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
+					SIGMAfraction = round(SIGMAfraction,.00001);
+					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
+                    RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
+					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
+                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+						SOCIALD = SOCIALDfraction + &SocialDistancing;
+						SOCIALDfraction = round(SOCIALDfraction,.00001);
+						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -31,7 +35,6 @@ X_IMPORT: parameters.sas
                                     OUTPUT; 
                                 END;
                             END;
-							END;
                         END;
 						END;
 					END; 
@@ -71,7 +74,7 @@ X_IMPORT: parameters.sas
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by SIGMAfraction RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 			QUIT;
 
@@ -88,19 +91,19 @@ X_IMPORT: keys.sas
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+                WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 X_IMPORT: postprocess.sas
-				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
+				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS RECOVERYDAYSfraction SOCIALD SOCIALDfraction BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by SIGMAfraction, RECOVERYDAYS, SOCIALD, Time
+                    order by SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, Time
                 ;
             quit;
 
@@ -115,7 +118,7 @@ X_IMPORT: postprocess.sas
 X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by SIGMAfraction RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;

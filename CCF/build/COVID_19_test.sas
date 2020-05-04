@@ -311,12 +311,16 @@ You need to evaluate each parameter for your population of interest.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                    DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
-						SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
-                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
-						IF RECOVERYDAYS >= 0 THEN DO;
-                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
-							IF SOCIALD >= 0 THEN DO; 
+                    DO SIGMAfraction = 0.8 TO 1.2 BY 0.1;
+					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
+					SIGMAfraction = round(SIGMAfraction,.00001);
+					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
+                    RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
+					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
+                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+						SOCIALD = SOCIALDfraction + &SocialDistancing;
+						SOCIALDfraction = round(SOCIALDfraction,.00001);
+						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -330,7 +334,6 @@ You need to evaluate each parameter for your population of interest.
                                     OUTPUT; 
                                 END;
                             END;
-							END;
                         END;
 						END;
 					END; 
@@ -370,7 +373,7 @@ You need to evaluate each parameter for your population of interest.
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
-                by SIGMAfraction RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 			QUIT;
 
@@ -392,7 +395,7 @@ You need to evaluate each parameter for your population of interest.
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+                WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -469,15 +472,15 @@ You need to evaluate each parameter for your population of interest.
 						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
+				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS RECOVERYDAYSfraction SOCIALD SOCIALDfraction BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
+                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
                     from TMODEL_SEIR_SIM
-                    order by SIGMAfraction, RECOVERYDAYS, SOCIALD, Time
+                    order by SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, Time
                 ;
             quit;
 
@@ -497,7 +500,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by SIGMAfraction RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -665,10 +668,13 @@ You need to evaluate each parameter for your population of interest.
                     R_N = &InitRecovered.;
                     *R0  = &R_T.;
                     /* prevent range below zero on each loop */
-                        DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
-						IF RECOVERYDAYS >= 0 THEN DO;
-                            DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
-							IF SOCIALD >= 0 THEN DO; 
+                        DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
+						RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
+						RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
+							DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+							SOCIALD = SOCIALDfraction + &SocialDistancing;
+							SOCIALDfraction = round(SOCIALDfraction,.00001);
+							IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
@@ -684,7 +690,6 @@ You need to evaluate each parameter for your population of interest.
                             END;
 							END;
                         END;
-						END;
 				RUN;
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
@@ -719,7 +724,7 @@ You need to evaluate each parameter for your population of interest.
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
-                by RECOVERYDAYS SOCIALD;
+                by RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 			QUIT;  
 
@@ -741,7 +746,7 @@ You need to evaluate each parameter for your population of interest.
 				LAG_R = R_N; 
 				LAG_N = N; 
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE RECOVERYDAYS=&RecoveryDays. and SOCIALD=&SocialDistancing.;
+                WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				N = SUM(S_N, E_N, I_N, R_N);
 				SCALE = LAG_N / N;
 				/* START: Common Post-Processing Across each Model Type and Approach */
@@ -818,15 +823,15 @@ You need to evaluate each parameter for your population of interest.
 						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM: RECOVERYDAYS SOCIALD BETA GAMMA R_T:;
+				DROP LAG: CUM: RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD BETA GAMMA R_T:;
 			RUN;
 
             /* round time to integers - precision */
             proc sql;
                 create table TMODEL_SIR_SIM as
-                    select S_N as SE, RECOVERYDAYS, SOCIALD, round(Time,1) as Time
+                    select S_N as SE, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
                     from TMODEL_SIR_SIM
-                    order by RECOVERYDAYS, SOCIALD, Time
+                    order by RECOVERYDAYSfraction, SOCIALDfraction, Time
                 ;
             quit; 
 
@@ -846,7 +851,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY));
-                by RECOVERYDAYS SOCIALD;
+                by RECOVERYDAYSfraction SOCIALDfraction;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -1016,12 +1021,16 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-				DO SIGMAfraction = 0.9 TO 1.1 BY 0.05;
+				DO SIGMAfraction = 0.8 TO 1.2 BY 0.1;
 					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
-                    DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2;
-					IF RECOVERYDAYS >= 0 THEN DO;
-                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1;
-						IF SOCIALD >= 0 THEN DO; 
+					SIGMAfraction = round(SIGMAfraction,.00001);
+					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
+                    RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
+					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
+                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+						SOCIALD = SOCIALDfraction + &SocialDistancing;
+						SOCIALDfraction = round(SOCIALDfraction,.00001);
+						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -1078,14 +1087,13 @@ You need to evaluate each parameter for your population of interest.
 						END;
 						END;
 					END;
-					END;
 				END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-				WHERE SIGMAfraction=1 and round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1160,7 +1168,7 @@ You need to evaluate each parameter for your population of interest.
 						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYS SOCIALD;
+				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD;
 			RUN;
 
 		/* calculate key output measures for all scenarios as input to uncertainty bounds */
@@ -1178,7 +1186,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SEIR_SIM;
-                by SIGMAfraction RECOVERYDAYS SOCIALD;
+                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
@@ -1349,10 +1357,13 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				/* prevent range below zero on each loop */
-					DO RECOVERYDAYS = &RecoveryDays.-4 TO &RecoveryDays.+4 BY 2; 
-					IF RECOVERYDAYS >= 0 THEN DO;
-                        DO SOCIALD = &SocialDistancing.-.2 TO &SocialDistancing.+.2 BY .1; 
-						IF SOCIALD >= 0 THEN DO; 
+					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
+                    RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
+					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
+                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+						SOCIALD = SOCIALDfraction + &SocialDistancing;
+						SOCIALDfraction = round(SOCIALDfraction,.00001);
+						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
@@ -1405,14 +1416,13 @@ You need to evaluate each parameter for your population of interest.
 						END;
 						END;
 					END;
-					END;
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
 			DATA DS_SIR;
 				SET DS_SIR_SIM;
-				WHERE round(RECOVERYDAYS,1)=round(&RecoveryDays.,1) and round(SOCIALD,.1)=round(&SocialDistancing.,.1);
+				WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				/* START: Common Post-Processing Across each Model Type and Approach */
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
@@ -1487,7 +1497,7 @@ You need to evaluate each parameter for your population of interest.
 						EventY_Multiplier = .;
 					%END;
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: RECOVERYDAYS SOCIALD;
+				DROP CUM: RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD;
 			RUN;
 
 		/* calculate key output measures for all scenarios as input to uncertainty bounds */
@@ -1505,7 +1515,7 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SIR_SIM;
-                by RECOVERYDAYS SOCIALD;
+                by RECOVERYDAYSfraction SOCIALDfraction;
                     if first.SOCIALD then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
