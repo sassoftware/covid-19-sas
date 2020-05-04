@@ -515,7 +515,7 @@ You need to evaluate each parameter for your population of interest.
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
                 by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALD then do;
+                    if first.SOCIALDfraction then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
@@ -866,7 +866,7 @@ You need to evaluate each parameter for your population of interest.
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY));
                 by RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALD then do;
+                    if first.SOCIALDfraction then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
@@ -1201,7 +1201,7 @@ You need to evaluate each parameter for your population of interest.
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SEIR_SIM;
                 by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALD then do;
+                    if first.SOCIALDfraction then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
@@ -1530,7 +1530,7 @@ You need to evaluate each parameter for your population of interest.
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET DS_SIR_SIM;
                 by RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALD then do;
+                    if first.SOCIALDfraction then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;

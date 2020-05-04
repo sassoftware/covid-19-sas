@@ -113,7 +113,7 @@ X_IMPORT: keys.sas
 				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY));
                 by RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALD then do;
+                    if first.SOCIALDfraction then do;
                         counter = 1;
                         CUMULATIVE_SUM_HOSP=0;
                         CUMULATIVE_SUM_ICU=0;
