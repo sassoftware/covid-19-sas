@@ -24,7 +24,7 @@ These programs also work within [SAS University Edition](https://www.sas.com/en_
 
   See examples of how to use this code in [the JHU-COVID19-SAS notebook](JHU-COVID19-SAS.ipynb). This code also shows how to use US Census map data to visualize the data geographically.
   
-  *	[import-data-ihme.sas](./import-data-ihme.sas) - This program uses PROC HTTP to fetch the CSV files from http://www.healthdata.org/covid/datadownloads. Subsequent steps are used to clean/normalize the data for easier reporting. The main output is a data set with all archived projection estimates of the demand for hospital services, including the availability of ventilators, general hospital beds, and ICU beds, as well as daily and cumulative deaths due to COVID-19.
+* [import-data-ihme.sas](./import-data-ihme.sas) - This program uses PROC HTTP to fetch the CSV files from http://www.healthdata.org/covid/datadownloads. Subsequent steps are used to clean/normalize the data for easier reporting. The main output is a data set with all archived projection estimates of the demand for hospital services, including the availability of ventilators, general hospital beds, and ICU beds, as well as daily and cumulative deaths due to COVID-19.
 
 ## Credits
 
