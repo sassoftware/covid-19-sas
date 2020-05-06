@@ -5,8 +5,7 @@ X_IMPORT: parameters.sas
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR_SIM;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
-				ModelType="SEIR with Data Step";
+				FORMAT DATE DATE9.;
 X_IMPORT: keys.sas
 				/* prevent range below zero on each loop */
 				DO SIGMAfraction = 0.8 TO 1.2 BY 0.1;
@@ -79,76 +78,23 @@ X_IMPORT: keys.sas
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
+			DATA DS_SEIR_SIM;
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
+				ModelType="SEIR with Data Step";
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
+				SET DS_SEIR_SIM;
+				*WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
+X_IMPORT: postprocess.sas
+				DROP CUM: counter SIGMAINV RECOVERYDAYS SOCIALD;
+			RUN;
+
 			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
 				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-X_IMPORT: postprocess.sas
-				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD;
-			RUN;
-
-		/* calculate key output measures for all scenarios as input to uncertainty bounds */
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA DS_SEIR_SIM;
-X_IMPORT: keys.sas
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
-				SET DS_SEIR_SIM;
-                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(sum(S_N,E_N)),-1*sum(S_N,E_N)));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMAfraction RECOVERYDAYS SOCIALD;
+				DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
 		/* merge scenario data with uncertain bounds */

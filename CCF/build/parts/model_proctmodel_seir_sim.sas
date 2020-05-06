@@ -79,99 +79,25 @@ X_IMPORT: parameters.sas
 			QUIT;
 
 			/* use the center point of the ranges for the requested scenario inputs */
-			DATA TMODEL_SEIR;
+			DATA TMODEL_SEIR_SIM;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;
 				ModelType="SEIR with PROC (T)MODEL";
 X_IMPORT: keys.sas
-				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
-					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
-				LAG_S = S_N; 
-				LAG_E = E_N; 
-				LAG_I = I_N; 
-				LAG_R = R_N; 
-				LAG_N = N; 
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-				N = SUM(S_N, E_N, I_N, R_N);
-				SCALE = LAG_N / N;
+				DAY = round(DAY,1);
+                *WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
 X_IMPORT: postprocess.sas
-				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS RECOVERYDAYSfraction SOCIALD SOCIALDfraction BETA GAMMA R_T:;
+				DROP CUM: counter SIGMAINV BETA GAMMA R_T:;
 			RUN;
 
-            /* round time to integers - precision */
-            proc sql;
-                create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
-                    from TMODEL_SEIR_SIM
-                    order by SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, Time
-                ;
-            quit;
-
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA TMODEL_SEIR_SIM;
-				FORMAT ModelType $30. DATE date9.;
-				ModelType="SEIR with PROC (T)MODEL";
-X_IMPORT: keys.sas
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
-				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SE),-1*SE));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-					DATE = &DAY_ZERO. + DAY;
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD;
+			DATA TMODEL_SEIR; 
+				SET TMODEL_SEIR_SIM;
+				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
             PROC SQL noprint;

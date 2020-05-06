@@ -61,11 +61,11 @@ You need to evaluate each parameter for your population of interest.
             BETA_DECAY                  BEST12.
             ECMO_RATE                   BEST12.
             DIAL_RATE                   BEST12.
-            HOSP_LOS                    BEST12.
-            ICU_LOS                     BEST12.
-            VENT_LOS                    BEST12.
-            ECMO_LOS                    BEST12.
-            DIAL_LOS                    BEST12.
+            HOSP_LOS                    $100.
+            ICU_LOS                     $100.
+            VENT_LOS                    $100.
+            ECMO_LOS                    $100.
+            DIAL_LOS                    $100.
         ;
         LABEL
             Scenario                    =   "Scenario Name"
@@ -93,11 +93,11 @@ You need to evaluate each parameter for your population of interest.
             BETA_DECAY                  =   "Daily Reduction (%) of Beta"
             ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
             DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
-            HOSP_LOS                    =   "Average Hospital Length of Stay"
-            ICU_LOS                     =   "Average ICU Length of Stay"
-            VENT_LOS                    =   "Average Ventilator Length of Stay"
-            ECMO_LOS                    =   "Average ECMO Length of Stay"
-            DIAL_LOS                    =   "Average Dialysis Length of Stay"
+            HOSP_LOS                    =   "Hospital Length of Stay"
+            ICU_LOS                     =   "ICU Length of Stay"
+            VENT_LOS                    =   "Ventilator Length of Stay"
+            ECMO_LOS                    =   "ECMO Length of Stay"
+            DIAL_LOS                    =   "Dialysis Length of Stay"
         ;
         Scenario                    =   "&Scenario.";
         IncubationPeriod            =   &IncubationPeriod.;
@@ -124,11 +124,11 @@ You need to evaluate each parameter for your population of interest.
         BETA_DECAY                  =   &BETA_DECAY.;
         ECMO_RATE                   =   &ECMO_RATE.;
         DIAL_RATE                   =   &DIAL_RATE.;
-        HOSP_LOS                    =   &HOSP_LOS.;
-        ICU_LOS                     =   &ICU_LOS.;
-        VENT_LOS                    =   &VENT_LOS.;
-        ECMO_LOS                    =   &ECMO_LOS.;
-        DIAL_LOS                    =   &DIAL_LOS.;
+        HOSP_LOS                    =   "&HOSP_LOS.";
+        ICU_LOS                     =   "&ICU_LOS.";
+        VENT_LOS                    =   "&VENT_LOS.";
+        ECMO_LOS                    =   "&ECMO_LOS.";
+        DIAL_LOS                    =   "&DIAL_LOS.";
     RUN;
 
     %IF &ScenarioSource = UI %THEN %DO;
@@ -383,7 +383,7 @@ You need to evaluate each parameter for your population of interest.
 			QUIT;
 
 			/* use the center point of the ranges for the requested scenario inputs */
-			DATA TMODEL_SEIR;
+			DATA TMODEL_SEIR_SIM;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;
 				ModelType="SEIR with PROC (T)MODEL";
 				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
@@ -392,173 +392,145 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN LAG_S LAG_E LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
-					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
-				LAG_S = S_N; 
-				LAG_E = E_N; 
-				LAG_I = I_N; 
-				LAG_R = R_N; 
-				LAG_N = N; 
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-				N = SUM(S_N, E_N, I_N, R_N);
-				SCALE = LAG_N / N;
+				DAY = round(DAY,1);
+                *WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
+						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+
 					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
 					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					
 					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+						Cumulative_sum_fatality + Fatality;
+						Deceased_Today = Fatality;
+						Total_Deaths = Cumulative_sum_fatality;
+					
 					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
 					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
 					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
 					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
 					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					
 					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-					Cumulative_sum_fatality + Fatality;
-					CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-					CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-					CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-					CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-					CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-					cumulative_Sum_Market_Fatality + Market_Fatality;
-					CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-					CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_MARKET_HOSP));
-					CUMMARKETICULAG=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_MARKET_ICU));
-					CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_MARKET_VENT));
-					CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_MARKET_ECMO));
-					CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_MARKET_DIAL));
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					Deceased_Today = Fatality;
-					Total_Deaths = Cumulative_sum_fatality;
-					MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-					MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-					MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-					MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-					MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-					MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-					Market_Deceased_Today = Market_Fatality;
-					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + round(DAY,1);
-					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					FORMAT ISOChangeEvent $30.;
-					%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
-						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
-							IF DATE = &&ISOChangeDate&j THEN DO;
-								ISOChangeEvent = "&&ISOChangeEvent&j";
-								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
-								EventY_Multiplier = 1.1+MOD(&j,2)/10;
-							END;
+						cumulative_Sum_Market_Fatality + Market_Fatality;
+						Market_Deceased_Today = Market_Fatality;
+						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+
+					/* setup LOS macro variables */	
+						%LET los_varlist = HOSP ICU VENT ECMO DIAL;
+							%DO i = 1 %TO %sysfunc(countw(&los_varlist));
+								%LET los_curvar = %scan(&los_varlist,&i)_LOS;
+								%LET los_len = %sysfunc(countw(&&&los_curvar,:));
+								/* the user input a range or rates for LOS = 1, 2, ... */
+								%IF &los_len > 1 %THEN %DO;
+
+									%LET &los_curvar._TABLE = %scan(&&&los_curvar,1,:);
+									%DO j = 2 %TO &los_len;
+										%LET &los_curvar._TABLE = &&&los_curvar._TABLE,%scan(&&&los_curvar,&j,:);
+									%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &los_len;
+									%LET MARKET_&los_curvar._MAX = &los_len;
+								%END;
+								/* the user input an integer value for LOS */
+								%ELSE %DO;
+									%LET MARKET_&los_curvar = &&&los_curvar;
+									%IF &&&los_curvar = 1 %THEN %LET &los_curvar._TABLE = 1;
+									%ELSE %LET &los_curvar._TABLE = 0;
+										%DO j = 2 %TO &&&los_curvar;
+											%IF &j = &&&los_curvar %THEN %LET &los_curvar._TABLE = &&&los_curvar._TABLE,1;
+											%ELSE %LET &los_curvar._TABLE = &&&los_curvar._TABLE,0;
+										%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &&&los_curvar;
+									%LET MARKET_&los_curvar._MAX = &&&los_curvar;
+								%END;
+								%put &los_curvar &&&los_curvar &&&los_curvar._MAX &&&los_curvar._TABLE;	
+							%END;
+
+					/* setup drivers for OCCUPANCY variable calculations in this code */
+						%LET varlist = HOSP ICU VENT ECMO DIAL MARKET_HOSP MARKET_ICU MARKET_VENT MARKET_ECMO MARKET_DIAL;
+
+					/* *_OCCUPANCY variable calculations */
+						call streaminit(2019); /* may need to move to main data step code = as long as it appears before rand function it works correctly */						
+						%DO i = 1 %TO %sysfunc(countw(&varlist));
+							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
+							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&i),_LOS_MAX)) + 1);
+							/* arrays to hold an retain the distribution of LOS for hospital census */
+								array %scan(&varlist,&i)_los{0:&maxlos} _TEMPORARY_;
+							/* at the start of each day reduce the LOS for each patient by 1 day */
+								do i = 0 to &maxlos;
+									if day = 0 then do;
+										%scan(&varlist,&i)_los{i}=0;
+									end;
+									else do;
+										if i < &maxlos then do;
+											%scan(&varlist,&i)_los{i} = %scan(&varlist,&i)_los{i+1};
+										end;
+										else do;
+											%scan(&varlist,&i)_los{i} = 0;
+										end;
+									end;
+								end;
+							/* distribute todays new admissions by LOS */
+								do i = 1 to round(%scan(&varlist,&i),1);
+									*temp = %sysfunc(cat(&,%scan(&varlist,&i),_LOS));
+									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&i),_LOS_TABLE)));
+									if temp<0 then temp=0;
+									else if temp>&maxlos then temp=&maxlos;
+									%scan(&varlist,&i)_los{temp}+1;
+								end;
+								/* set the output variables equal to total census for current value of Day */
+									%scan(&varlist,&i)_OCCUPANCY = sum(of %scan(&varlist,&i)_los{*});
 						%END;
-					%END;
-					%ELSE %DO;
-						ISOChangeEvent = '';
-						EventY_Multiplier = .;
-					%END;
+							/* correct name of hospital occupancy to expected output */
+								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
+							/* derived Occupancy values */
+								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+					
+					/* date variables */
+						DATE = &DAY_ZERO. + round(DAY,1);
+						ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					
+					/* ISOChangeEvent variable */
+						FORMAT ISOChangeEvent $30.;
+						%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
+							%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+								IF DATE = &&ISOChangeDate&j THEN DO;
+									ISOChangeEvent = "&&ISOChangeEvent&j";
+									/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+									EventY_Multiplier = 1.1+MOD(&j,2)/10;
+								END;
+							%END;
+						%END;
+						%ELSE %DO;
+							ISOChangeEvent = '';
+							EventY_Multiplier = .;
+						%END;
+
+					/* clean up */
+						drop i temp;
+
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM: SIGMAINV SIGMAfraction RECOVERYDAYS RECOVERYDAYSfraction SOCIALD SOCIALDfraction BETA GAMMA R_T:;
+				DROP CUM: counter SIGMAINV BETA GAMMA R_T:;
 			RUN;
 
-            /* round time to integers - precision */
-            proc sql;
-                create table TMODEL_SEIR_SIM as
-                    select sum(S_N,E_N) as SE, SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
-                    from TMODEL_SEIR_SIM
-                    order by SIGMAfraction, RECOVERYDAYSfraction, SOCIALDfraction, Time
-                ;
-            quit;
-
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA TMODEL_SEIR_SIM;
-				FORMAT ModelType $30. DATE date9.;
-				ModelType="SEIR with PROC (T)MODEL";
-				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
-				ScenarioName="&Scenario.";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarioUser="&SYSUSERID.";
-				ScenarioSource="&ScenarioSource.";
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
-				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY));
-                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SE),-1*SE));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-					DATE = &DAY_ZERO. + DAY;
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY Sigma RECOVERYDAYS SOCIALD;
+			DATA TMODEL_SEIR; 
+				SET TMODEL_SEIR_SIM;
+				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
             PROC SQL noprint;
@@ -734,7 +706,7 @@ You need to evaluate each parameter for your population of interest.
 			QUIT;  
 
             /* use the center point of the ranges for the requested scenario inputs */
-			DATA TMODEL_SIR;
+			DATA TMODEL_SIR_SIM;
 				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;	
 				ModelType="SIR with PROC (T)MODEL";
 				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
@@ -743,173 +715,146 @@ You need to evaluate each parameter for your population of interest.
 				ScenarioUser="&SYSUSERID.";
 				ScenarioSource="&ScenarioSource.";
 				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
-					CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
-				LAG_S = S_N; 
-				E_N = &E.; LAG_E = E_N;  /* placeholder for post-processing of SIR model */
-				LAG_I = I_N; 
-				LAG_R = R_N; 
-				LAG_N = N; 
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
+				E_N = &E.;  /* placeholder for post-processing of SIR model */
 				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-                WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-				N = SUM(S_N, E_N, I_N, R_N);
-				SCALE = LAG_N / N;
+				DAY = round(DAY,1);
+                *WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
+						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+
 					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
 					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					
 					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+						Cumulative_sum_fatality + Fatality;
+						Deceased_Today = Fatality;
+						Total_Deaths = Cumulative_sum_fatality;
+					
 					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
 					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
 					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
 					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
 					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					
 					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-					Cumulative_sum_fatality + Fatality;
-					CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-					CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-					CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-					CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-					CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-					cumulative_Sum_Market_Fatality + Market_Fatality;
-					CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-					CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_MARKET_HOSP));
-					CUMMARKETICULAG=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_MARKET_ICU));
-					CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_MARKET_VENT));
-					CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_MARKET_ECMO));
-					CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_MARKET_DIAL));
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					Deceased_Today = Fatality;
-					Total_Deaths = Cumulative_sum_fatality;
-					MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-					MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-					MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-					MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-					MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-					MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-					Market_Deceased_Today = Market_Fatality;
-					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + round(DAY,1);
-					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					FORMAT ISOChangeEvent $30.;
-					%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
-						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
-							IF DATE = &&ISOChangeDate&j THEN DO;
-								ISOChangeEvent = "&&ISOChangeEvent&j";
-								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
-								EventY_Multiplier = 1.1+MOD(&j,2)/10;
-							END;
+						cumulative_Sum_Market_Fatality + Market_Fatality;
+						Market_Deceased_Today = Market_Fatality;
+						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+
+					/* setup LOS macro variables */	
+						%LET los_varlist = HOSP ICU VENT ECMO DIAL;
+							%DO i = 1 %TO %sysfunc(countw(&los_varlist));
+								%LET los_curvar = %scan(&los_varlist,&i)_LOS;
+								%LET los_len = %sysfunc(countw(&&&los_curvar,:));
+								/* the user input a range or rates for LOS = 1, 2, ... */
+								%IF &los_len > 1 %THEN %DO;
+
+									%LET &los_curvar._TABLE = %scan(&&&los_curvar,1,:);
+									%DO j = 2 %TO &los_len;
+										%LET &los_curvar._TABLE = &&&los_curvar._TABLE,%scan(&&&los_curvar,&j,:);
+									%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &los_len;
+									%LET MARKET_&los_curvar._MAX = &los_len;
+								%END;
+								/* the user input an integer value for LOS */
+								%ELSE %DO;
+									%LET MARKET_&los_curvar = &&&los_curvar;
+									%IF &&&los_curvar = 1 %THEN %LET &los_curvar._TABLE = 1;
+									%ELSE %LET &los_curvar._TABLE = 0;
+										%DO j = 2 %TO &&&los_curvar;
+											%IF &j = &&&los_curvar %THEN %LET &los_curvar._TABLE = &&&los_curvar._TABLE,1;
+											%ELSE %LET &los_curvar._TABLE = &&&los_curvar._TABLE,0;
+										%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &&&los_curvar;
+									%LET MARKET_&los_curvar._MAX = &&&los_curvar;
+								%END;
+								%put &los_curvar &&&los_curvar &&&los_curvar._MAX &&&los_curvar._TABLE;	
+							%END;
+
+					/* setup drivers for OCCUPANCY variable calculations in this code */
+						%LET varlist = HOSP ICU VENT ECMO DIAL MARKET_HOSP MARKET_ICU MARKET_VENT MARKET_ECMO MARKET_DIAL;
+
+					/* *_OCCUPANCY variable calculations */
+						call streaminit(2019); /* may need to move to main data step code = as long as it appears before rand function it works correctly */						
+						%DO i = 1 %TO %sysfunc(countw(&varlist));
+							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
+							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&i),_LOS_MAX)) + 1);
+							/* arrays to hold an retain the distribution of LOS for hospital census */
+								array %scan(&varlist,&i)_los{0:&maxlos} _TEMPORARY_;
+							/* at the start of each day reduce the LOS for each patient by 1 day */
+								do i = 0 to &maxlos;
+									if day = 0 then do;
+										%scan(&varlist,&i)_los{i}=0;
+									end;
+									else do;
+										if i < &maxlos then do;
+											%scan(&varlist,&i)_los{i} = %scan(&varlist,&i)_los{i+1};
+										end;
+										else do;
+											%scan(&varlist,&i)_los{i} = 0;
+										end;
+									end;
+								end;
+							/* distribute todays new admissions by LOS */
+								do i = 1 to round(%scan(&varlist,&i),1);
+									*temp = %sysfunc(cat(&,%scan(&varlist,&i),_LOS));
+									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&i),_LOS_TABLE)));
+									if temp<0 then temp=0;
+									else if temp>&maxlos then temp=&maxlos;
+									%scan(&varlist,&i)_los{temp}+1;
+								end;
+								/* set the output variables equal to total census for current value of Day */
+									%scan(&varlist,&i)_OCCUPANCY = sum(of %scan(&varlist,&i)_los{*});
 						%END;
-					%END;
-					%ELSE %DO;
-						ISOChangeEvent = '';
-						EventY_Multiplier = .;
-					%END;
+							/* correct name of hospital occupancy to expected output */
+								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
+							/* derived Occupancy values */
+								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+					
+					/* date variables */
+						DATE = &DAY_ZERO. + round(DAY,1);
+						ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					
+					/* ISOChangeEvent variable */
+						FORMAT ISOChangeEvent $30.;
+						%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
+							%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+								IF DATE = &&ISOChangeDate&j THEN DO;
+									ISOChangeEvent = "&&ISOChangeEvent&j";
+									/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+									EventY_Multiplier = 1.1+MOD(&j,2)/10;
+								END;
+							%END;
+						%END;
+						%ELSE %DO;
+							ISOChangeEvent = '';
+							EventY_Multiplier = .;
+						%END;
+
+					/* clean up */
+						drop i temp;
+
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP LAG: CUM: RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD BETA GAMMA R_T:;
+				DROP CUM: counter BETA GAMMA R_T:;
 			RUN;
 
-            /* round time to integers - precision */
-            proc sql;
-                create table TMODEL_SIR_SIM as
-                    select S_N as SE, RECOVERYDAYSfraction, SOCIALDfraction, round(Time,1) as Time
-                    from TMODEL_SIR_SIM
-                    order by RECOVERYDAYSfraction, SOCIALDfraction, Time
-                ;
-            quit; 
-
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA TMODEL_SIR_SIM;
-				FORMAT ModelType $30. DATE date9.;
-				ModelType="SIR with PROC (T)MODEL";
-				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
-				ScenarioName="&Scenario.";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarioUser="&SYSUSERID.";
-				ScenarioSource="&ScenarioSource.";
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
-				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY));
-                by RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SE),-1*SE));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-					DATE = &DAY_ZERO. + DAY;
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY RECOVERYDAYS SOCIALD;
+			DATA TMODEL_SIR; 
+				SET TMODEL_SIR_SIM;
+				WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				DROP RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
             PROC SQL noprint;
@@ -1017,8 +962,7 @@ You need to evaluate each parameter for your population of interest.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SEIR_SIM;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
-				ModelType="SEIR with Data Step";
+				FORMAT DATE DATE9.;
 				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
@@ -1096,154 +1040,147 @@ You need to evaluate each parameter for your population of interest.
 				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
 			RUN;
 
-			DATA DS_SEIR;
+			DATA DS_SEIR_SIM;
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
+				ModelType="SEIR with Data Step";
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 				SET DS_SEIR_SIM;
-				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				*WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
+						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+
 					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
 					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					
 					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+						Cumulative_sum_fatality + Fatality;
+						Deceased_Today = Fatality;
+						Total_Deaths = Cumulative_sum_fatality;
+					
 					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
 					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
 					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
 					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
 					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					
 					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-					Cumulative_sum_fatality + Fatality;
-					CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-					CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-					CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-					CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-					CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-					cumulative_Sum_Market_Fatality + Market_Fatality;
-					CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-					CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_MARKET_HOSP));
-					CUMMARKETICULAG=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_MARKET_ICU));
-					CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_MARKET_VENT));
-					CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_MARKET_ECMO));
-					CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_MARKET_DIAL));
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					Deceased_Today = Fatality;
-					Total_Deaths = Cumulative_sum_fatality;
-					MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-					MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-					MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-					MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-					MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-					MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-					Market_Deceased_Today = Market_Fatality;
-					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + round(DAY,1);
-					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					FORMAT ISOChangeEvent $30.;
-					%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
-						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
-							IF DATE = &&ISOChangeDate&j THEN DO;
-								ISOChangeEvent = "&&ISOChangeEvent&j";
-								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
-								EventY_Multiplier = 1.1+MOD(&j,2)/10;
-							END;
+						cumulative_Sum_Market_Fatality + Market_Fatality;
+						Market_Deceased_Today = Market_Fatality;
+						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+
+					/* setup LOS macro variables */	
+						%LET los_varlist = HOSP ICU VENT ECMO DIAL;
+							%DO i = 1 %TO %sysfunc(countw(&los_varlist));
+								%LET los_curvar = %scan(&los_varlist,&i)_LOS;
+								%LET los_len = %sysfunc(countw(&&&los_curvar,:));
+								/* the user input a range or rates for LOS = 1, 2, ... */
+								%IF &los_len > 1 %THEN %DO;
+
+									%LET &los_curvar._TABLE = %scan(&&&los_curvar,1,:);
+									%DO j = 2 %TO &los_len;
+										%LET &los_curvar._TABLE = &&&los_curvar._TABLE,%scan(&&&los_curvar,&j,:);
+									%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &los_len;
+									%LET MARKET_&los_curvar._MAX = &los_len;
+								%END;
+								/* the user input an integer value for LOS */
+								%ELSE %DO;
+									%LET MARKET_&los_curvar = &&&los_curvar;
+									%IF &&&los_curvar = 1 %THEN %LET &los_curvar._TABLE = 1;
+									%ELSE %LET &los_curvar._TABLE = 0;
+										%DO j = 2 %TO &&&los_curvar;
+											%IF &j = &&&los_curvar %THEN %LET &los_curvar._TABLE = &&&los_curvar._TABLE,1;
+											%ELSE %LET &los_curvar._TABLE = &&&los_curvar._TABLE,0;
+										%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &&&los_curvar;
+									%LET MARKET_&los_curvar._MAX = &&&los_curvar;
+								%END;
+								%put &los_curvar &&&los_curvar &&&los_curvar._MAX &&&los_curvar._TABLE;	
+							%END;
+
+					/* setup drivers for OCCUPANCY variable calculations in this code */
+						%LET varlist = HOSP ICU VENT ECMO DIAL MARKET_HOSP MARKET_ICU MARKET_VENT MARKET_ECMO MARKET_DIAL;
+
+					/* *_OCCUPANCY variable calculations */
+						call streaminit(2019); /* may need to move to main data step code = as long as it appears before rand function it works correctly */						
+						%DO i = 1 %TO %sysfunc(countw(&varlist));
+							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
+							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&i),_LOS_MAX)) + 1);
+							/* arrays to hold an retain the distribution of LOS for hospital census */
+								array %scan(&varlist,&i)_los{0:&maxlos} _TEMPORARY_;
+							/* at the start of each day reduce the LOS for each patient by 1 day */
+								do i = 0 to &maxlos;
+									if day = 0 then do;
+										%scan(&varlist,&i)_los{i}=0;
+									end;
+									else do;
+										if i < &maxlos then do;
+											%scan(&varlist,&i)_los{i} = %scan(&varlist,&i)_los{i+1};
+										end;
+										else do;
+											%scan(&varlist,&i)_los{i} = 0;
+										end;
+									end;
+								end;
+							/* distribute todays new admissions by LOS */
+								do i = 1 to round(%scan(&varlist,&i),1);
+									*temp = %sysfunc(cat(&,%scan(&varlist,&i),_LOS));
+									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&i),_LOS_TABLE)));
+									if temp<0 then temp=0;
+									else if temp>&maxlos then temp=&maxlos;
+									%scan(&varlist,&i)_los{temp}+1;
+								end;
+								/* set the output variables equal to total census for current value of Day */
+									%scan(&varlist,&i)_OCCUPANCY = sum(of %scan(&varlist,&i)_los{*});
 						%END;
-					%END;
-					%ELSE %DO;
-						ISOChangeEvent = '';
-						EventY_Multiplier = .;
-					%END;
+							/* correct name of hospital occupancy to expected output */
+								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
+							/* derived Occupancy values */
+								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+					
+					/* date variables */
+						DATE = &DAY_ZERO. + round(DAY,1);
+						ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					
+					/* ISOChangeEvent variable */
+						FORMAT ISOChangeEvent $30.;
+						%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
+							%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+								IF DATE = &&ISOChangeDate&j THEN DO;
+									ISOChangeEvent = "&&ISOChangeEvent&j";
+									/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+									EventY_Multiplier = 1.1+MOD(&j,2)/10;
+								END;
+							%END;
+						%END;
+						%ELSE %DO;
+							ISOChangeEvent = '';
+							EventY_Multiplier = .;
+						%END;
+
+					/* clean up */
+						drop i temp;
+
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: SIGMAINV SIGMAfraction RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD;
+				DROP CUM: counter SIGMAINV RECOVERYDAYS SOCIALD;
 			RUN;
 
-		/* calculate key output measures for all scenarios as input to uncertainty bounds */
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA DS_SEIR_SIM;
-				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
-				ScenarioName="&Scenario.";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarioUser="&SYSUSERID.";
-				ScenarioSource="&ScenarioSource.";
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
+			DATA DS_SEIR;
 				SET DS_SEIR_SIM;
-                by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(sum(S_N,E_N)),-1*sum(S_N,E_N)));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY SIGMAfraction RECOVERYDAYS SOCIALD;
+				WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
 		/* merge scenario data with uncertain bounds */
@@ -1353,8 +1290,7 @@ You need to evaluate each parameter for your population of interest.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 %THEN %DO;
 			DATA DS_SIR_SIM;
-				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
-				ModelType="SIR with Data Step";
+				FORMAT DATE DATE9.;
 				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
@@ -1425,154 +1361,147 @@ You need to evaluate each parameter for your population of interest.
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
-			DATA DS_SIR;
+			DATA DS_SIR_SIM;
+				FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;		
+				ModelType="SIR with Data Step";
+				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 				SET DS_SIR_SIM;
-				WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				*WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				BY RECOVERYDAYSfraction SOCIALDfraction;
+					IF first.SOCIALDfraction THEN counter = 1;
+					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
+						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
+
 					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
 					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
 					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					
 					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+						Cumulative_sum_fatality + Fatality;
+						Deceased_Today = Fatality;
+						Total_Deaths = Cumulative_sum_fatality;
+					
 					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
 					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
 					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
 					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
 					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					
 					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-					Cumulative_sum_fatality + Fatality;
-					CUMULATIVE_SUM_MARKET_HOSP + MARKET_HOSP;
-					CUMULATIVE_SUM_MARKET_ICU + MARKET_ICU;
-					CUMULATIVE_SUM_MARKET_VENT + MARKET_VENT;
-					CUMULATIVE_SUM_MARKET_ECMO + MARKET_ECMO;
-					CUMULATIVE_SUM_MARKET_DIAL + MARKET_DIAL;
-					cumulative_Sum_Market_Fatality + Market_Fatality;
-					CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-					CUMMARKETADMITLAG=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_MARKET_HOSP));
-					CUMMARKETICULAG=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_MARKET_ICU));
-					CUMMARKETVENTLAG=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_MARKET_VENT));
-					CUMMARKETECMOLAG=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_MARKET_ECMO));
-					CUMMARKETDIALLAG=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_MARKET_DIAL));
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					Deceased_Today = Fatality;
-					Total_Deaths = Cumulative_sum_fatality;
-					MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-					MARKET_HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_HOSP-CUMMARKETADMITLAG,1);
-					MARKET_ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ICU-CUMMARKETICULAG,1);
-					MARKET_VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_VENT-CUMMARKETVENTLAG,1);
-					MARKET_ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_ECMO-CUMMARKETECMOLAG,1);
-					MARKET_DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_MARKET_DIAL-CUMMARKETDIALLAG,1);	
-					Market_Deceased_Today = Market_Fatality;
-					Market_Total_Deaths = cumulative_Sum_Market_Fatality;
-					Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
-					DATE = &DAY_ZERO. + round(DAY,1);
-					ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
-					FORMAT ISOChangeEvent $30.;
-					%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
-						%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
-							IF DATE = &&ISOChangeDate&j THEN DO;
-								ISOChangeEvent = "&&ISOChangeEvent&j";
-								/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
-								EventY_Multiplier = 1.1+MOD(&j,2)/10;
-							END;
+						cumulative_Sum_Market_Fatality + Market_Fatality;
+						Market_Deceased_Today = Market_Fatality;
+						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
+
+					/* setup LOS macro variables */	
+						%LET los_varlist = HOSP ICU VENT ECMO DIAL;
+							%DO i = 1 %TO %sysfunc(countw(&los_varlist));
+								%LET los_curvar = %scan(&los_varlist,&i)_LOS;
+								%LET los_len = %sysfunc(countw(&&&los_curvar,:));
+								/* the user input a range or rates for LOS = 1, 2, ... */
+								%IF &los_len > 1 %THEN %DO;
+
+									%LET &los_curvar._TABLE = %scan(&&&los_curvar,1,:);
+									%DO j = 2 %TO &los_len;
+										%LET &los_curvar._TABLE = &&&los_curvar._TABLE,%scan(&&&los_curvar,&j,:);
+									%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &los_len;
+									%LET MARKET_&los_curvar._MAX = &los_len;
+								%END;
+								/* the user input an integer value for LOS */
+								%ELSE %DO;
+									%LET MARKET_&los_curvar = &&&los_curvar;
+									%IF &&&los_curvar = 1 %THEN %LET &los_curvar._TABLE = 1;
+									%ELSE %LET &los_curvar._TABLE = 0;
+										%DO j = 2 %TO &&&los_curvar;
+											%IF &j = &&&los_curvar %THEN %LET &los_curvar._TABLE = &&&los_curvar._TABLE,1;
+											%ELSE %LET &los_curvar._TABLE = &&&los_curvar._TABLE,0;
+										%END;
+									%LET MARKET_&los_curvar._TABLE = &&&los_curvar._TABLE;
+									%LET &los_curvar._MAX = &&&los_curvar;
+									%LET MARKET_&los_curvar._MAX = &&&los_curvar;
+								%END;
+								%put &los_curvar &&&los_curvar &&&los_curvar._MAX &&&los_curvar._TABLE;	
+							%END;
+
+					/* setup drivers for OCCUPANCY variable calculations in this code */
+						%LET varlist = HOSP ICU VENT ECMO DIAL MARKET_HOSP MARKET_ICU MARKET_VENT MARKET_ECMO MARKET_DIAL;
+
+					/* *_OCCUPANCY variable calculations */
+						call streaminit(2019); /* may need to move to main data step code = as long as it appears before rand function it works correctly */						
+						%DO i = 1 %TO %sysfunc(countw(&varlist));
+							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
+							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&i),_LOS_MAX)) + 1);
+							/* arrays to hold an retain the distribution of LOS for hospital census */
+								array %scan(&varlist,&i)_los{0:&maxlos} _TEMPORARY_;
+							/* at the start of each day reduce the LOS for each patient by 1 day */
+								do i = 0 to &maxlos;
+									if day = 0 then do;
+										%scan(&varlist,&i)_los{i}=0;
+									end;
+									else do;
+										if i < &maxlos then do;
+											%scan(&varlist,&i)_los{i} = %scan(&varlist,&i)_los{i+1};
+										end;
+										else do;
+											%scan(&varlist,&i)_los{i} = 0;
+										end;
+									end;
+								end;
+							/* distribute todays new admissions by LOS */
+								do i = 1 to round(%scan(&varlist,&i),1);
+									*temp = %sysfunc(cat(&,%scan(&varlist,&i),_LOS));
+									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&i),_LOS_TABLE)));
+									if temp<0 then temp=0;
+									else if temp>&maxlos then temp=&maxlos;
+									%scan(&varlist,&i)_los{temp}+1;
+								end;
+								/* set the output variables equal to total census for current value of Day */
+									%scan(&varlist,&i)_OCCUPANCY = sum(of %scan(&varlist,&i)_los{*});
 						%END;
-					%END;
-					%ELSE %DO;
-						ISOChangeEvent = '';
-						EventY_Multiplier = .;
-					%END;
+							/* correct name of hospital occupancy to expected output */
+								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
+							/* derived Occupancy values */
+								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+					
+					/* date variables */
+						DATE = &DAY_ZERO. + round(DAY,1);
+						ADMIT_DATE = SUM(DATE, &IncubationPeriod.);
+					
+					/* ISOChangeEvent variable */
+						FORMAT ISOChangeEvent $30.;
+						%IF %sysevalf(%superq(ISOChangeDate)=,boolean)=0 %THEN %DO;
+							%DO j = 1 %TO %SYSFUNC(countw(&ISOChangeDate.,:)); 
+								IF DATE = &&ISOChangeDate&j THEN DO;
+									ISOChangeEvent = "&&ISOChangeEvent&j";
+									/* the values in EventY_Multiplier will get multiplied by Peak values later in the code */
+									EventY_Multiplier = 1.1+MOD(&j,2)/10;
+								END;
+							%END;
+						%END;
+						%ELSE %DO;
+							ISOChangeEvent = '';
+							EventY_Multiplier = .;
+						%END;
+
+					/* clean up */
+						drop i temp;
+
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: RECOVERYDAYSfraction RECOVERYDAYS SOCIALDfraction SOCIALD;
+				DROP CUM: counter RECOVERYDAYS SOCIALD;
 			RUN;
 
-		/* calculate key output measures for all scenarios as input to uncertainty bounds */
-            /* use a skeleton from the normal post-processing to processes every scenario.
-                by statement used for separating scenarios - order by in sql above prepares this
-                note that lag function used in conditional logic can be very tricky.
-                The code below has logic to override the lag at the start of each by group.
-            */
-			DATA DS_SIR_SIM;
-				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
-				ScenarioName="&Scenario.";
-				ScenarioIndex=&ScenarioIndex.;
-				ScenarioUser="&SYSUSERID.";
-				ScenarioSource="&ScenarioSource.";
-				ScenarioNameUnique=cats("&Scenario.",' (',ScenarioIndex,'-',"&SYSUSERID.",'-',"&ScenarioSource.",')');
-				RETAIN counter CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL;
+			DATA DS_SIR;
 				SET DS_SIR_SIM;
-                by RECOVERYDAYSfraction SOCIALDfraction;
-                    if first.SOCIALDfraction then do;
-                        counter = 1;
-                        CUMULATIVE_SUM_HOSP=0;
-                        CUMULATIVE_SUM_ICU=0;
-                        CUMULATIVE_SUM_VENT=0;
-                        CUMULATIVE_SUM_ECMO=0;
-                        CUMULATIVE_SUM_DIAL=0;
-                    end;
-                    else do;
-                        counter+1;
-                    end;
-				/* START: Common Post-Processing Across each Model Type and Approach */
-					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(S_N),-1*S_N));
-                        if counter<&IncubationPeriod then NEWINFECTED=.; /* reset the lag for by group */
-
-					IF NEWINFECTED < 0 THEN NEWINFECTED=0;
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-
-					CUMULATIVE_SUM_HOSP + HOSP;
-					CUMULATIVE_SUM_ICU + ICU;
-					CUMULATIVE_SUM_VENT + VENT;
-					CUMULATIVE_SUM_ECMO + ECMO;
-					CUMULATIVE_SUM_DIAL + DIAL;
-
-                    CUMADMITLAGGED=ROUND(LAG&HOSP_LOS.(CUMULATIVE_SUM_HOSP),1) ;
-                        if counter<=&HOSP_LOS then CUMADMITLAGGED=.; /* reset the lag for by group */
-					CUMICULAGGED=ROUND(LAG&ICU_LOS.(CUMULATIVE_SUM_ICU),1) ;
-                        if counter<=&ICU_LOS then CUMICULAGGED=.; /* reset the lag for by group */
-					CUMVENTLAGGED=ROUND(LAG&VENT_LOS.(CUMULATIVE_SUM_VENT),1) ;
-                        if counter<=&VENT_LOS then CUMVENTLAGGED=.; /* reset the lag for by group */
-					CUMECMOLAGGED=ROUND(LAG&ECMO_LOS.(CUMULATIVE_SUM_ECMO),1) ;
-                        if counter<=&ECMO_LOS then CUMECMOLAGGED=.; /* reset the lag for by group */
-					CUMDIALLAGGED=ROUND(LAG&DIAL_LOS.(CUMULATIVE_SUM_DIAL),1) ;
-                        if counter<=&DIAL_LOS then CUMDIALLAGGED=.; /* reset the lag for by group */
-
-					ARRAY FIXINGDOT _NUMERIC_;
-					DO OVER FIXINGDOT;
-						IF FIXINGDOT=. THEN FIXINGDOT=0;
-					END;
-					
-                    HOSPITAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_HOSP-CUMADMITLAGGED,1);
-					ICU_OCCUPANCY= ROUND(CUMULATIVE_SUM_ICU-CUMICULAGGED,1);
-					VENT_OCCUPANCY= ROUND(CUMULATIVE_SUM_VENT-CUMVENTLAGGED,1);
-					ECMO_OCCUPANCY= ROUND(CUMULATIVE_SUM_ECMO-CUMECMOLAGGED,1);
-					DIAL_OCCUPANCY= ROUND(CUMULATIVE_SUM_DIAL-CUMDIALLAGGED,1);
-					
-				/* END: Common Post-Processing Across each Model Type and Approach */
-                KEEP ModelType ScenarioIndex DATE HOSPITAL_OCCUPANCY ICU_OCCUPANCY VENT_OCCUPANCY ECMO_OCCUPANCY DIAL_OCCUPANCY RECOVERYDAYS SOCIALD;
+				WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+				DROP RECOVERYDAYSfraction SOCIALDfraction;
 			RUN;
 
 		/* merge scenario data with uncertain bounds */

@@ -115,6 +115,108 @@ run;
 
 
 
+%macro test;
+
+	data test;
+		HOSP_LOS = 4;
+		ICU_LOS = 3;
+
+		%let list = HOSP ICU;
+		%let nvars = %sysfunc(countw(&list));
+
+		%do i = 1 %to &nvars;
+
+			do i = 1 to %sysfunc(cat(%scan(&list,&i),_LOS));
+				put i;
+			end;
+
+		%end;
+		
+	run;
+
+%mend;
+
+%test;
+
+
+%macro test;
+
+	%LET HOSP_LOS = 4;
+	%LET ICU_LOS = 3;
+
+	data test;
+
+
+		%let list = HOSP ICU;
+		%let nvars = %sysfunc(countw(&list));
+
+		%do i = 1 %to &nvars;
+
+			do i = 1 to %sysfunc(cat(&,%scan(&list,&i),_LOS));
+				put i;
+			end;
+
+		%end;
+		
+	run;
+
+%mend;
+
+%test;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%macro test;
+
+		%let maxlos = 40;
+		%LET varlist = HOSP ICU VENT ECMO DIAL;
+		%LET varlistn = %sysfunc(countw(&varlist));
+
+	data test;
+
+		%DO i = 1 %TO &varlistn;
+			array %scan(&varlist,&i)_los{0:&maxlos} _TEMPORARY_;
+			put %scan(&varlist,&i)_los{1};
+		%END;
+
+	run;
+
+%mend;
+%test;
+
+
+
+
+
+
+
+
+data temp;
+call streaminit(2019);
+do i = 1 to 100;
+	x = rand('TABLED',0,0,0,1);
+	put i x;
+output;
+end;
+run;
+
+
+
 
 
 
