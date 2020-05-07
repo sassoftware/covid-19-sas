@@ -34,11 +34,11 @@ D_IMPORT: CCF_pre.sas
             BETA_DECAY                  BEST12.
             ECMO_RATE                   BEST12.
             DIAL_RATE                   BEST12.
-            HOSP_LOS                    BEST12.
-            ICU_LOS                     BEST12.
-            VENT_LOS                    BEST12.
-            ECMO_LOS                    BEST12.
-            DIAL_LOS                    BEST12.
+            HOSP_LOS                    $100.
+            ICU_LOS                     $100.
+            VENT_LOS                    $100.
+            ECMO_LOS                    $100.
+            DIAL_LOS                    $100.
         ;
         LABEL
             Scenario                    =   "Scenario Name"
@@ -66,11 +66,11 @@ D_IMPORT: CCF_pre.sas
             BETA_DECAY                  =   "Daily Reduction (%) of Beta"
             ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
             DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
-            HOSP_LOS                    =   "Average Hospital Length of Stay"
-            ICU_LOS                     =   "Average ICU Length of Stay"
-            VENT_LOS                    =   "Average Ventilator Length of Stay"
-            ECMO_LOS                    =   "Average ECMO Length of Stay"
-            DIAL_LOS                    =   "Average Dialysis Length of Stay"
+            HOSP_LOS                    =   "Hospital Length of Stay"
+            ICU_LOS                     =   "ICU Length of Stay"
+            VENT_LOS                    =   "Ventilator Length of Stay"
+            ECMO_LOS                    =   "ECMO Length of Stay"
+            DIAL_LOS                    =   "Dialysis Length of Stay"
         ;
         Scenario                    =   "&Scenario.";
         IncubationPeriod            =   &IncubationPeriod.;
@@ -97,11 +97,11 @@ D_IMPORT: CCF_pre.sas
         BETA_DECAY                  =   &BETA_DECAY.;
         ECMO_RATE                   =   &ECMO_RATE.;
         DIAL_RATE                   =   &DIAL_RATE.;
-        HOSP_LOS                    =   &HOSP_LOS.;
-        ICU_LOS                     =   &ICU_LOS.;
-        VENT_LOS                    =   &VENT_LOS.;
-        ECMO_LOS                    =   &ECMO_LOS.;
-        DIAL_LOS                    =   &DIAL_LOS.;
+        HOSP_LOS                    =   "&HOSP_LOS.";
+        ICU_LOS                     =   "&ICU_LOS.";
+        VENT_LOS                    =   "&VENT_LOS.";
+        ECMO_LOS                    =   "&ECMO_LOS.";
+        DIAL_LOS                    =   "&DIAL_LOS.";
     RUN;
 
 X_IMPORT: scenario_setup.sas

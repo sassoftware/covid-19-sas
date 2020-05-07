@@ -81,18 +81,6 @@ X_IMPORT: keys.sas
 			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
-/* PARAMETER SETTINGS */ 
-/*PARMS N &Population. R0 &R0_FIT. R0_c1 &R0_BEND_FIT. R0_c2 &R_T_Change_Two. R0_c3 &R_T_Change_3. R0_c4 &R_T_Change_4.; */
-/*BOUNDS 1 <= R0 <= 13;*/
-/*RESTRICT R0 > 0, R0_c1 > 0, R0_c2 > 0, R0_c3 > 0, R0_c4 > 0;*/
-/*GAMMA = &GAMMA.;*/
-/*SIGMAINV = &SIGMAINV.;*/
-/*change_0 = (TIME < (&CURVEBEND1. - &DAY_ZERO.));*/
-/*change_1 = ((TIME >= (&CURVEBEND1. - &DAY_ZERO.)) & (TIME < (&ISOChangeDateTwo. - &DAY_ZERO.)));  */
-/*change_2 = ((TIME >= (&ISOChangeDateTwo. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate3. - &DAY_ZERO.)));*/
-/*change_3 = ((TIME >= (&ISOChangeDate3. - &DAY_ZERO.)) & (TIME < (&ISOChangeDate4. - &DAY_ZERO.)));*/
-/*change_4 = (TIME >= (&ISOChangeDate4. - &DAY_ZERO.)); 	         */
-/*BETA = change_0*R0*GAMMA/N + change_1*R0_c1*GAMMA/N + change_2*R0_c2*GAMMA/N + change_3*R0_c3*GAMMA/N + change_4*R0_c4*GAMMA/N;*/
 					/* PARAMETER SETTINGS */ 
 					/* this parameterization assumes: &CURVEBEND1 happens before ISOChangeDate1 - it works if this is not true but does not apply SocialDistancingChange1 to the period between */
 					%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
@@ -127,18 +115,11 @@ X_IMPORT: keys.sas
 					FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;
 					ModelType="SEIR with PROC (T)MODEL-Fit R0";
 X_IMPORT: keys.sas
-					RETAIN LAG_S LAG_I LAG_R LAG_N CUMULATIVE_SUM_HOSP CUMULATIVE_SUM_ICU CUMULATIVE_SUM_VENT CUMULATIVE_SUM_ECMO CUMULATIVE_SUM_DIAL Cumulative_sum_fatality
-						CUMULATIVE_SUM_MARKET_HOSP CUMULATIVE_SUM_MARKET_ICU CUMULATIVE_SUM_MARKET_VENT CUMULATIVE_SUM_MARKET_ECMO CUMULATIVE_SUM_MARKET_DIAL cumulative_Sum_Market_Fatality;
-					LAG_S = S_N; 
-					LAG_E = E_N; 
-					LAG_I = I_N; 
-					LAG_R = R_N; 
-					LAG_N = N; 
+					RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 					SET TMODEL_SEIR_FIT_I(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
-					N = SUM(S_N, E_N, I_N, R_N);
-					SCALE = LAG_N / N;
+					counter = DAY+1;
 X_IMPORT: postprocess.sas
-					DROP LAG: CUM: ;
+					DROP CUM: counter;
 				RUN;
 
 				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
