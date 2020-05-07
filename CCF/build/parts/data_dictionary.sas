@@ -98,5 +98,5 @@ D_IMPORT: fit_recall_label.sas
 T_IMPORT: fit_recall_label.sas
 U_IMPORT: fit_recall_label.sas
 
-					RUN;
 					QUIT;
+					RUN;
