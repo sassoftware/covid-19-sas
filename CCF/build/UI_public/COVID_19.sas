@@ -405,24 +405,24 @@ You need to evaluate each parameter for your population of interest.
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
 						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					HOSP = CEIL(NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.);
+					ICU = CEIL(NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					VENT = CEIL(NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.);
 					
-					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+					Fatality = CEIL(NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.);
 						Cumulative_sum_fatality + Fatality;
 						Deceased_Today = Fatality;
 						Total_Deaths = Cumulative_sum_fatality;
 					
-					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
-					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
-					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
-					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
-					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					MARKET_HOSP = CEIL(NEWINFECTED * &HOSP_RATE.);
+					MARKET_ICU = CEIL(NEWINFECTED * &ICU_RATE. * &HOSP_RATE.);
+					MARKET_VENT = CEIL(NEWINFECTED * &VENT_RATE. * &HOSP_RATE.);
+					MARKET_ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.);
+					MARKET_DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.);
 					
-					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
+					Market_Fatality = CEIL(NEWINFECTED * &FatalityRate. * &HOSP_RATE.);
 						cumulative_Sum_Market_Fatality + Market_Fatality;
 						Market_Deceased_Today = Market_Fatality;
 						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
@@ -468,9 +468,9 @@ You need to evaluate each parameter for your population of interest.
 							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
 							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&j),_LOS_MAX)) + 1);
 							/* arrays to hold an retain the distribution of LOS for hospital census */
-								array %scan(&varlist,&j)_los{0:&maxlos} _TEMPORARY_;
+								array %scan(&varlist,&j)_los{1:&maxlos} _TEMPORARY_;
 							/* at the start of each day reduce the LOS for each patient by 1 day */
-								do k = 0 to &maxlos;
+								do k = 1 to &maxlos;
 									if day = 0 then do;
 										%scan(&varlist,&j)_los{k}=0;
 									end;
@@ -489,16 +489,17 @@ You need to evaluate each parameter for your population of interest.
 									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&j),_LOS_TABLE)));
 									if temp<0 then temp=0;
 									else if temp>&maxlos then temp=&maxlos;
-									%scan(&varlist,&j)_los{temp}+1;
+									/* if stay (>=1) then put them in the LOS array */
+									if temp>0 then %scan(&varlist,&j)_los{temp}+1;
 								end;
 								/* set the output variables equal to total census for current value of Day */
 									%scan(&varlist,&j)_OCCUPANCY = sum(of %scan(&varlist,&j)_los{*});
 						%END;
 							/* correct name of hospital occupancy to expected output */
 								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
-							/* derived Occupancy values */
-								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+							/* derived Occupancy values - calculated from renamed variables so remember to use old name (*hosp) which persist until data is written */
+								MedSurgOccupancy=Hosp_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hosp_Occupancy-MArket_ICU_Occupancy;
 					
 					/* date variables */
 						DATE = &DAY_ZERO. + round(DAY,1);
@@ -729,24 +730,24 @@ You need to evaluate each parameter for your population of interest.
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
 						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					HOSP = CEIL(NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.);
+					ICU = CEIL(NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					VENT = CEIL(NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.);
 					
-					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+					Fatality = CEIL(NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.);
 						Cumulative_sum_fatality + Fatality;
 						Deceased_Today = Fatality;
 						Total_Deaths = Cumulative_sum_fatality;
 					
-					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
-					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
-					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
-					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
-					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					MARKET_HOSP = CEIL(NEWINFECTED * &HOSP_RATE.);
+					MARKET_ICU = CEIL(NEWINFECTED * &ICU_RATE. * &HOSP_RATE.);
+					MARKET_VENT = CEIL(NEWINFECTED * &VENT_RATE. * &HOSP_RATE.);
+					MARKET_ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.);
+					MARKET_DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.);
 					
-					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
+					Market_Fatality = CEIL(NEWINFECTED * &FatalityRate. * &HOSP_RATE.);
 						cumulative_Sum_Market_Fatality + Market_Fatality;
 						Market_Deceased_Today = Market_Fatality;
 						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
@@ -792,9 +793,9 @@ You need to evaluate each parameter for your population of interest.
 							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
 							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&j),_LOS_MAX)) + 1);
 							/* arrays to hold an retain the distribution of LOS for hospital census */
-								array %scan(&varlist,&j)_los{0:&maxlos} _TEMPORARY_;
+								array %scan(&varlist,&j)_los{1:&maxlos} _TEMPORARY_;
 							/* at the start of each day reduce the LOS for each patient by 1 day */
-								do k = 0 to &maxlos;
+								do k = 1 to &maxlos;
 									if day = 0 then do;
 										%scan(&varlist,&j)_los{k}=0;
 									end;
@@ -813,16 +814,17 @@ You need to evaluate each parameter for your population of interest.
 									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&j),_LOS_TABLE)));
 									if temp<0 then temp=0;
 									else if temp>&maxlos then temp=&maxlos;
-									%scan(&varlist,&j)_los{temp}+1;
+									/* if stay (>=1) then put them in the LOS array */
+									if temp>0 then %scan(&varlist,&j)_los{temp}+1;
 								end;
 								/* set the output variables equal to total census for current value of Day */
 									%scan(&varlist,&j)_OCCUPANCY = sum(of %scan(&varlist,&j)_los{*});
 						%END;
 							/* correct name of hospital occupancy to expected output */
 								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
-							/* derived Occupancy values */
-								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+							/* derived Occupancy values - calculated from renamed variables so remember to use old name (*hosp) which persist until data is written */
+								MedSurgOccupancy=Hosp_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hosp_Occupancy-MArket_ICU_Occupancy;
 					
 					/* date variables */
 						DATE = &DAY_ZERO. + round(DAY,1);
@@ -1055,24 +1057,24 @@ You need to evaluate each parameter for your population of interest.
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
 						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					HOSP = CEIL(NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.);
+					ICU = CEIL(NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					VENT = CEIL(NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.);
 					
-					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+					Fatality = CEIL(NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.);
 						Cumulative_sum_fatality + Fatality;
 						Deceased_Today = Fatality;
 						Total_Deaths = Cumulative_sum_fatality;
 					
-					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
-					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
-					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
-					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
-					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					MARKET_HOSP = CEIL(NEWINFECTED * &HOSP_RATE.);
+					MARKET_ICU = CEIL(NEWINFECTED * &ICU_RATE. * &HOSP_RATE.);
+					MARKET_VENT = CEIL(NEWINFECTED * &VENT_RATE. * &HOSP_RATE.);
+					MARKET_ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.);
+					MARKET_DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.);
 					
-					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
+					Market_Fatality = CEIL(NEWINFECTED * &FatalityRate. * &HOSP_RATE.);
 						cumulative_Sum_Market_Fatality + Market_Fatality;
 						Market_Deceased_Today = Market_Fatality;
 						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
@@ -1118,9 +1120,9 @@ You need to evaluate each parameter for your population of interest.
 							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
 							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&j),_LOS_MAX)) + 1);
 							/* arrays to hold an retain the distribution of LOS for hospital census */
-								array %scan(&varlist,&j)_los{0:&maxlos} _TEMPORARY_;
+								array %scan(&varlist,&j)_los{1:&maxlos} _TEMPORARY_;
 							/* at the start of each day reduce the LOS for each patient by 1 day */
-								do k = 0 to &maxlos;
+								do k = 1 to &maxlos;
 									if day = 0 then do;
 										%scan(&varlist,&j)_los{k}=0;
 									end;
@@ -1139,16 +1141,17 @@ You need to evaluate each parameter for your population of interest.
 									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&j),_LOS_TABLE)));
 									if temp<0 then temp=0;
 									else if temp>&maxlos then temp=&maxlos;
-									%scan(&varlist,&j)_los{temp}+1;
+									/* if stay (>=1) then put them in the LOS array */
+									if temp>0 then %scan(&varlist,&j)_los{temp}+1;
 								end;
 								/* set the output variables equal to total census for current value of Day */
 									%scan(&varlist,&j)_OCCUPANCY = sum(of %scan(&varlist,&j)_los{*});
 						%END;
 							/* correct name of hospital occupancy to expected output */
 								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
-							/* derived Occupancy values */
-								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+							/* derived Occupancy values - calculated from renamed variables so remember to use old name (*hosp) which persist until data is written */
+								MedSurgOccupancy=Hosp_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hosp_Occupancy-MArket_ICU_Occupancy;
 					
 					/* date variables */
 						DATE = &DAY_ZERO. + round(DAY,1);
@@ -1376,24 +1379,24 @@ You need to evaluate each parameter for your population of interest.
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
 						IF NEWINFECTED < 0 THEN NEWINFECTED=0;
 
-					HOSP = NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.;
-					ICU = NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					VENT = NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					ECMO = NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.;
-					DIAL = NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.;
+					HOSP = CEIL(NEWINFECTED * &HOSP_RATE. * &MarketSharePercent.);
+					ICU = CEIL(NEWINFECTED * &ICU_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					VENT = CEIL(NEWINFECTED * &VENT_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &MarketSharePercent. * &HOSP_RATE.);
+					DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &MarketSharePercent. * &HOSP_RATE.);
 					
-					Fatality = NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.;
+					Fatality = CEIL(NEWINFECTED * &FatalityRate * &MarketSharePercent. * &HOSP_RATE.);
 						Cumulative_sum_fatality + Fatality;
 						Deceased_Today = Fatality;
 						Total_Deaths = Cumulative_sum_fatality;
 					
-					MARKET_HOSP = NEWINFECTED * &HOSP_RATE.;
-					MARKET_ICU = NEWINFECTED * &ICU_RATE. * &HOSP_RATE.;
-					MARKET_VENT = NEWINFECTED * &VENT_RATE. * &HOSP_RATE.;
-					MARKET_ECMO = NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.;
-					MARKET_DIAL = NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.;
+					MARKET_HOSP = CEIL(NEWINFECTED * &HOSP_RATE.);
+					MARKET_ICU = CEIL(NEWINFECTED * &ICU_RATE. * &HOSP_RATE.);
+					MARKET_VENT = CEIL(NEWINFECTED * &VENT_RATE. * &HOSP_RATE.);
+					MARKET_ECMO = CEIL(NEWINFECTED * &ECMO_RATE. * &HOSP_RATE.);
+					MARKET_DIAL = CEIL(NEWINFECTED * &DIAL_RATE. * &HOSP_RATE.);
 					
-					Market_Fatality = NEWINFECTED * &FatalityRate. * &HOSP_RATE.;
+					Market_Fatality = CEIL(NEWINFECTED * &FatalityRate. * &HOSP_RATE.);
 						cumulative_Sum_Market_Fatality + Market_Fatality;
 						Market_Deceased_Today = Market_Fatality;
 						Market_Total_Deaths = cumulative_Sum_Market_Fatality;
@@ -1439,9 +1442,9 @@ You need to evaluate each parameter for your population of interest.
 							/* get largest possible LOS for current variable - stored in setup LOS above (increase by 1 in case rates dont sum to exactly 1 */
 							%LET maxlos = %eval(%sysfunc(cat(&,%scan(&varlist,&j),_LOS_MAX)) + 1);
 							/* arrays to hold an retain the distribution of LOS for hospital census */
-								array %scan(&varlist,&j)_los{0:&maxlos} _TEMPORARY_;
+								array %scan(&varlist,&j)_los{1:&maxlos} _TEMPORARY_;
 							/* at the start of each day reduce the LOS for each patient by 1 day */
-								do k = 0 to &maxlos;
+								do k = 1 to &maxlos;
 									if day = 0 then do;
 										%scan(&varlist,&j)_los{k}=0;
 									end;
@@ -1460,16 +1463,17 @@ You need to evaluate each parameter for your population of interest.
 									temp = rand('TABLED',%sysfunc(cat(&,%scan(&varlist,&j),_LOS_TABLE)));
 									if temp<0 then temp=0;
 									else if temp>&maxlos then temp=&maxlos;
-									%scan(&varlist,&j)_los{temp}+1;
+									/* if stay (>=1) then put them in the LOS array */
+									if temp>0 then %scan(&varlist,&j)_los{temp}+1;
 								end;
 								/* set the output variables equal to total census for current value of Day */
 									%scan(&varlist,&j)_OCCUPANCY = sum(of %scan(&varlist,&j)_los{*});
 						%END;
 							/* correct name of hospital occupancy to expected output */
 								rename HOSP_OCCUPANCY=HOSPITAL_OCCUPANCY MARKET_HOSP_OCCUPANCY=MARKET_HOSPITAL_OCCUPANCY;
-							/* derived Occupancy values */
-								MedSurgOccupancy=Hospital_Occupancy-ICU_Occupancy;
-								Market_MEdSurg_Occupancy=Market_Hospital_Occupancy-MArket_ICU_Occupancy;
+							/* derived Occupancy values - calculated from renamed variables so remember to use old name (*hosp) which persist until data is written */
+								MedSurgOccupancy=Hosp_Occupancy-ICU_Occupancy;
+								Market_MEdSurg_Occupancy=Market_Hosp_Occupancy-MArket_ICU_Occupancy;
 					
 					/* date variables */
 						DATE = &DAY_ZERO. + round(DAY,1);
