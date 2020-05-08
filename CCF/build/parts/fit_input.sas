@@ -14,7 +14,10 @@
 
 /* START: STORE.FIT_INPUT READ */
 
-X_IMPORT: fit_input_ohio.sas
+P_IMPORT: fit_input_file.sas
+D_IMPORT: fit_input_ohio.sas
+T_IMPORT: fit_input_ohio.sas
+U_IMPORT: fit_input_ohio.sas
  
 /* END: STORE.FIT_INPUT READ */
 

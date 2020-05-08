@@ -14,7 +14,7 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
 
 # Getting Started
 - **PREPARE**
-    - Download `COVID_19.sas` to your SAS environment
+    - Download `COVID_19.sas` and `fit_input.csv` to your SAS environment
         - Also, download the `run_scenario.csv` file for an example submission file to run many scenarios in batch
 - **SETUP**
     - Edit `line 10` to a local directory you want to save datasets with model output and scenario information to
@@ -32,6 +32,10 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
     - All of the parameters that lead to the results in `STORE.MODEL_FINAL` save in `STORE.SCENARIOS`, and all inputs to the macro also save to `STORE.INPUTS`.  The variable `SCENARIOINDEX` links these files.
 - **ADJUST inputs to your population**
     - Change the input parameters to match the population you are working with.  If their is a wide range of scenarios you want to run then use the run_scenarios.csv method to easily submit all the combinations.
+- **CREATE your data feed for the fitting method**
+    - The example code reads input cases from `fit_input.csv`.
+    - This file can be replaced with a similar .csv or the section of the code can be updated to read your data feed for case counts.  Search `COVID_19.sas` for `/* START: STORE.FIT_INPUT READ */` and you will find the section that does this import which has helpful commenting on this adaptation.  
+    - An example of tying this section to a data feed from a US State website can be found in `\examples\fit_input_ohio.sas`
 
 # Explore the Inputs, Outputs and Details in the Wiki
 [Explore the wiki](https://github.com/sassoftware/covid-19-sas/wiki/CC%3A-Home)

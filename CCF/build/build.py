@@ -85,6 +85,7 @@ v.close()
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')
 copyfile('./public/run_scenarios.csv', '../run_scenarios.csv')
 copyfile('./public/run_scenarios.csv', './ccf/run_scenarios.csv')
+copyfile('./parts/fit_input_ohio.sas','../examples/fit_input_ohio.sas')
 
 # write the graphviz plot to an svg for inclusion in the /build/readme.md
 dot.format = 'SVG'
