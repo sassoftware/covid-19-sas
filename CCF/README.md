@@ -45,11 +45,11 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
 With the option `plots=yes`, the `COVID_19.sas` program will create diagnostic visuals for each scenario. Some example of these visuals follow.  The output data is also available in SAS Visual Analytics with user interface to drive the running of scenarios is in the works.
 | All Approaches | Fitting Approaches |
 :-------------------------:|:-------------------------:
-![](./examples/example-0.png)  |  ![](./examples/example-1.png)
-![](./examples/example-4.png)  |  ![](./examples/example-2.png)
-![](./examples/example-3.png)  |  
+![](./images/example-0.png)  |  ![](./images/example-1.png)
+![](./images/example-4.png)  |  ![](./images/example-2.png)
+![](./images/example-3.png)  |  
 
 # Example User Interface (Coming Soon)
 Our goal is to allow users to visualize and run scenarios from a user interface.  Take a look at our current prototype:
 
-![](./examples/ui_demo.gif)
+![](./images/ui_demo.gif)

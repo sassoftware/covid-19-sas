@@ -18,9 +18,9 @@ Among other outputs, these analyses will create diagnostic visuals for each mode
 
 | All Approaches | Fitting Approaches |
 :-------------------------:|:-------------------------:
-![](./CCF/examples/example-0.png)  |  ![](./CCF/examples/example-1.png)
-![](./CCF/examples/example-4.png)  |  ![](./CCF/examples/example-2.png)
-![](./CCF/examples/example-3.png)  | 
+![](./CCF/images/example-0.png)  |  ![](./CCF/images/example-1.png)
+![](./CCF/images/example-4.png)  |  ![](./CCF/images/example-2.png)
+![](./CCF/images/example-3.png)  | 
 
 ## Data sources for COVID-19 reporting
 
