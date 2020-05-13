@@ -13,7 +13,7 @@ In addition to the information shared within this readme and the commenting with
 For a good understanding of the SIR and SEIR model approaches, we recommend this [very well written blog post](https://triplebyte.com/blog/modeling-infectious-diseases) from the folks at TRIPLEBYTE.
 
 # User Interface: COVID-19 Epidemiological Scenario Analysis
-Visually interact with this code to create your own scenarios using a user interface by getting access here: [COVID-19 Epidemiological Scenario Analysis](https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html)
+Visually interact with this code to investigate your scenarios using a user interface by getting access here: [COVID-19 Epidemiological Scenario Analysis](https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html)
 
 # Getting Started with the Code
 - **PREPARE**
