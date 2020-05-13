@@ -13,7 +13,7 @@
 
 
 /* CHANGE BEFORE RUNNING - File location to save zip files */
-%let fileloc = C:\Users\jalann\Documents\IHME\IHME Data Downloads\GitHub;
+%let fileloc = ;
 
 libname final "&fileloc";
 
@@ -129,6 +129,28 @@ options minoperator mindelimiter=',';
 		run;
 	%end;
 	
+	%else %if &date2 in (Apr29) %then %do;
+		*NOTE: Below is the most current file format;
+		data ihme_&date2;
+			length location_name $50 date $10;
+			infile zipfile dlm="," dsd firstobs=2;
+			input 
+				v1 $
+				location_name $ location_id $
+				date $			allbed_mean		allbed_lower	allbed_upper	
+				ICUbed_mean		ICUbed_lower	ICUbed_upper	InvVen_mean	
+				InvVen_lower	InvVen_upper	deaths_mean		deaths_lower	
+				deaths_upper	admis_mean		admis_lower		admis_upper	
+				newICU_mean		newICU_lower	newICU_upper	totdea_mean	
+				totdea_lower	totdea_upper	bedover_mean	bedover_lower	
+				bedover_upper	icuover_mean	icuover_lower	icuover_upper
+				
+				;
+			drop v1 location_id;
+			rename date = date_c;
+		run;
+	%end;
+	
 	*add in Projection_Date variable and create variable labels and formats;
 	data ihme_&date2;
 		set ihme_&date2;
@@ -189,7 +211,39 @@ options minoperator mindelimiter=',';
 %IMHE(2020-04-22, Apr22);
 %IMHE(2020-04-27, Apr27);
 %IMHE(2020-04-28, Apr28);
+%IMHE(2020-04-29, Apr29);
 
+	filename inzip "&fileloc.May04.zip";
+	%let url = https://ihmecovid19storage.blob.core.windows.net/archive/2020-05-04/ihme-covid19.zip;
+	proc http
+	url="&url"
+	method="GET"
+	out=inzip
+	;
+	run;
+	
+	
+	/* Reads a CSV from the zip file into a SAS data set */
+	filename zipfile zip "&fileloc.May04.zip" member="*\Hospitalization_all_locs.csv";
+
+data ihme_May04;
+			length location_name $50 date $10;
+			infile zipfile dlm="," dsd firstobs=2;
+			input 
+				v1 $	location_name $
+				date $			allbed_mean		allbed_lower	allbed_upper	
+				ICUbed_mean		ICUbed_lower	ICUbed_upper	InvVen_mean	
+				InvVen_lower	InvVen_upper	deaths_mean		deaths_lower	
+				deaths_upper	admis_mean		admis_lower		admis_upper	
+				newICU_mean		newICU_lower	newICU_upper	totdea_mean	
+				totdea_lower	totdea_upper	bedover_mean	bedover_lower	
+				bedover_upper	icuover_mean	icuover_lower	icuover_upper
+				;
+			drop v1;
+			rename date = date_c;
+		run;
+		
+	
 *combine all the data sets;
 data final.IHME;
 	set IHME_:;
