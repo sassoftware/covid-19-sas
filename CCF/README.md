@@ -54,7 +54,7 @@ With the option `plots=yes`, the `COVID_19.sas` program will create diagnostic v
 :-------------------------:|:-------------------------:
 ![](./images/example-0.png)  |  ![](./images/example-1.png)
 ![](./images/example-4.png)  |  ![](./images/example-2.png)
-![](./images/example-3.png)  |  
+![](./images/example-3.png)  |  ![](./images/example-5.png)
 
 # Example User Interface (Coming Soon)
 Our goal is to allow users to visualize and run scenarios from a user interface.  Take a look at our current prototype:

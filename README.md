@@ -20,7 +20,7 @@ Among other outputs, these analyses will create diagnostic visuals for each mode
 :-------------------------:|:-------------------------:
 ![](./CCF/images/example-0.png)  |  ![](./CCF/images/example-1.png)
 ![](./CCF/images/example-4.png)  |  ![](./CCF/images/example-2.png)
-![](./CCF/images/example-3.png)  | 
+![](./CCF/images/example-3.png)  |  ![](./CCF/images/example-5.png)
 
 ## Data sources for COVID-19 reporting
 

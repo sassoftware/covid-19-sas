@@ -19,4 +19,15 @@ Here’s how I see the simplest form of the equation:
 0.00248575 = 0.01*(2^(1/4.25)-1+(1/14)) = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) * 0.01)
 
 
-see code in ./progress/from ccf/
+see code in ./progress/from ccf/BromModelEnhance20200430.sas 
+
+Thoughts:
+inputs: BETADecayChangeDate, BETADecayChange 
+
+parameters calc: BETAIncrement 
+
+sir ds: 
+    beta_decay initial
+        then reset on BETADecayChangeDate values to BETADecayChange amounts
+    beta = beta - BETA_DECAY * adjustment (see andrew note)
+
