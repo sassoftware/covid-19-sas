@@ -2,12 +2,12 @@ From CC:
 Logic -> basically taking the change in beta by changing social distancing by 1% at whatever doubling time and recovery days are input by users.
  
 Formula would be following: %LET BETAChange = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) /
-                                                                                                                                                                                    &Population. * (1 - &SocialDistancingChange.));
+                                                                                                &Population. * (1 - &SocialDistancingChange.));
  
 %LET BETAincrement1 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) /
-                                                                                                                                                                                    &Population. * (1 -0));
+                                                                        &Population. * (1 -0));
 %LET BETAincrement2 = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) /
-                                                                                                                                                                                    &Population. * (1 – 0.01));
+                                                                        &Population. * (1 – 0.01));
 %LET BETAIncrement = &BetaIncrement2-&BetaIncrement1;
 
 
@@ -23,6 +23,8 @@ see code in ./progress/from ccf/BromModelEnhance20200430.sas
 
 Thoughts:
 inputs: BETADecayChangeDate, BETADecayChange 
+new names; BETAShiftChangeDate, BETAShiftChange, BETAShiftWindow
+    drive loop off of Change
 
 parameters calc: BETAIncrement 
 
@@ -30,4 +32,3 @@ sir ds:
     beta_decay initial
         then reset on BETADecayChangeDate values to BETADecayChange amounts
     beta = beta - BETA_DECAY * adjustment (see andrew note)
-
