@@ -13,7 +13,7 @@
 
 
 /* CHANGE BEFORE RUNNING - File location to save zip files */
-%let fileloc = C:\Users\jalann\Documents\IHME\IHME Data Downloads\GitHub;
+%let fileloc = ;
 
 libname final "&fileloc";
 
@@ -129,6 +129,28 @@ options minoperator mindelimiter=',';
 		run;
 	%end;
 	
+	%else %if &date2 in (Apr29) %then %do;
+		*NOTE: Below is the most current file format;
+		data ihme_&date2;
+			length location_name $50 date $10;
+			infile zipfile dlm="," dsd firstobs=2;
+			input 
+				v1 $
+				location_name $ location_id $
+				date $			allbed_mean		allbed_lower	allbed_upper	
+				ICUbed_mean		ICUbed_lower	ICUbed_upper	InvVen_mean	
+				InvVen_lower	InvVen_upper	deaths_mean		deaths_lower	
+				deaths_upper	admis_mean		admis_lower		admis_upper	
+				newICU_mean		newICU_lower	newICU_upper	totdea_mean	
+				totdea_lower	totdea_upper	bedover_mean	bedover_lower	
+				bedover_upper	icuover_mean	icuover_lower	icuover_upper
+				
+				;
+			drop v1 location_id;
+			rename date = date_c;
+		run;
+	%end;
+	
 	*add in Projection_Date variable and create variable labels and formats;
 	data ihme_&date2;
 		set ihme_&date2;
@@ -189,7 +211,137 @@ options minoperator mindelimiter=',';
 %IMHE(2020-04-22, Apr22);
 %IMHE(2020-04-27, Apr27);
 %IMHE(2020-04-28, Apr28);
+%IMHE(2020-04-29, Apr29);
 
+
+	filename inzip "&fileloc.May04.zip";
+	%let url = https://ihmecovid19storage.blob.core.windows.net/archive/2020-05-04/ihme-covid19.zip;
+	proc http
+	url="&url"
+	method="GET"
+	out=inzip
+	;
+	run;
+	
+	
+	/* Reads a CSV from the zip file into a SAS data set */
+	filename zipfile zip "&fileloc.May04.zip" member="*\Hospitalization_all_locs.csv";
+
+data ihme_May04;
+			length location_name $50 date $10;
+			infile zipfile dlm="," dsd firstobs=2;
+			informat mobility_data_type total_tests_data_type $10.;
+			format mobility_data_type total_tests_data_type $10.;
+			input 
+				v1 $	location_name $
+				date $			allbed_mean		allbed_lower	allbed_upper	
+				ICUbed_mean		ICUbed_lower	ICUbed_upper	InvVen_mean	
+				InvVen_lower	InvVen_upper	deaths_mean		deaths_lower	
+				deaths_upper	admis_mean		admis_lower		admis_upper	
+				newICU_mean		newICU_lower	newICU_upper	totdea_mean	
+				totdea_lower	totdea_upper	bedover_mean	bedover_lower	
+				bedover_upper	icuover_mean	icuover_lower	icuover_upper
+				mobility_data_type $	mobility_composite		total_tests_data_type $
+				total_tests			confirmed_infections	est_infections_mean	
+				est_infections_lower	est_infections_upper
+				;
+			drop v1;
+			rename date = date_c;
+		run;
+		
+		
+	filename inzip "&fileloc.May10.zip";
+	%let url = https://ihmecovid19storage.blob.core.windows.net/archive/2020-05-10/ihme-covid19.zip;
+	proc http
+	url="&url"
+	method="GET"
+	out=inzip
+	;
+	run;
+	
+	
+	/* Reads a CSV from the zip file into a SAS data set */
+	filename zipfile zip "&fileloc.May10.zip" member="*\Hospitalization_all_locs.csv";
+
+data ihme_May10;
+			length location_name $50 date $10;
+			infile zipfile dlm="," dsd firstobs=2;
+			informat mobility_data_type total_tests_data_type $10.;
+			format mobility_data_type total_tests_data_type $10.;
+			input 
+				v1 $	location_name $
+				date $			allbed_mean		allbed_lower	allbed_upper	
+				ICUbed_mean		ICUbed_lower	ICUbed_upper	InvVen_mean	
+				InvVen_lower	InvVen_upper	deaths_mean		deaths_lower	
+				deaths_upper	admis_mean		admis_lower		admis_upper	
+				newICU_mean		newICU_lower	newICU_upper	totdea_mean	
+				totdea_lower	totdea_upper	bedover_mean	bedover_lower	
+				bedover_upper	icuover_mean	icuover_lower	icuover_upper
+				deaths_mean_smoothed	deaths_lower_smoothed	deaths_upper_smoothed	
+				totdea_mean_smoothed	totdea_lower_smoothed	totdea_upper_smoothed	
+				mobility_data_type	$	mobility_composite		total_tests_data_type $
+				total_tests				confirmed_infections	est_infections_mean	
+				est_infections_lower	est_infections_upper
+				;
+			drop v1;
+			rename date = date_c;
+		run;
+		
+%macro IMHE2(date1, date2);
+		data ihme_&date2;
+		set ihme_&date2;
+		Projection_Date_c = "&date2";
+		Projection_Date = input("&date1", yymmdd10.);
+		Date = input(date_c, yymmdd10.);
+		format date date9. Projection_Date date9.;
+		label 	Projection_Date = "Date of Projection Release"
+				Projection_Date_c = "Date of Projection Release (Char)"
+				location_name = "Location Name"
+				date = "Date"
+				date_c = "Date (Char)"
+				allbed_mean = "Mean covid beds needed by day"
+				allbed_lower = "Lower uncertainty bound of covid beds needed by day"
+				allbed_upper = "Upper uncertainty bound of covid beds needed by day"
+				ICUbed_mean = "Mean ICU covid beds needed by day"
+				ICUbed_lower = "Lower uncertainty bound of ICU covid beds needed by day"
+				ICUbed_upper = "Upper uncertainty bound of ICU covid beds needed by day"
+				InvVen_mean = "Mean invasive ventilation needed by day"
+				InvVen_lower = "Lower uncertainty bound of invasive ventilation needed by day"
+				InvVen_upper = "Upper uncertainty bound of invasive ventilation needed by day"
+				deaths_mean = "Mean daily covid deaths"
+				deaths_lower = "Lower uncertainty bound of daily covid deaths"
+				deaths_upper = "Upper uncertainty bound of daily covid deaths"
+				admis_mean = "Mean hospital admissions by day"
+				admis_lower = "Lower uncertainty bound of hospital admissions by day"
+				admis_upper = "Upper uncertainty bound of hospital admissions by day"
+				newICU_mean = "Mean number of new people going to the ICU by day"
+				newICU_lower = "Lower uncertainty bound of the number of new people going to the ICU by day"
+				newICU_upper = "Upper uncertainty bound of the number of new people going to the ICU by day"
+				totdea_mean = "Mean cumulative covid deaths"
+				totdea_lower = "Lower uncertainty bound of cumulative covid deaths"
+				totdea_upper = "Upper uncertainty bound of cumulative covid deaths"
+				bedover_mean = "[covid all beds needed] - ([total bed capacity] - [average all bed usage])"
+				bedover_lower = "Lower uncertainty bound of bedover (above)"
+				bedover_upper = "Upper uncertainty bound of bedover (above)"
+				icuover_mean = "[covid ICU beds needed] - ([total ICU capacity] - [average ICU bed usage])"
+				icuover_lower = "Lower uncertainty bound of icuover (above)"
+				icuover_upper = "Upper uncertainty bound of icuover (above)";
+				label 
+				mobility_data_type	= "Indicator of whether mobility composite is observed / projected"
+				mobility_composite	= "Mobility composite score"
+				total_tests_data_type = "Indicator of whether total tests composite is observed or projected"
+				total_tests ="Total tests"
+				confirmed_infections = "Observed data only (confirmed infections)"
+				est_infections_mean	= "Mean estimated infections"
+				est_infections_lower = "Lower uncertainty bound of estimated infections"
+				est_infections_upper = "Upper uncertainty bound stimated infections"
+				;
+	run;
+		
+%mend IMHE2;
+%IMHE2(2020-05-04, May04);
+%IMHE2(2020-05-10, May10);
+	
 *combine all the data sets;
 data final.IHME;
 	set IHME_:;

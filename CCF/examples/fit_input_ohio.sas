@@ -1,4 +1,5 @@
 						/* pull data for US State of Ohio */
+							/* the file appears to be updated throughout the day but partial data for today could cause issues with fit - this code only updates when data is stale by 2 days */
 							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 							OPTION VALIDVARNAME=V7;
 							PROC IMPORT file=OHIO OUT=WORK.FIT_IMPORT DBMS=CSV REPLACE;

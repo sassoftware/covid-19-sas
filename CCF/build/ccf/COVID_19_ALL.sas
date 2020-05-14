@@ -1658,8 +1658,7 @@ You need to evaluate each parameter for your population of interest.
 		/* If this is a new scenario then run it */
     	%IF &ScenarioExist = 0 AND &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
 
-			/* START DOWNLOAD FIT_INPUT - only if STORE.FIT_INPUT does not have data for yesterday */
-				/* the file appears to be updated throughout the day but partial data for today could cause issues with fit */
+			/* START FIT_INPUT - only if STORE.FIT_INPUT does not have data for yesterday or does not exist */
 					%IF %sysfunc(exist(STORE.FIT_INPUT)) %THEN %DO;
 						PROC SQL NOPRINT; 
 							SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
@@ -1670,11 +1669,12 @@ You need to evaluate each parameter for your population of interest.
 						%LET LATEST_CASE=0;
 					%END;
 				/* update the fit source (STORE.FIT_INPUT) if outdated */
-					%IF &ScenarioSource. = BATCH AND &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
+					%IF &LATEST_CASE. < %eval(%sysfunc(today())-2) %THEN %DO;
 
 /* START: STORE.FIT_INPUT READ */
 
 						/* pull data for US State of Ohio */
+							/* the file appears to be updated throughout the day but partial data for today could cause issues with fit - this code only updates when data is stale by 2 days */
 							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
 							OPTION VALIDVARNAME=V7;
 							PROC IMPORT file=OHIO OUT=WORK.FIT_IMPORT DBMS=CSV REPLACE;
@@ -1730,7 +1730,7 @@ You need to evaluate each parameter for your population of interest.
 /* END: STORE.FIT_INPUT READ */
 
 					%END;
-            /* END DOWNLOAD FIT_INPUT **/
+            /* END FIT_INPUT **/
 			/* Fit Model with Proc (t)Model (SAS/ETS) */
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA = STORE.FIT_INPUT OUTMODEL=SEIRMOD_I NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA = STORE.FIT_INPUT OUTMODEL=SEIRMOD_I NOPRINT; %END;
