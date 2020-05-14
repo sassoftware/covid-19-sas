@@ -15,6 +15,8 @@ For a good understanding of the SIR and SEIR model approaches, we recommend this
 # User Interface: COVID-19 Epidemiological Scenario Analysis
 Visually interact with this code to investigate your scenarios using a user interface by getting access here: [COVID-19 Epidemiological Scenario Analysis](https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html)
 
+![](./images/ui_demo.gif)
+
 # Getting Started with the Code
 - **PREPARE**
     - Download `COVID_19.sas` and `fit_input.csv` to your SAS environment
@@ -55,8 +57,3 @@ With the option `plots=yes`, the `COVID_19.sas` program will create diagnostic v
 ![](./images/example-0.png)  |  ![](./images/example-1.png)
 ![](./images/example-4.png)  |  ![](./images/example-2.png)
 ![](./images/example-3.png)  |  ![](./images/example-5.png)
-
-# Example User Interface (Coming Soon)
-Our goal is to allow users to visualize and run scenarios from a user interface.  Take a look at our current prototype:
-
-![](./images/ui_demo.gif)
