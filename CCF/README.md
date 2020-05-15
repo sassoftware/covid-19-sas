@@ -57,3 +57,6 @@ With the option `plots=yes`, the `COVID_19.sas` program will create diagnostic v
 ![](./images/example-0.png)  |  ![](./images/example-1.png)
 ![](./images/example-4.png)  |  ![](./images/example-2.png)
 ![](./images/example-3.png)  |  ![](./images/example-5.png)
+
+# Preferred Reference for Citation
+Cleveland Clinic and SAS COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/covid-19-sas
