@@ -18,9 +18,9 @@ X_IMPORT: keys.sas
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
-							%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+							%DO j = 1 %TO &ISOChangeLoop;
 								BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-												&Population. * (1 - &&SocialDistancingChange&j);
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 							%END;
 							byinc = 0.1;
 							DO DAY = 0 TO &N_DAYS. by byinc;
@@ -32,7 +32,7 @@ X_IMPORT: keys.sas
 									N = SUM(S_N, I_N, R_N);
 								END;
 								ELSE DO;
-									BETA = LAG_BETA * (1- &BETA_DECAY.);
+									BETA = LAG_BETA;
 									S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
 									I_N = LAG_I + (BETA * LAG_S * LAG_I - GAMMA * LAG_I)*byinc;
 									R_N = LAG_R + (GAMMA * LAG_I)*byinc;
@@ -45,24 +45,30 @@ X_IMPORT: keys.sas
 									I_N = SCALE*I_N;
 									R_N = SCALE*R_N;
 								END;
-								LAG_S = S_N;
-								E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
-								LAG_I = I_N;
-								LAG_R = R_N;
-								LAG_N = N;
-								DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
-								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-									%IF j = 1 %THEN %DO;
-										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-									%END; %ELSE %DO;
-										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-									%END;
-								%END;
-								LAG_BETA = BETA;
-								IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-									DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
-									OUTPUT;
-								END;
+								/* prepare for tomorrow (DAY+1) */
+									/* remember todays values for SEIR */
+										LAG_S = S_N;
+										E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
+										LAG_I = I_N;
+										LAG_R = R_N;
+										LAG_N = N;
+										LAB_BETA = BETA;
+									/* output integer days and make BETA adjustments */
+										IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
+											DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
+											/* implement shifts in SocialDistancing on and over date ranges */
+												%IF &ISOChangeLoop > 0 %THEN %DO;
+													%DO j = 1 %TO &ISOChangeLoop;
+														%IF &j > 1 %THEN %DO; ELSE %END;
+															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN BETAChange = BETAChange&j.;
+													%END;
+													ELSE BETAChange = 0;
+												%END;
+												%ELSE %DO; BETAChange = 0; %END;
+											/* adjust BETA for tomorrow */
+												LAG_BETA = BETA - BETAChange;
+											OUTPUT;
+										END;
 							END;
 						END;
 						END;

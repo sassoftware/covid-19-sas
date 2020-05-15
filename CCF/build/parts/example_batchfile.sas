@@ -42,7 +42,8 @@
 		informat VentPErcent best32. ;
 		informat ISOChangeDate $200. ;
 		informat ISOChangeEvent $200. ;
-		informat SocialDistancingChange $16. ;
+		informat ISOChangeWindow $50. ;
+		informat SocialDistancingChange $50. ;
 		informat FatalityRate best32. ;
 		informat plots $3. ;
 		format scenario $25. ;
@@ -59,7 +60,8 @@
 		format VentPErcent best12. ;
 		format ISOChangeDate $200. ;
 		format ISOChangeEvent $200. ;
-		format SocialDistancingChange $16. ;
+		format ISOChangeWindow $50. ;
+		format SocialDistancingChange $50. ;
 		format FatalityRate best12. ;
 		format plots $3. ;
 		input
@@ -77,6 +79,7 @@
 					VentPErcent
 					ISOChangeDate $
 					ISOChangeEvent $
+					ISOChangeWindow $
 					SocialDistancingChange  $
 					FatalityRate
 					plots  $

@@ -14,8 +14,10 @@ ICUPercent=0.45,
 VentPErcent=0.35,
 ISOChangeDate='27MAR2020'd:'01MAY2020'd:'01JUL2020'd:'01SEP2020'd:'01NOV2020'd,
 ISOChangeEvent=Change 1:Change 2:Change 3:Change 4:Change 5,
-SocialDistancingChange=0.7:0.5:0.7:0.5:0.7,
+ISOChangeWindow=1:1:1:1,
+SocialDistancingChange=0.7:-0.2:0.2:-0.2:0.2,
 FatalityRate=0,
 plots=YES,
 DAY_ZERO='01MAR2020'd	
 );
+/* 0.7:0.5:0.7:0.5:0.7 */
