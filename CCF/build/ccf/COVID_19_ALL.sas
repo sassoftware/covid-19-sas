@@ -1082,7 +1082,7 @@ You need to evaluate each parameter for your population of interest.
 										LAG_I = I_N;
 										LAG_R = R_N;
 										LAG_N = N;
-										LAB_BETA = BETA;
+										LAG_BETA = BETA;
 									/* output integer days and make BETA adjustments*/
 										IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 											DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
@@ -1096,7 +1096,20 @@ You need to evaluate each parameter for your population of interest.
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA - BETAChange;
+												LAG_BETA = BETA + BETAChange;
+												/* 	socialdistancingchange is the amount of change in social distancing to implement on ISOChangedate
+														positive socialdistancingchange is percentage decrease in social distancing - people spread out
+															interpret as MORE social distancing
+														negative socialdistnacingchange is percentage increase in social distancing - people gather
+															interpret as LESS social distancing
+													positive SocialDistancingChange leads to positive BETAChange
+														
+														as BETA decreases the disease spread is decreasing
+														BETAChange
+															this is a factor that increases/decreases BETA on a given day
+																if SocialDistancingChange is positive then BETAChange is positive
+																if SocialDistancingChange is negative then BETAChange is negative
+												*/
 											OUTPUT;
 										END;
 							END;
@@ -1414,7 +1427,7 @@ You need to evaluate each parameter for your population of interest.
 										LAG_I = I_N;
 										LAG_R = R_N;
 										LAG_N = N;
-										LAB_BETA = BETA;
+										LAG_BETA = BETA;
 									/* output integer days and make BETA adjustments */
 										IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
 											DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
@@ -1428,7 +1441,7 @@ You need to evaluate each parameter for your population of interest.
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA - BETAChange;
+												LAG_BETA = BETA + BETAChange;
 											OUTPUT;
 										END;
 							END;
