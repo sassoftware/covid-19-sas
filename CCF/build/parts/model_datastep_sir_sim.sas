@@ -11,7 +11,7 @@ X_IMPORT: keys.sas
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.2 TO .2 BY 0.05;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
@@ -66,7 +66,7 @@ X_IMPORT: keys.sas
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA + BETAChange;
+												LAG_BETA = BETA - BETAChange;
 											OUTPUT;
 										END;
 							END;
