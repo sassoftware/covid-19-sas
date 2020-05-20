@@ -10,7 +10,6 @@ X_IMPORT: parameters.sas
                     E_N = &E.;
                     I_N = &I. / &DiagnosedRate.;
                     R_N = &InitRecovered.;
-                    *R0  = &R_T.;
                     /* prevent range below zero on each loop */
                         DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
 						RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
@@ -76,7 +75,7 @@ X_IMPORT: keys.sas
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 X_IMPORT: postprocess.sas
-				DROP CUM: counter BETA GAMMA R_T:;
+				DROP CUM: counter BETA GAMMA;
 			RUN;
 
 			DATA TMODEL_SIR; 
