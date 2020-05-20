@@ -373,7 +373,7 @@ You need to evaluate each parameter for your population of interest.
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
@@ -704,18 +704,16 @@ You need to evaluate each parameter for your population of interest.
                         DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
 						RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 						RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-							DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+							DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 							SOCIALD = SOCIALDfraction + &SocialDistancing;
 							SOCIALDfraction = round(SOCIALDfraction,.00001);
 							IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
-								R_T = BETA / GAMMA * &Population.;
-								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+								%DO j = 1 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-													&Population. * (1 - &&SocialDistancingChange&j);
-									R_T_Change&j = BETAChange&j / GAMMA * &Population.;
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;								
 								DO TIME = 0 TO &N_DAYS. by 1;
 									OUTPUT; 
@@ -727,27 +725,21 @@ You need to evaluate each parameter for your population of interest.
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* PARAMETER SETTINGS */ 
-                PARMS N &Population.;
-                BOUNDS 1 <= R_T <= 13;
-				%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
-				RESTRICT R_T > 0 %DO j = 1 %TO &jmax; , R_T_Change&j > 0 %END;;
-				%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
-				%ELSE %DO;
-					%DO j = 1 %TO &jmax;
-						%LET j2 = %eval(&j + 1);
-						%IF &j = 1 %THEN %DO; 
-							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
-						%END;
-						%IF &j = &jmax %THEN %DO;
-							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
-						%END;
-						%ELSE %DO;
-							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
-						%END;
+
+				/* construct BETA with additive changes */
+				%IF &ISOChangeLoop > 0 %THEN %DO;
+					BETA = BETA 
+					%DO j = 1 %TO &ISOChangeLoop;
+						%DO j2 = 1 %TO &&ISOChangeWindow&j;
+							- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
+						%END;	
 					%END;
-					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R_T_Change&j*GAMMA/N %END;; 
+					;
 				%END;
+				%ELSE %DO;
+					BETA = BETA;
+				%END;
+
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 				DERT.S_N = -BETA*S_N*I_N;
@@ -1037,7 +1029,7 @@ You need to evaluate each parameter for your population of interest.
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
@@ -1096,20 +1088,7 @@ You need to evaluate each parameter for your population of interest.
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA + BETAChange;
-												/* 	socialdistancingchange is the amount of change in social distancing to implement on ISOChangedate
-														positive socialdistancingchange is percentage decrease in social distancing - people spread out
-															interpret as MORE social distancing
-														negative socialdistnacingchange is percentage increase in social distancing - people gather
-															interpret as LESS social distancing
-													positive SocialDistancingChange leads to positive BETAChange
-														
-														as BETA decreases the disease spread is decreasing
-														BETAChange
-															this is a factor that increases/decreases BETA on a given day
-																if SocialDistancingChange is positive then BETAChange is positive
-																if SocialDistancingChange is negative then BETAChange is negative
-												*/
+												LAG_BETA = BETA - BETAChange;
 											OUTPUT;
 										END;
 							END;
@@ -1386,7 +1365,7 @@ You need to evaluate each parameter for your population of interest.
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
@@ -1441,7 +1420,7 @@ You need to evaluate each parameter for your population of interest.
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA + BETAChange;
+												LAG_BETA = BETA - BETAChange;
 											OUTPUT;
 										END;
 							END;

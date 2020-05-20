@@ -15,16 +15,18 @@ X_IMPORT: parameters.sas
                         DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
 						RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 						RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-							DO SOCIALDfraction = -.1 TO .1 BY 0.025;
+							DO SOCIALDfraction = -.2 TO .2 BY 0.05;
 							SOCIALD = SOCIALDfraction + &SocialDistancing;
 							SOCIALDfraction = round(SOCIALDfraction,.00001);
 							IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
-								%DO j = 1 %TO &ISOChangeLoop;
+								R_T = BETA / GAMMA * &Population.;
+								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
+													&Population. * (1 - &&SocialDistancingChange&j);
+									R_T_Change&j = BETAChange&j / GAMMA * &Population.;
 								%END;								
 								DO TIME = 0 TO &N_DAYS. by 1;
 									OUTPUT; 
@@ -36,18 +38,25 @@ X_IMPORT: parameters.sas
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* construct BETA with additive changes */
-				%IF &ISOChangeLoop > 0 %THEN %DO;
-					BETA = BETA 
-					%DO j = 1 %TO &ISOChangeLoop;
-						%DO j2 = 1 %TO &&ISOChangeWindow&j;
-							- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
-						%END;	
-					%END;
-					;
-				%END;
+				/* PARAMETER SETTINGS */ 
+                PARMS N &Population.;
+                BOUNDS 1 <= R_T <= 13;
+				RESTRICT R_T > 0 %DO j = 1 %TO &ISOChangeLoop; , R_T_Change&j > 0 %END;;
+				%IF &ISOChangeLoop = 0 %THEN %DO; BETA = BETA; %END;
 				%ELSE %DO;
-					BETA = BETA;
+					%DO j = 1 %TO &ISOChangeLoop;
+						%LET j2 = %eval(&j + 1);
+						%IF &j = 1 %THEN %DO; 
+							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
+						%END;
+						%IF &j = &ISOChangeLoop %THEN %DO;
+							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
+						%END;
+						%ELSE %DO;
+							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
+						%END;
+					%END;
+					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &ISOChangeLoop; + change_&j*R_T_Change&j*GAMMA/N %END;; 
 				%END;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/

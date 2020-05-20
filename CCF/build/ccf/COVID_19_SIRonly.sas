@@ -371,7 +371,7 @@ You need to evaluate each parameter for your population of interest.
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
@@ -426,7 +426,7 @@ You need to evaluate each parameter for your population of interest.
 												%END;
 												%ELSE %DO; BETAChange = 0; %END;
 											/* adjust BETA for tomorrow */
-												LAG_BETA = BETA + BETAChange;
+												LAG_BETA = BETA - BETAChange;
 											OUTPUT;
 										END;
 							END;
