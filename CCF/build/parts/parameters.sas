@@ -14,7 +14,7 @@
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
@@ -24,7 +24,11 @@
 
 						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j));
-						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+						%IF &j = 1 %THEN %LET R_T_Change&j = %SYSEVALF(&R_T - &&BETAChange&j / &GAMMA. * &Population.);
+						%ELSE %DO;
+							%LET j2=%eval(&j-1);
+							%LET R_T_Change&j = %SYSEVALF(&&R_T_Change&j2 - &&BETAChange&j / &GAMMA. * &Population.);
+						%END;
 
 						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
