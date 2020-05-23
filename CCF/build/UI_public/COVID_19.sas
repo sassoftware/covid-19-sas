@@ -188,7 +188,7 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
@@ -299,7 +299,7 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
@@ -626,7 +626,7 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
@@ -948,7 +948,7 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
@@ -1291,7 +1291,7 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
 					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
 					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
