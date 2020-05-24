@@ -1807,12 +1807,11 @@ You need to evaluate each parameter for your population of interest.
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
 								BETA = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
-								BETAChange1 = BETA - (&R0_BEND_FIT * GAMMA / &Population);
+								BETAChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
 								%DO j = 2 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;
-put "&BETA / &BETAChange1 / &BETAChange2 " BETA BETAChange1 BETAChange2;
                                 DO TIME = 0 TO &N_DAYS. by 1;
                                     OUTPUT; 
                                 END;
@@ -1821,22 +1820,25 @@ put "&BETA / &BETAChange1 / &BETAChange2 " BETA BETAChange1 BETAChange2;
 						END;
 					END; 
 				RUN;
-data temp1; set dinit; run;
+
 			/* Create SEIR Projections based R0 and first social distancing change from model fit above, plus additional change points */
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
 					/* construct BETA with additive changes */
-					%IF &ISOChangeLoop > 1 %THEN %DO;
-						BETA = BETA - (&DAY_ZERO + TIME > &CURVEBEND1) * BETAChange1 
-						%DO j = 2 %TO &ISOChangeLoop;
-							%DO j2 = 1 %TO &&ISOChangeWindow&j;
+					%IF &ISOChangeLoop > 0 %THEN %DO;
+						BETA = BETA 
+						%DO j = 1 %TO &ISOChangeLoop;
+							%IF &j = 1 %THEN %DO;
+								- (&DAY_ZERO + TIME > &CURVEBEND1) * BETAChange&j
+							%END;
+							%ELSE %DO j2 = 1 %TO &&ISOChangeWindow&j;
 								- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
 							%END;	
 						%END;
 						;
 					%END;
 					%ELSE %DO;
-						BETA = BETA - (&DAY_ZERO + TIME > &CURVEBEND1) * BETAChange1;
+						BETA = BETA;
 					%END;
 
 					/* DIFFERENTIAL EQUATIONS */ 
@@ -1853,7 +1855,7 @@ data temp1; set dinit; run;
 					by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 				RUN;
 				QUIT;
-data temp2; set tmodel_seir_sim_fit_i; run;
+
 				DATA TMODEL_SEIR_SIM_FIT_I;
 					FORMAT ModelType $30. DATE ADMIT_DATE DATE9.;
 					ModelType="SEIR with PROC (T)MODEL-Fit R0";
@@ -2004,7 +2006,7 @@ data temp2; set tmodel_seir_sim_fit_i; run;
 					WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 					DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 				RUN;
-data temp3; set tmodel_seir_fit_i; run;
+
 				PROC SQL noprint;
 					create table TMODEL_SEIR_FIT_I as
 						select * from
