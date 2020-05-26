@@ -82,12 +82,16 @@ X_IMPORT: keys.sas
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
-								BETA = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
-								BETAChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
-								%DO j = 2 %TO &ISOChangeLoop;
+								BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
+                                                &Population. * (1 - SOCIALD);
+								BETAF = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
+								BETAFChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
+								%DO j = 1 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;
+								/* use first change to move back to expected change from BETA while account for fitted BETA = BETAF */
+									BETAChange1 = BETA - BETAF; 
                                 DO TIME = 0 TO &N_DAYS. by 1;
                                     OUTPUT; 
                                 END;
@@ -102,10 +106,10 @@ X_IMPORT: keys.sas
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
 					/* construct BETA with additive changes */
 					%IF &ISOChangeLoop > 0 %THEN %DO;
-						BETA = BETA 
+						BETA = BETAF 
 						%DO j = 1 %TO &ISOChangeLoop;
 							%IF &j = 1 %THEN %DO;
-								- (&DAY_ZERO + TIME > &CURVEBEND1) * BETAChange&j
+								- (&DAY_ZERO + TIME > &CURVEBEND1) * BETAFChange&j
 							%END;
 							%ELSE %DO j2 = 1 %TO &&ISOChangeWindow&j;
 								- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
