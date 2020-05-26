@@ -91,7 +91,8 @@ X_IMPORT: keys.sas
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;
 								/* use first change to move back to expected change from BETA while account for fitted BETA = BETAF */
-									BETAChange1 = BETA - BETAF; 
+									BETAChange1 = ((((2 ** (1 / &doublingtime.) - 1) + GAMMA) / &Population. * &SocialDistancingChange1) - (BETA-BETAF) + BETAFChange1) / &ISOChangeWindow1;
+									/* read: full BETAChange1 minus existing reduction in BETA plus Change at CURVEBEND all divided by window to return to desired state */
                                 DO TIME = 0 TO &N_DAYS. by 1;
                                     OUTPUT; 
                                 END;
@@ -111,7 +112,7 @@ X_IMPORT: keys.sas
 							%IF &j = 1 %THEN %DO;
 								- (&DAY_ZERO + TIME > &CURVEBEND1) * BETAFChange&j
 							%END;
-							%ELSE %DO j2 = 1 %TO &&ISOChangeWindow&j;
+							%DO j2 = 1 %TO &&ISOChangeWindow&j;
 								- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
 							%END;	
 						%END;
@@ -148,13 +149,21 @@ X_IMPORT: keys.sas
 						IF first.SOCIALDfraction THEN counter = 1;
 						ELSE counter + 1;
 X_IMPORT: postprocess.sas
-					DROP CUM: counter SIGMAINV BETA GAMMA;
+					DROP CUM: counter SIGMAINV GAMMA;
 				RUN;
+
+PROC SGPLOT DATA=TMODEL_SEIR_SIM_FIT_I;
+	WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
+	TITLE "BETA Values over Time";
+	SERIES X=DATE Y=BETA / LINEATTRS=(THICKNESS=2);
+	refline &curvebend1 &ISOChangeDate1 / axis=x label=("Curve Bend" "ISOChangeDate1");
+RUN;
+TITLE;
 
 				DATA TMODEL_SEIR_FIT_I; 
 					SET TMODEL_SEIR_SIM_FIT_I;
 					WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-					DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction BETA;
 				RUN;
 
 				PROC SQL noprint;
