@@ -1774,17 +1774,9 @@ You need to evaluate each parameter for your population of interest.
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
-								BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-                                                &Population. * (1 - SOCIALD);
 								BETAF = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
+								/* relative change to BETAF at CURVEBEND1 */
 								BETAFChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
-								%DO j = 1 %TO &ISOChangeLoop;
-									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
-								%END;
-								/* use first change to move back to expected change from BETA while account for fitted BETA = BETAF */
-									BETAChange1 = ((((2 ** (1 / &doublingtime.) - 1) + GAMMA) / &Population. * &SocialDistancingChange1) - (BETA-BETAF) + BETAFChange1) / &ISOChangeWindow1;
-									/* read: full BETAChange1 minus existing reduction in BETA plus Change at CURVEBEND all divided by window to return to desired state */
                                 DO TIME = 0 TO &N_DAYS. by 1;
                                     OUTPUT; 
                                 END;
@@ -1798,25 +1790,11 @@ You need to evaluate each parameter for your population of interest.
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
 					/* construct BETA with additive changes */
-					%IF &ISOChangeLoop > 0 %THEN %DO;
-						BETA = BETAF 
-						%DO j = 1 %TO &ISOChangeLoop;
-							%IF &j = 1 %THEN %DO;
-								- (&DAY_ZERO + TIME > &CURVEBEND1) * BETAFChange&j
-							%END;
-							%DO j2 = 1 %TO &&ISOChangeWindow&j;
-								- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
-							%END;	
-						%END;
-						;
-					%END;
-					%ELSE %DO;
-						BETA = BETA;
-					%END;
-
+						BETA = BETAF - (&DAY_ZERO + TIME > &CURVEBEND1) * BETAFChange1;
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
+					
 					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
 					DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
 					/* c. inflow from b. - outflow through recovery or death during illness*/
@@ -1971,21 +1949,13 @@ You need to evaluate each parameter for your population of interest.
 						drop k temp;
 
 				/* END: Common Post-Processing Across each Model Type and Approach */
-					DROP CUM: counter SIGMAINV GAMMA;
+					DROP CUM: counter SIGMAINV GAMMA BETA;
 				RUN;
-
-PROC SGPLOT DATA=TMODEL_SEIR_SIM_FIT_I;
-	WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-	TITLE "BETA Values over Time";
-	SERIES X=DATE Y=BETA / LINEATTRS=(THICKNESS=2);
-	refline &curvebend1 &ISOChangeDate1 / axis=x label=("Curve Bend" "ISOChangeDate1");
-RUN;
-TITLE;
 
 				DATA TMODEL_SEIR_FIT_I; 
 					SET TMODEL_SEIR_SIM_FIT_I;
 					WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
-					DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction BETA;
+					DROP SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 				RUN;
 
 				PROC SQL noprint;
