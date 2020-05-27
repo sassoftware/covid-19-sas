@@ -82,9 +82,10 @@ X_IMPORT: keys.sas
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
-								BETAF = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
+								BETA = (&R0_FIT * GAMMA / &Population) * (1 - SOCIALD);
 								/* relative change to BETAF at CURVEBEND1 */
-								BETAFChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
+								BETAChange1 = ((&R0_BEND_FIT - &R0_FIT) * GAMMA / &Population);
+								SocialDistancing = SOCIALD;
                                 DO TIME = 0 TO &N_DAYS. by 1;
                                     OUTPUT; 
                                 END;
@@ -98,7 +99,7 @@ X_IMPORT: keys.sas
 				%IF &HAVE_V151. = YES %THEN %DO; PROC TMODEL DATA=DINIT NOPRINT; %END;
 				%ELSE %DO; PROC MODEL DATA=DINIT NOPRINT; %END;
 					/* construct BETA with additive changes */
-						BETA = BETAF - (&DAY_ZERO + TIME > &CURVEBEND1) * BETAFChange1;
+						BETA = BETA - (&DAY_ZERO + TIME > &CURVEBEND1) * BETAChange1;
 					/* DIFFERENTIAL EQUATIONS */ 
 					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
 					DERT.S_N = -BETA*S_N*I_N;
@@ -112,6 +113,7 @@ X_IMPORT: keys.sas
 					/* SOLVE THE EQUATIONS */ 
 					SOLVE S_N E_N I_N R_N / OUT = TMODEL_SEIR_SIM_FIT_I;
 					by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+					id TIME SocialDistancing;
 				RUN;
 				QUIT;
 
@@ -127,7 +129,7 @@ X_IMPORT: keys.sas
 						IF first.SOCIALDfraction THEN counter = 1;
 						ELSE counter + 1;
 X_IMPORT: postprocess.sas
-					DROP CUM: counter SIGMAINV GAMMA BETA;
+					DROP CUM: counter SIGMAINV GAMMA BETAChange:;
 				RUN;
 
 				DATA TMODEL_SEIR_FIT_I; 

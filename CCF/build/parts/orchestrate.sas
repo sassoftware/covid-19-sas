@@ -124,6 +124,35 @@ X_IMPORT: models.sas
                 YAXIS LABEL="Daily Occupancy";
             RUN;
             TITLE; TITLE2; TITLE3;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "BETA Parameter Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=BETA / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="BETA Parameter" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "Social Distancing Input Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=SocialDistancing / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="Social Distancing" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
         %END;	
     %END;
 

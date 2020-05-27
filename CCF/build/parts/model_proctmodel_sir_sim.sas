@@ -24,8 +24,13 @@ X_IMPORT: parameters.sas
 								%DO j = 1 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
-								%END;								
+								%END;
+								SocialDistancing = SOCIALD;								
 								DO TIME = 0 TO &N_DAYS. by 1;
+									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
+										/* For each day in window make adjustment to SocialDistancing */
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+									%END;
 									OUTPUT; 
 								END;
                             END;
@@ -40,7 +45,8 @@ X_IMPORT: parameters.sas
 					BETA = BETA 
 					%DO j = 1 %TO &ISOChangeLoop;
 						%DO j2 = 1 %TO &&ISOChangeWindow&j;
-							- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
+							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
+							- (&DAY_ZERO + TIME > &&ISOChangeDate&j + &j2 - 1) * BETAChange&j
 						%END;	
 					%END;
 					;
@@ -58,6 +64,7 @@ X_IMPORT: parameters.sas
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
                 by RECOVERYDAYSfraction SOCIALDfraction;
+				id TIME SocialDistancing;
 			RUN;
 			QUIT;  
 
@@ -75,7 +82,7 @@ X_IMPORT: keys.sas
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 X_IMPORT: postprocess.sas
-				DROP CUM: counter BETA GAMMA;
+				DROP CUM: counter GAMMA BETAChange:;
 			RUN;
 
 			DATA TMODEL_SIR; 

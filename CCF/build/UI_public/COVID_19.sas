@@ -348,7 +348,12 @@ You need to evaluate each parameter for your population of interest.
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;
+								SocialDistancing = SOCIALD;	
                                 DO TIME = 0 TO &N_DAYS. by 1;
+									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
+										/* For each day in window make adjustment to SocialDistancing */
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+									%END;
                                     OUTPUT; 
                                 END;
                             END;
@@ -364,7 +369,8 @@ You need to evaluate each parameter for your population of interest.
 					BETA = BETA 
 					%DO j = 1 %TO &ISOChangeLoop;
 						%DO j2 = 1 %TO &&ISOChangeWindow&j;
-							- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
+							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
+							- (&DAY_ZERO + TIME > &&ISOChangeDate&j + &j2 - 1) * BETAChange&j
 						%END;	
 					%END;
 					;
@@ -384,6 +390,7 @@ You need to evaluate each parameter for your population of interest.
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
                 by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+				id TIME SocialDistancing;
 			RUN;
 			QUIT;
 
@@ -530,7 +537,7 @@ You need to evaluate each parameter for your population of interest.
 						drop k temp;
 
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: counter SIGMAINV BETA GAMMA;
+				DROP CUM: counter SIGMAINV GAMMA BETAChange:;
 			RUN;
 
 			DATA TMODEL_SEIR; 
@@ -671,8 +678,13 @@ You need to evaluate each parameter for your population of interest.
 								%DO j = 1 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
-								%END;								
+								%END;
+								SocialDistancing = SOCIALD;								
 								DO TIME = 0 TO &N_DAYS. by 1;
+									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
+										/* For each day in window make adjustment to SocialDistancing */
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+									%END;
 									OUTPUT; 
 								END;
                             END;
@@ -687,7 +699,8 @@ You need to evaluate each parameter for your population of interest.
 					BETA = BETA 
 					%DO j = 1 %TO &ISOChangeLoop;
 						%DO j2 = 1 %TO &&ISOChangeWindow&j;
-							- (&DAY_ZERO + TIME > &&ISOChangeDate&j) * BETAChange&j
+							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
+							- (&DAY_ZERO + TIME > &&ISOChangeDate&j + &j2 - 1) * BETAChange&j
 						%END;	
 					%END;
 					;
@@ -705,6 +718,7 @@ You need to evaluate each parameter for your population of interest.
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
                 by RECOVERYDAYSfraction SOCIALDfraction;
+				id TIME SocialDistancing;
 			RUN;
 			QUIT;  
 
@@ -852,7 +866,7 @@ You need to evaluate each parameter for your population of interest.
 						drop k temp;
 
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: counter BETA GAMMA;
+				DROP CUM: counter GAMMA BETAChange:;
 			RUN;
 
 			DATA TMODEL_SIR; 
@@ -1007,6 +1021,7 @@ You need to evaluate each parameter for your population of interest.
 									I_N = &I. / &DiagnosedRate.;
 									R_N = &InitRecovered.;
 									BETA = kBETA;
+										SocialDistancing = SOCIALD;
 									N = SUM(S_N, E_N, I_N, R_N);
 								END;
 								ELSE DO;
@@ -1041,7 +1056,10 @@ You need to evaluate each parameter for your population of interest.
 												%IF &ISOChangeLoop > 0 %THEN %DO;
 													%DO j = 1 %TO &ISOChangeLoop;
 														%IF &j > 1 %THEN %DO; ELSE %END;
-															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN BETAChange = BETAChange&j.;
+															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN DO;
+																BETAChange = BETAChange&j.;
+																SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+															END;
 													%END;
 													ELSE BETAChange = 0;
 												%END;
@@ -1055,7 +1073,7 @@ You need to evaluate each parameter for your population of interest.
 						END;
 					END;
 				END;
-				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
+				DROP LAG: byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR_SIM;
@@ -1346,6 +1364,7 @@ You need to evaluate each parameter for your population of interest.
 									I_N = &I./&DiagnosedRate.;
 									R_N = &InitRecovered.;
 									BETA = kBETA;
+										SocialDistancing = SOCIALD;
 									N = SUM(S_N, I_N, R_N);
 								END;
 								ELSE DO;
@@ -1377,7 +1396,10 @@ You need to evaluate each parameter for your population of interest.
 												%IF &ISOChangeLoop > 0 %THEN %DO;
 													%DO j = 1 %TO &ISOChangeLoop;
 														%IF &j > 1 %THEN %DO; ELSE %END;
-															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN BETAChange = BETAChange&j.;
+															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN DO;
+																BETAChange = BETAChange&j.;
+																SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+															END;
 													%END;
 													ELSE BETAChange = 0;
 												%END;
@@ -1390,7 +1412,7 @@ You need to evaluate each parameter for your population of interest.
 						END;
 						END;
 					END;
-				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
+				DROP LAG: byinc kBETA GAMMA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
@@ -1626,6 +1648,35 @@ You need to evaluate each parameter for your population of interest.
                 YAXIS LABEL="Daily Occupancy";
             RUN;
             TITLE; TITLE2; TITLE3;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "BETA Parameter Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=BETA / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="BETA Parameter" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "Social Distancing Input Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=SocialDistancing / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="Social Distancing" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
         %END;	
     %END;
 
@@ -1776,6 +1827,8 @@ You need to evaluate each parameter for your population of interest.
 								ADMIT_DATE = "Date of Admission"
 								DATE = "Date of Infection"
 								DAY = "Day of Pandemic"
+								BETA = "Beta Parameter (Contact Rate)"
+								SocialDistancing = "Social Distancing (% Reduction from Normal)"
 								HOSP = "Newly Hospitalized"
 								HOSPITAL_OCCUPANCY = "Hospital Census"
 								MARKET_HOSP = "Regional Newly Hospitalized"

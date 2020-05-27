@@ -7,6 +7,8 @@
 								ADMIT_DATE = "Date of Admission"
 								DATE = "Date of Infection"
 								DAY = "Day of Pandemic"
+								BETA = "Beta Parameter (Contact Rate)"
+								SocialDistancing = "Social Distancing (% Reduction from Normal)"
 								HOSP = "Newly Hospitalized"
 								HOSPITAL_OCCUPANCY = "Hospital Census"
 								MARKET_HOSP = "Regional Newly Hospitalized"
