@@ -29,7 +29,7 @@ X_IMPORT: parameters.sas
 								DO TIME = 0 TO &N_DAYS. by 1;
 									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
 										/* For each day in window make adjustment to SocialDistancing */
-										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
 									%END;
 									OUTPUT; 
 								END;
@@ -42,7 +42,7 @@ X_IMPORT: parameters.sas
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* construct BETA with additive changes */
 				%IF &ISOChangeLoop > 0 %THEN %DO;
-					BETA = BETA 
+					BETAv = BETA 
 					%DO j = 1 %TO &ISOChangeLoop;
 						%DO j2 = 1 %TO &&ISOChangeWindow&j;
 							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
@@ -52,19 +52,19 @@ X_IMPORT: parameters.sas
 					;
 				%END;
 				%ELSE %DO;
-					BETA = BETA;
+					BETAv = BETA;
 				%END;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
+				DERT.S_N = -BETAv*S_N*I_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
-				DERT.I_N = BETA*S_N*I_N - GAMMA*I_N;
+				DERT.I_N = BETAv*S_N*I_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
 				DERT.R_N = GAMMA*I_N;           
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N I_N R_N / TIME=TIME OUT = TMODEL_SIR_SIM; 
                 by RECOVERYDAYSfraction SOCIALDfraction;
-				id TIME SocialDistancing;
+				id TIME SocialDistancing BETAv;
 			RUN;
 			QUIT;  
 
@@ -75,7 +75,7 @@ X_IMPORT: parameters.sas
 X_IMPORT: keys.sas
 				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
 				E_N = &E.;  /* placeholder for post-processing of SIR model */
-				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+				SET TMODEL_SIR_SIM(RENAME=(TIME=DAY BETAv=BETA) DROP=_ERRORS_ _MODE_ _TYPE_ BETA);
 				DAY = round(DAY,1);
                 *WHERE RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				BY RECOVERYDAYSfraction SOCIALDfraction;

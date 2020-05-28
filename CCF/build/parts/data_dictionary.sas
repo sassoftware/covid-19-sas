@@ -8,6 +8,7 @@
 								DATE = "Date of Infection"
 								DAY = "Day of Pandemic"
 								BETA = "Beta Parameter (Contact Rate)"
+								RT = "Reproduction Number"
 								SocialDistancing = "Social Distancing (% Reduction from Normal)"
 								HOSP = "Newly Hospitalized"
 								HOSPITAL_OCCUPANCY = "Hospital Census"

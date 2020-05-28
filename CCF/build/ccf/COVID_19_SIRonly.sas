@@ -431,7 +431,7 @@ You need to evaluate each parameter for your population of interest.
 														%IF &j > 1 %THEN %DO; ELSE %END;
 															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN DO;
 																BETAChange = BETAChange&j.;
-																SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+																SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
 															END;
 													%END;
 													ELSE BETAChange = 0;
@@ -445,7 +445,7 @@ You need to evaluate each parameter for your population of interest.
 						END;
 						END;
 					END;
-				DROP LAG: byinc kBETA GAMMA BETAChange:;
+				DROP LAG: byinc kBETA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
@@ -459,6 +459,8 @@ You need to evaluate each parameter for your population of interest.
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
+					RT = BETA / GAMMA * &Population.;
 
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
@@ -584,7 +586,7 @@ You need to evaluate each parameter for your population of interest.
 						drop k temp;
 
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: counter RECOVERYDAYS SOCIALD;
+				DROP CUM: counter RECOVERYDAYS SOCIALD GAMMA;
 			RUN;
 
 			DATA DS_SIR;
@@ -704,6 +706,21 @@ You need to evaluate each parameter for your population of interest.
                 SERIES X=DATE Y=SocialDistancing / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
                 COLAXIS LABEL="Date" GRID;
                 ROWAXIS LABEL="Social Distancing" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "Reproduction Number Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=RT / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="Reproduction Number" GRID;
                 %IF &ISOChangeLoop > 0 %THEN %DO;
                     REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
                 %END;
@@ -861,6 +878,7 @@ You need to evaluate each parameter for your population of interest.
 								DATE = "Date of Infection"
 								DAY = "Day of Pandemic"
 								BETA = "Beta Parameter (Contact Rate)"
+								RT = "Reproduction Number"
 								SocialDistancing = "Social Distancing (% Reduction from Normal)"
 								HOSP = "Newly Hospitalized"
 								HOSPITAL_OCCUPANCY = "Hospital Census"

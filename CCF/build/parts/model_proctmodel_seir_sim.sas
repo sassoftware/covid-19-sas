@@ -32,7 +32,7 @@ X_IMPORT: parameters.sas
                                 DO TIME = 0 TO &N_DAYS. by 1;
 									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
 										/* For each day in window make adjustment to SocialDistancing */
-										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
 									%END;
                                     OUTPUT; 
                                 END;
@@ -46,7 +46,7 @@ X_IMPORT: parameters.sas
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
 				/* construct BETA with additive changes */
 				%IF &ISOChangeLoop > 0 %THEN %DO;
-					BETA = BETA 
+					BETAv = BETA 
 					%DO j = 1 %TO &ISOChangeLoop;
 						%DO j2 = 1 %TO &&ISOChangeWindow&j;
 							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
@@ -56,13 +56,13 @@ X_IMPORT: parameters.sas
 					;
 				%END;
 				%ELSE %DO;
-					BETA = BETA;
+					BETAv = BETA;
 				%END;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
+				DERT.S_N = -BETAv*S_N*I_N;
 				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
+				DERT.E_N = BETAv*S_N*I_N - SIGMAINV*E_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
 				DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
@@ -70,7 +70,7 @@ X_IMPORT: parameters.sas
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
                 by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
-				id TIME SocialDistancing;
+				id TIME SocialDistancing BETAv;
 			RUN;
 			QUIT;
 
@@ -80,7 +80,7 @@ X_IMPORT: parameters.sas
 				ModelType="SEIR with PROC (T)MODEL";
 X_IMPORT: keys.sas
 				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
-				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY BETAv=BETA) DROP=_ERRORS_ _MODE_ _TYPE_ BETA);
 				DAY = round(DAY,1);
                 *WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;

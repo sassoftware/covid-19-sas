@@ -1,5 +1,7 @@
 				/* START: Common Post-Processing Across each Model Type and Approach */
 
+					RT = BETA / GAMMA * &Population.;
+
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
 						IF NEWINFECTED < 0 THEN NEWINFECTED=0;

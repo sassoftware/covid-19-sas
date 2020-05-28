@@ -70,7 +70,7 @@ X_IMPORT: keys.sas
 														%IF &j > 1 %THEN %DO; ELSE %END;
 															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN DO;
 																BETAChange = BETAChange&j.;
-																SocialDistancing = SocialDistancing - &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+																SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
 															END;
 													%END;
 													ELSE BETAChange = 0;
@@ -85,7 +85,7 @@ X_IMPORT: keys.sas
 						END;
 					END;
 				END;
-				DROP LAG: byinc kBETA GAMMA BETAChange:;
+				DROP LAG: byinc kBETA BETAChange:;
 			RUN;
 
 			DATA DS_SEIR_SIM;
@@ -98,7 +98,7 @@ X_IMPORT: keys.sas
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 X_IMPORT: postprocess.sas
-				DROP CUM: counter SIGMAINV RECOVERYDAYS SOCIALD;
+				DROP CUM: counter SIGMAINV RECOVERYDAYS SOCIALD GAMMA;
 			RUN;
 
 			DATA DS_SEIR;
