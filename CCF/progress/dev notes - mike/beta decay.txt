@@ -34,6 +34,28 @@ sir ds:
     beta = beta - BETA_DECAY * adjustment (see andrew note)
 
 
+Trace SD:
+    orchestrate: SocialDistancing, SocialDistancingChange
+    parameters: BETA, BETAChange 
+    tmodel: R_T_Change
+
+%LET BETA = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &SocialDistancing.));
+%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * (1 - &&SocialDistancingChange&j));
+%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
+
+
+
+
+
+
+
+
+
+
+
+
 %EasyRun(
 scenario=with beta change,
 IncubationPeriod=0,
@@ -57,85 +79,5 @@ BETAShiftChange=-0.03,
 BETAShiftChangeLength=14	
 );
 
-		/* If this is a new scenario then run it */
-    	%IF &ScenarioExist = 0 %THEN %DO;
-			DATA DS_SIR_SIM;
-				FORMAT DATE DATE9.;
-X_IMPORT: keys.sas
-				/* prevent range below zero on each loop */
-					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
-                    RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
-					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
-						SOCIALD = SOCIALDfraction + &SocialDistancing;
-						SOCIALDfraction = round(SOCIALDfraction,.00001);
-						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
-							GAMMA = 1 / RECOVERYDAYS;
-							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-											&Population. * (1 - SOCIALD);
-							%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-								BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-												&Population. * (1 - &&SocialDistancingChange&j);
-							%END;
-							byinc = 0.1;
-							DO DAY = 0 TO &N_DAYS. by byinc;
-								IF DAY = 0 THEN DO;
-									S_N = &Population. - (&I. / &DiagnosedRate.) - &InitRecovered.;
-									I_N = &I./&DiagnosedRate.;
-									R_N = &InitRecovered.;
-									BETA = kBETA;
-									N = SUM(S_N, I_N, R_N);
-								END;
-								ELSE DO;
-									BETA = LAG_BETA;
-									S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
-									I_N = LAG_I + (BETA * LAG_S * LAG_I - GAMMA * LAG_I)*byinc;
-									R_N = LAG_R + (GAMMA * LAG_I)*byinc;
-									N = SUM(S_N, I_N, R_N);
-									SCALE = LAG_N / N;
-									IF S_N < 0 THEN S_N = 0;
-									IF I_N < 0 THEN I_N = 0;
-									IF R_N < 0 THEN R_N = 0;
-									S_N = SCALE*S_N;
-									I_N = SCALE*I_N;
-									R_N = SCALE*R_N;
-								END;
-								/* prepare for tomorrow (DAY+1) */
-									LAG_S = S_N;
-									E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
-									LAG_I = I_N;
-									LAG_R = R_N;
-									LAG_N = N;
-									/* todays date - need current date to determine when to put step change in Social Distancing*/
-										DATE = &DAY_ZERO. + int(DAY);
-									/* if today is a day for introducing a Social Distance Change then update BETA for tomorrow */
-										%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-											%IF j = 1 %THEN %DO;
-												IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-											%END; %ELSE %DO;
-												IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-											%END;
-										%END;
-									/* if today is a day for introducing a shift in Beta then implement and upate BETA_SHIFT for tomorrow */
-										IF &BETAShiftChangeLoop > 0 THEN DO;
-											%DO j = 1 %TO &BETAShiftChangeLoop.;
-												%IF j > 1 %THEN %DO; ELSE %END;
-												IF &&BETAShiftChangeDate&j <= date < &&BETAShiftChangeDate&j + &&BETAShiftChangeLength&j THEN BETA_SHIFT = (&&BETAShiftChange&j * &&BETAShiftChangeSD&j / &&BETAShiftChangeLength&j) / &Population.;
-											%END;
-											ELSE BETA_SHIFT = 0;
-										END;
-										ELSE DO;
-											BETA_SHIFT = -1 * BETA * &BETA_DECAY;
-										END;
-									LAG_BETA = BETA + BETA_SHIFT;
-									/* output if integer day */
-										IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-											DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
-											OUTPUT;
-										END;
-							END;
-						END;
-						END;
-					END;
-				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
-			RUN;
+
+
