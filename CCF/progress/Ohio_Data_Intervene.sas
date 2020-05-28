@@ -5,8 +5,8 @@
 libname store "&homedir.";
 
 							PROC SQL NOPRINT;
-								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.OHIO_SUMMARY;
-								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.OHIO_SUMMARY;
+								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
+								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.FIT_INPUT;
 							QUIT;
 
 %LET scenario=Scenario_DrS_00_40_run_12;
@@ -22,7 +22,7 @@ libname store "&homedir.";
 %LET Admission_Rate=0.075;
 %LET ICUPercent=0.45;
 %LET VentPErcent=0.35;
-%LET ISOChangeDate='23MAR2020'd;
+%LET ISOChangeDate='27MAR2020'd;
 %LET SocialDistancingChange=0.0;
 %LET ISOChangeDateTwo='30APR2020'd;
 %LET SocialDistancingChangeTwo=0.25;
@@ -143,7 +143,7 @@ libname store "&homedir.";
 %LET DOUBLING_TIME_T = %SYSEVALF(1/%SYSFUNC(LOG2(&BETA*&S - &GAMMA + 1)));
 
 
-				PROC MODEL DATA = STORE.OHIO_SUMMARY OUTMODEL=SEIRMOD /*NOPRINT*/; 
+				PROC MODEL DATA = STORE.FIT_INPUT(WHERE=(DATE>"14FEB2020"D)) OUTMODEL=SEIRMOD /*NOPRINT*/; 
 					/* Parameters of interest */
 					PARMS R0 &R_T. I0 &I. RI -1 DI &ISOChangeDate;
 					BOUNDS 1 <= R0 <= 13;
@@ -199,6 +199,115 @@ libname store "&homedir.";
 						FORMAT CUMULATIVE_CASE_COUNT COMMA10.;
 					RUN;
 					TITLE;TITLE2;TITLE3;
+
+
+
+
+				PROC TMODEL OUTMODEL=SEIRMOD; 
+					/* Parameters of interest */
+					PARMS R0 &R_T. RMIN 0.1 I0 &I. DI &ISOChangeDate. DSTD 10;
+					BOUNDS 1 <= R0 <= 10;
+					BOUNDS RMIN > 0;
+					/* Fixed values */
+					CONTROL SIGMA &SIGMA. 
+							INF &RecoveryDays.;
+					N = &Population.;
+					/* Coefficient parameterizations */
+					GAMMA = 1 / INF;
+					STEP = CDF('NORMAL',DATE, DI, DSTD);
+/*					BETA = (R0 + RI*STEP) * GAMMA / N;*/
+					beta = (R0*(1 - step) + Rmin*step)*gamma/N;
+					/* Differential equations */
+					/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
+					DERT.S_N = -BETA * S_N * I_N;
+					/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
+					DERT.E_N = BETA * S_N * I_N - SIGMA * E_N;
+					/* c. inflow from b. - outflow through recovery or death during illness*/
+					DERT.I_N = SIGMA * E_N - GAMMA * I_N;
+					/* d. Recovered and death humans through "promotion" inflow from c.*/
+					DERT.R_N = GAMMA * I_N;
+					CUMULATIVE_CASE_COUNT = I_N + R_N;
+					OUTVARS S_N E_N I_N R_N;
+					ESTIMATE R0, RMIN, I0, DI, DSTD, / OUTEST=PRMCOV OUTCOV;
+					/* Fit the data */
+					FIT CUMULATIVE_CASE_COUNT INIT=(S_N=&Population. E_N=0 I_N=I0 R_N=0) / TIME=TIME DYNAMIC OUTPREDICT OUTACTUAL OUT=EPIPRED 
+						OPTIMIZER=ORMP(OPTTOL=1E-5) LTEBOUND=1E-10 /*OUTEST=PARAMS*/
+/*						DATA = STORE.FIT_INPUT(WHERE=(CUMULATIVE_CASE_COUNT>0));*/
+						DATA = STORE.FIT_INPUT(WHERE=("14FEB2020"D<DATE<="01MAY2020"D));
+/*						%IF &HAVE_V151. = YES %THEN %DO; OPTIMIZER=ORMP(OPTTOL=1E-5) %END;;*/
+				QUIT;
+
+					data prmcov;
+	   set prmcov(rename=_est0=R0 rename=_est1=Rmin rename=_est2=i0 rename=_est3=di rename=_est4=dstd);
+		if _name_ = "_est0" then _name_="R0";
+		if _name_ = "_est1" then _name_="Rmin";
+		if _name_ = "_est2" then _name_="i0";
+		if _name_ = "_est3" then _name_="di";
+		if _name_ = "_est4" then _name_="dstd";
+   run;
+
+					DATA EPIPRED;
+						SET EPIPRED;
+						LABEL CUMULATIVE_CASE_COUNT='Cumulative Incidence';
+						FORMAT DATE DATE9.; 
+						DATE = &FIRST_CASE. + TIME -1;
+					run;
+					PROC SGPLOT DATA=EPIPRED;
+						WHERE _TYPE_  NE 'RESIDUAL';
+						TITLE "Actual v. Predicted Infections in Region";
+/*						TITLE2 "Initial R0: %SYSFUNC(round(&R0_FIT.,.01))";*/
+/*						TITLE3 "Adjusted R0 after %sysfunc(INPUTN(&CURVEBEND1., date10.), date9.): %SYSFUNC(round(&R0_BEND_FIT.,.01)) with Social Distancing of %SYSFUNC(round(%SYSEVALF(&SOC_DIST_FIT.*100)))%";*/
+						SERIES X=DATE Y=CUMULATIVE_CASE_COUNT / LINEATTRS=(THICKNESS=2) GROUP=_TYPE_  MARKERS NAME="cases";
+						FORMAT CUMULATIVE_CASE_COUNT COMMA10.;
+					RUN;
+					TITLE;TITLE2;TITLE3;
+
+   data _null_;
+      set prmcov(where=(_name_=""));
+      call symputx('r0est',round(R0,0.01));
+      call symputx('rminest',round(Rmin,0.01));
+      call symputx('i0est',round(i0,0.01));
+      call symputx('diest',put(di,mmddyy.));
+      call symputx('dstdest',round(dstd,0.1));
+   run;
+   
+ 
+   proc sql;
+      create table pred as
+      select date as pdate, CUMULATIVE_CASE_COUNT as predcases, e_n, r_n, s_n, i_n from EPIPRED where _type_="PREDICT";
+   
+      create table act as
+      select date as adate, CUMULATIVE_CASE_COUNT as actcases, e_n, r_n, s_n, i_n from EPIPRED where _type_="ACTUAL";
+   
+      create table plotfit as 
+      select pdate as date, predcases, actcases
+      from pred inner join act on pdate = adate;
+   quit;
+   
+   
+   data plotfit;
+      set plotfit  end=last;
+      pnewcases = predcases - lag(predcases);
+      anewcases = actcases - lag(actcases);
+      label pnewcases='Daily New Cases';
+      label anewcases='Daily New Cases';
+      if last then call symputx("endfit",put(date,mmddyy.));;
+   run;
+ 
+ 
+
+   /*Plot results*/
+   title2 "Fit of Cumulative Infections (R0=&r0est Rmin=&rminest i0=&i0est di=&diest dstd=&dstdest)";
+   
+      
+   proc sgplot data=plotfit;
+       series x=date y=pnewcases / lineattrs=(thickness=2)  markers name="cases";
+       series x=date y=anewcases / lineattrs=(thickness=2)  markers name="cases";
+       format pnewcases anewcases comma10.;
+   run;
+   title;
+   title2;
+
 
 								/* DATA FOR PROC TMODEL APPROACHES */
 				DATA DINIT(Label="Initial Conditions of Simulation"); 
