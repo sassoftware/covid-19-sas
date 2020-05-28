@@ -14,7 +14,10 @@ To use the work in these projects, a SAS environment is required.  Refer to the 
 This first entry is a collaboration between the Cleveland Clinic and SAS Institute. Explore [the /CCF folder](./CCF)
 for code and documentation about the model implementation.
 
-This project is also the engine for an interactive visual interface available at https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html  The web-based interface does not require a local SAS environment.
+### How to experience this project and learn more
+Experts from Cleveland Clinic and SAS will present about this project and its impact during SAS Global Forum (virtual, online) on June 16, 2020.  [Visit the event site to register](https://www.sas.com/en_us/events/sas-global-forum/agenda.html) or to view the on-demand presentation after the event.
+
+This project is also the engine for an [interactive visual interface that is hosted by SAS](https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html), available now.  The web-based interface does not require a local SAS environment.
 
 ![](./CCF/images/ui_demo.gif)
 
