@@ -10,7 +10,6 @@ X_IMPORT: parameters.sas
                     E_N = &E.;
                     I_N = &I. / &DiagnosedRate.;
                     R_N = &InitRecovered.;
-                    *R0  = &R_T.;
                     /* prevent range below zero on each loop */
                     DO SIGMAfraction = 0.8 TO 1.2 BY 0.1;
 					SIGMAINV = 1/(SIGMAfraction*&SIGMA.);
@@ -18,20 +17,23 @@ X_IMPORT: parameters.sas
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction * &RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
                                 GAMMA = 1 / RECOVERYDAYS;
                                 BETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
                                                 &Population. * (1 - SOCIALD);
-								R_T = BETA / GAMMA * &Population.;
-								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+								%DO j = 1 %TO &ISOChangeLoop;
 									BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-													&Population. * (1 - &&SocialDistancingChange&j);
-									R_T_Change&j = BETAChange&j / GAMMA * &Population.;
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 								%END;
+								SocialDistancing = SOCIALD;	
                                 DO TIME = 0 TO &N_DAYS. by 1;
+									%IF &ISOChangeLoop > 0 %THEN %DO j = 1 %TO &ISOChangeLoop;
+										/* For each day in window make adjustment to SocialDistancing */
+										IF  &&ISOChangeDate&j < &DAY_ZERO + TIME <= &&ISOChangeDate&j + &&ISOChangeWindow&j THEN SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+									%END;
                                     OUTPUT; 
                                 END;
                             END;
@@ -42,32 +44,25 @@ X_IMPORT: parameters.sas
 
 			%IF &HAVE_V151 = YES %THEN %DO; PROC TMODEL DATA = DINIT NOPRINT; performance nthreads=4 bypriority=1 partpriority=1; %END;
 			%ELSE %DO; PROC MODEL DATA = DINIT NOPRINT; %END;
-				/* PARAMETER SETTINGS */ 
-                PARMS N &Population.;
-                BOUNDS 1 <= R_T <= 13;
-				%LET jmax = %SYSFUNC(countw(&SocialDistancingChange.,:));
-				RESTRICT R_T > 0 %DO j = 1 %TO &jmax; , R_T_Change&j > 0 %END;;
-				%IF &jmax = 0 %THEN %DO; BETA = BETA; %END;
-				%ELSE %DO;
-					%DO j = 1 %TO &jmax;
-						%LET j2 = %eval(&j + 1);
-						%IF &j = 1 %THEN %DO; 
-							change_0 = (TIME < (&&ISOChangeDate&j - &DAY_ZERO));
-						%END;
-						%IF &j = &jmax %THEN %DO;
-							change_&j = (TIME >= (&&ISOChangeDate&j - &DAY_ZERO));
-						%END;
-						%ELSE %DO;
-							change_&j = ((TIME >= (&&ISOChangeDate&j - &DAY_ZERO.)) & (TIME < (&&ISOChangeDate&j2 - &DAY_ZERO.)));
-						%END;
+				/* construct BETA with additive changes */
+				%IF &ISOChangeLoop > 0 %THEN %DO;
+					BETAv = BETA 
+					%DO j = 1 %TO &ISOChangeLoop;
+						%DO j2 = 1 %TO &&ISOChangeWindow&j;
+							/* apply a BETAChange for each day after ISOChangeDate up to number of days in ISOChangeWindow */
+							- (&DAY_ZERO + TIME > &&ISOChangeDate&j + &j2 - 1) * BETAChange&j
+						%END;	
 					%END;
-					BETA = change_0*R_T*GAMMA/N %DO j = 1 %TO &jmax; + change_&j*R_T_Change&j*GAMMA/N %END;; 
+					;
+				%END;
+				%ELSE %DO;
+					BETAv = BETA;
 				%END;
 				/* DIFFERENTIAL EQUATIONS */ 
 				/* a. Decrease in healthy susceptible persons through infections: number of encounters of (S,I)*TransmissionProb*/
-				DERT.S_N = -BETA*S_N*I_N;
+				DERT.S_N = -BETAv*S_N*I_N;
 				/* b. inflow from a. -Decrease in Exposed: alpha*e "promotion" inflow from E->I;*/
-				DERT.E_N = BETA*S_N*I_N - SIGMAINV*E_N;
+				DERT.E_N = BETAv*S_N*I_N - SIGMAINV*E_N;
 				/* c. inflow from b. - outflow through recovery or death during illness*/
 				DERT.I_N = SIGMAINV*E_N - GAMMA*I_N;
 				/* d. Recovered and death humans through "promotion" inflow from c.*/
@@ -75,6 +70,7 @@ X_IMPORT: parameters.sas
 				/* SOLVE THE EQUATIONS */ 
 				SOLVE S_N E_N I_N R_N / TIME=TIME OUT = TMODEL_SEIR_SIM; 
                 by SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
+				id TIME SocialDistancing BETAv;
 			RUN;
 			QUIT;
 
@@ -84,14 +80,14 @@ X_IMPORT: parameters.sas
 				ModelType="SEIR with PROC (T)MODEL";
 X_IMPORT: keys.sas
 				RETAIN counter cumulative_sum_fatality cumulative_Sum_Market_Fatality;
-				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY) DROP=_ERRORS_ _MODE_ _TYPE_);
+				SET TMODEL_SEIR_SIM(RENAME=(TIME=DAY BETAv=BETA) DROP=_ERRORS_ _MODE_ _TYPE_ BETA);
 				DAY = round(DAY,1);
                 *WHERE SIGMAfraction=1 and RECOVERYDAYSfraction=1 and SOCIALDfraction=0;
 				BY SIGMAfraction RECOVERYDAYSfraction SOCIALDfraction;
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 X_IMPORT: postprocess.sas
-				DROP CUM: counter SIGMAINV BETA GAMMA R_T:;
+				DROP CUM: counter SIGMAINV GAMMA BETAChange:;
 			RUN;
 
 			DATA TMODEL_SEIR; 

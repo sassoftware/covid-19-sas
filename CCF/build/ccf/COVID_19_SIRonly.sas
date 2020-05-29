@@ -69,9 +69,9 @@ You need to evaluate each parameter for your population of interest.
 	QUIT;
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
-                SocialDistancing,ISOChangeDate,ISOChangeEvent,SocialDistancingChange,
+                SocialDistancing,ISOChangeDate,ISOChangeEvent,ISOChangeWindow,SocialDistancingChange,
                 MarketSharePercent,Admission_Rate,ICUPercent,VentPErcent,FatalityRate,
-                plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=3,DAY_ZERO='13MAR2020'd,BETA_DECAY=0.0,
+                plots=no,N_DAYS=365,DiagnosedRate=1.0,E=0,SIGMA=3,DAY_ZERO='13MAR2020'd,
                 ECMO_RATE=0.03,DIAL_RATE=0.05,HOSP_LOS=7,ICU_LOS=9,VENT_LOS=10,ECMO_LOS=6,DIAL_LOS=11);
 
     DATA INPUTS;
@@ -86,6 +86,7 @@ You need to evaluate each parameter for your population of interest.
             SocialDistancing            BEST12.    
             ISOChangeDate               $200.    
             ISOChangeEvent              $200.
+            ISOChangeWindow             $50.
             SocialDistancingChange      $50.     
             MarketSharePercent          BEST12.    
             Admission_Rate              BEST12.    
@@ -98,7 +99,6 @@ You need to evaluate each parameter for your population of interest.
             E                           BEST12.
             SIGMA                       BEST12.
             DAY_ZERO                    DATE9.
-            BETA_DECAY                  BEST12.
             ECMO_RATE                   BEST12.
             DIAL_RATE                   BEST12.
             HOSP_LOS                    $100.
@@ -118,6 +118,7 @@ You need to evaluate each parameter for your population of interest.
             SocialDistancing            =   "Initial Social Distancing (% Reduction from Normal)"
             ISOChangeDate               =   "Dates of Change in Social Distancing"
             ISOChangeEvent              =   "Event label associated with ISOChangeDate"
+            ISOChangeWindow             =   "Number of Days to rollout Social Distancing Change"
             SocialDistancingChange      =   "Social Distancing Change (% Reduction from Normal)"
             MarketSharePercent          =   "Anticipated Share (%) of Regional Hospitalized Patients"
             Admission_Rate              =   "Percentage of Infected Patients Requiring Hospitalization"
@@ -130,7 +131,6 @@ You need to evaluate each parameter for your population of interest.
             E                           =   "Number of Exposed Patients on Day 0"
             SIGMA                       =   "Days Exposed before Infected"
             DAY_ZERO                    =   "Date of the First COVID-19 Case"
-            BETA_DECAY                  =   "Daily Reduction (%) of Beta"
             ECMO_RATE                   =   "Percentage of Hospitalized Patients Requiring ECMO"
             DIAL_RATE                   =   "Percentage of Hospitalized Patients Requiring Dialysis"
             HOSP_LOS                    =   "Hospital Length of Stay"
@@ -149,6 +149,7 @@ You need to evaluate each parameter for your population of interest.
         SocialDistancing            =   &SocialDistancing.;
         ISOChangeDate               =   "&ISOChangeDate.";
         ISOChangeEvent              =   "&ISOChangeEvent.";
+        ISOChangeWindow             =   "&ISOChangeWindow.";
         SocialDistancingChange      =   "&SocialDistancingChange.";
         MarketSharePercent          =   &MarketSharePercent.;
         Admission_Rate              =   &Admission_Rate.;
@@ -161,7 +162,6 @@ You need to evaluate each parameter for your population of interest.
         E                           =   &E.;
         SIGMA                       =   &SIGMA.;
         DAY_ZERO                    =   &DAY_ZERO.;
-        BETA_DECAY                  =   &BETA_DECAY.;
         ECMO_RATE                   =   &ECMO_RATE.;
         DIAL_RATE                   =   &DIAL_RATE.;
         HOSP_LOS                    =   "&HOSP_LOS.";
@@ -228,14 +228,22 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
-					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
+					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
+					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-												&Population. * (1 - &&SocialDistancingChange&j));
-						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
 						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET ISOChangeWindow&j = %scan(&ISOChangeWindow.,&j,:);
+
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j));
+						%IF &j = 1 %THEN %LET R_T_Change&j = %SYSEVALF(&R_T - &&BETAChange&j / &GAMMA. * &Population.);
+						%ELSE %DO;
+							%LET j2=%eval(&j-1);
+							%LET R_T_Change&j = %SYSEVALF(&&R_T_Change&j2 - &&BETAChange&j / &GAMMA. * &Population.);
+						%END;
+
 						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
@@ -245,7 +253,7 @@ You need to evaluate each parameter for your population of interest.
 				
         DATA SCENARIOS;
             set SCENARIOS sashelp.vmacro(in=i where=(scope='EASYRUN'));
-            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB','SDCHANGETITLE','J') then delete;
+            if name in ('SQLEXITCODE','SQLOBS','SQLOOPS','SQLRC','SQLXOBS','SQLXOPENERRS','SCENARIOINDEX_BASE','PULLLIB','SDCHANGETITLE','J','J2') then delete;
 				FORMAT ScenarioName $50. ScenarioNameUnique $100. ScenarioSource $10. ScenarioUser $25.;
 				ScenarioName="&Scenario.";
 				ScenarioIndex=&ScenarioIndex.;
@@ -334,14 +342,22 @@ You need to evaluate each parameter for your population of interest.
 				%LET R_T = %SYSEVALF(&BETA. / &GAMMA. * &Population.);
 
 				%IF %sysevalf(%superq(SocialDistancingChange)=,boolean)=0 %THEN %DO;
-					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing):;
-					%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+					%LET sdchangetitle=Adjust R0 (Date / Event / R0 / Social Distancing Shift):;
+					%LET ISOChangeLoop = %SYSFUNC(countw(&SocialDistancingChange.,:));
+					%DO j = 1 %TO &ISOChangeLoop;
 						%LET SocialDistancingChange&j = %scan(&SocialDistancingChange.,&j,:);
-						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
-												&Population. * (1 - &&SocialDistancingChange&j));
-						%LET R_T_Change&j = %SYSEVALF(&&BETAChange&j / &GAMMA. * &Population.);
 						%LET ISOChangeDate&j = %scan(&ISOChangeDate.,&j,:);
 						%LET ISOChangeEvent&j = %scan(&ISOChangeEvent.,&j,:);
+						%LET ISOChangeWindow&j = %scan(&ISOChangeWindow.,&j,:);
+
+						%LET BETAChange&j = %SYSEVALF(((2 ** (1 / &doublingtime.) - 1) + &GAMMA.) / 
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j));
+						%IF &j = 1 %THEN %LET R_T_Change&j = %SYSEVALF(&R_T - &&BETAChange&j / &GAMMA. * &Population.);
+						%ELSE %DO;
+							%LET j2=%eval(&j-1);
+							%LET R_T_Change&j = %SYSEVALF(&&R_T_Change&j2 - &&BETAChange&j / &GAMMA. * &Population.);
+						%END;
+
 						%LET sdchangetitle = &sdchangetitle. (%sysfunc(INPUTN(&&ISOChangeDate&j., date10.), date9.) / &&ISOChangeEvent&j / %SYSFUNC(round(&&R_T_Change&j,.01)) / %SYSEVALF(&&SocialDistancingChange&j.*100)%);
 					%END; 
 				%END;
@@ -363,16 +379,16 @@ You need to evaluate each parameter for your population of interest.
 					DO RECOVERYDAYSfraction = 0.8 TO 1.2 BY 0.1;
                     RECOVERYDAYS = RECOVERYDAYSfraction*&RecoveryDays;
 					RECOVERYDAYSfraction = round(RECOVERYDAYSfraction,.00001);
-                        DO SOCIALDfraction = -.2 TO .2 BY 0.1;
+                        DO SOCIALDfraction = -.1 TO .1 BY 0.025;
 						SOCIALD = SOCIALDfraction + &SocialDistancing;
 						SOCIALDfraction = round(SOCIALDfraction,.00001);
 						IF SOCIALD >=0 and SOCIALD<=1 THEN DO; 
 							GAMMA = 1 / RECOVERYDAYS;
 							kBETA = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
 											&Population. * (1 - SOCIALD);
-							%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
+							%DO j = 1 %TO &ISOChangeLoop;
 								BETAChange&j = ((2 ** (1 / &doublingtime.) - 1) + GAMMA) / 
-												&Population. * (1 - &&SocialDistancingChange&j);
+												&Population. * ((&&SocialDistancingChange&j)/&&ISOChangeWindow&j);
 							%END;
 							byinc = 0.1;
 							DO DAY = 0 TO &N_DAYS. by byinc;
@@ -381,10 +397,11 @@ You need to evaluate each parameter for your population of interest.
 									I_N = &I./&DiagnosedRate.;
 									R_N = &InitRecovered.;
 									BETA = kBETA;
+										SocialDistancing = SOCIALD;
 									N = SUM(S_N, I_N, R_N);
 								END;
 								ELSE DO;
-									BETA = LAG_BETA * (1- &BETA_DECAY.);
+									BETA = LAG_BETA;
 									S_N = LAG_S - (BETA * LAG_S * LAG_I)*byinc;
 									I_N = LAG_I + (BETA * LAG_S * LAG_I - GAMMA * LAG_I)*byinc;
 									R_N = LAG_R + (GAMMA * LAG_I)*byinc;
@@ -397,29 +414,38 @@ You need to evaluate each parameter for your population of interest.
 									I_N = SCALE*I_N;
 									R_N = SCALE*R_N;
 								END;
-								LAG_S = S_N;
-								E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
-								LAG_I = I_N;
-								LAG_R = R_N;
-								LAG_N = N;
-								DATE = &DAY_ZERO. + int(DAY); /* need current date to determine when to put step change in Social Distancing */
-								%DO j = 1 %TO %SYSFUNC(countw(&SocialDistancingChange.,:));
-									%IF j = 1 %THEN %DO;
-										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-									%END; %ELSE %DO;
-										IF date = &&ISOChangeDate&j THEN BETA = BETAChange&j.;
-									%END;
-								%END;
-								LAG_BETA = BETA;
-								IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
-									DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
-									OUTPUT;
-								END;
+								/* prepare for tomorrow (DAY+1) */
+									/* remember todays values for SEIR */
+										LAG_S = S_N;
+										E_N = 0; LAG_E = E_N; /* placeholder for post-processing of SIR model */
+										LAG_I = I_N;
+										LAG_R = R_N;
+										LAG_N = N;
+										LAG_BETA = BETA;
+									/* output integer days and make BETA adjustments */
+										IF abs(DAY - round(DAY,1)) < byinc/10 THEN DO;
+											DATE = &DAY_ZERO. + round(DAY,1); /* brought forward from post-processing: examine location impact on ISOChangeDate* */
+											/* implement shifts in SocialDistancing on and over date ranges */
+												%IF &ISOChangeLoop > 0 %THEN %DO;
+													%DO j = 1 %TO &ISOChangeLoop;
+														%IF &j > 1 %THEN %DO; ELSE %END;
+															IF &&ISOChangeDate&j <= date < &&ISOChangeDate&j + &&ISOChangeWindow&j THEN DO;
+																BETAChange = BETAChange&j.;
+																SocialDistancing = SocialDistancing + &&SocialDistancingChange&j/&&ISOChangeWindow&j;
+															END;
+													%END;
+													ELSE BETAChange = 0;
+												%END;
+												%ELSE %DO; BETAChange = 0; %END;
+											/* adjust BETA for tomorrow */
+												LAG_BETA = BETA - BETAChange;
+											OUTPUT;
+										END;
 							END;
 						END;
 						END;
 					END;
-				DROP LAG: BETA byinc kBETA GAMMA BETAChange:;
+				DROP LAG: byinc kBETA BETAChange:;
 			RUN;
 
 		/* use the center point of the ranges for the request scenario inputs */
@@ -433,6 +459,8 @@ You need to evaluate each parameter for your population of interest.
 					IF first.SOCIALDfraction THEN counter = 1;
 					ELSE counter + 1;
 				/* START: Common Post-Processing Across each Model Type and Approach */
+
+					RT = BETA / GAMMA * &Population.;
 
 					NEWINFECTED=LAG&IncubationPeriod(SUM(LAG(SUM(S_N,E_N)),-1*SUM(S_N,E_N)));
 						IF counter < &IncubationPeriod THEN NEWINFECTED = .;
@@ -558,7 +586,7 @@ You need to evaluate each parameter for your population of interest.
 						drop k temp;
 
 				/* END: Common Post-Processing Across each Model Type and Approach */
-				DROP CUM: counter RECOVERYDAYS SOCIALD;
+				DROP CUM: counter RECOVERYDAYS SOCIALD GAMMA;
 			RUN;
 
 			DATA DS_SIR;
@@ -655,6 +683,50 @@ You need to evaluate each parameter for your population of interest.
                 YAXIS LABEL="Daily Occupancy";
             RUN;
             TITLE; TITLE2; TITLE3;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "BETA Parameter Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=BETA / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="BETA Parameter" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "Social Distancing Input Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=SocialDistancing / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="Social Distancing" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
+
+            PROC SGPANEL DATA=work.MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex.;
+				PANELBY MODELTYPE / NOVARNAME;
+                TITLE "Reproduction Number Over Time - All Approaches";
+                TITLE2 "&sdchangetitle.";
+                SERIES X=DATE Y=RT / GROUP=MODELTYPE LINEATTRS=(THICKNESS=2);
+                COLAXIS LABEL="Date" GRID;
+                ROWAXIS LABEL="Reproduction Number" GRID;
+                %IF &ISOChangeLoop > 0 %THEN %DO;
+                    REFLINE %DO j=1 %TO &ISOChangeLoop; &&ISOChangeDate&j %END; / axis=x ;
+                %END;
+            RUN;
+            TITLE; TITLE2;
+
         %END;	
     %END;
 
@@ -805,6 +877,9 @@ You need to evaluate each parameter for your population of interest.
 								ADMIT_DATE = "Date of Admission"
 								DATE = "Date of Infection"
 								DAY = "Day of Pandemic"
+								BETA = "Beta Parameter (Contact Rate)"
+								RT = "Reproduction Number"
+								SocialDistancing = "Social Distancing (% Reduction from Normal)"
 								HOSP = "Newly Hospitalized"
 								HOSPITAL_OCCUPANCY = "Hospital Census"
 								MARKET_HOSP = "Regional Newly Hospitalized"
@@ -1032,7 +1107,8 @@ You need to evaluate each parameter for your population of interest.
 		informat VentPErcent best32. ;
 		informat ISOChangeDate $200. ;
 		informat ISOChangeEvent $200. ;
-		informat SocialDistancingChange $16. ;
+		informat ISOChangeWindow $50. ;
+		informat SocialDistancingChange $50. ;
 		informat FatalityRate best32. ;
 		informat plots $3. ;
 		format scenario $25. ;
@@ -1049,7 +1125,8 @@ You need to evaluate each parameter for your population of interest.
 		format VentPErcent best12. ;
 		format ISOChangeDate $200. ;
 		format ISOChangeEvent $200. ;
-		format SocialDistancingChange $16. ;
+		format ISOChangeWindow $50. ;
+		format SocialDistancingChange $50. ;
 		format FatalityRate best12. ;
 		format plots $3. ;
 		input
@@ -1067,6 +1144,7 @@ You need to evaluate each parameter for your population of interest.
 					VentPErcent
 					ISOChangeDate $
 					ISOChangeEvent $
+					ISOChangeWindow $
 					SocialDistancingChange  $
 					FatalityRate
 					plots  $

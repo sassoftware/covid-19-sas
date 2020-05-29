@@ -20,10 +20,12 @@ ICUPercent=0.45,
 VentPErcent=0.35,
 ISOChangeDate='31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,
 ISOChangeEvent=Social Distance:Essential Businesses:Shelter In Place:Reopen,
-SocialDistancingChange=0:0.2:0.5:0.3,
+ISOChangeWindow=1:1:1:1,
+SocialDistancingChange=0:0.2:0.3:-0.2,
 FatalityRate=0,
 plots=YES	
 );
+/* 0:0.2:0.5:0.3 */
 	
 %EasyRun(
 scenario=Scenario_DrS_00_40_run_1,
@@ -40,10 +42,12 @@ ICUPercent=0.45,
 VentPErcent=0.35,
 ISOChangeDate='31MAR2020'd:'06APR2020'd:'20APR2020'd:'01MAY2020'd,
 ISOChangeEvent=Social Distance:Essential Businesses:Shelter In Place:Reopen,
-SocialDistancingChange=0:0.4:0.5:0.3,
+ISOChangeWindow=1:1:1:1,
+SocialDistancingChange=0:0.4:0.1:-0.2,
 FatalityRate=0,
 plots=YES	
 );
+/* 0:0.4:0.5:0.3 */
 	
 %EasyRun(
 scenario=Scenario_DrS_00_40_run_12,
@@ -60,7 +64,9 @@ ICUPercent=0.45,
 VentPErcent=0.35,
 ISOChangeDate='31MAY2020'd:'06AUG2020'd:'20AUG2020'd:'01SEP2020'd,
 ISOChangeEvent=Social Distance:Essential Businesses:Shelter In Place:Reopen,
-SocialDistancingChange=0.25:0.5:0.4:0.2,
+ISOChangeWindow=1:1:1:1,
+SocialDistancingChange=0.25:0.25:-0.1:-0.2,
 FatalityRate=0,
 plots=YES	
 );
+/* 0.25:0.5:0.4:0.2 */
