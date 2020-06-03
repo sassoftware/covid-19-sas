@@ -1,4 +1,4 @@
-# COVID-19 Epidemiological Scenario and Critcial Resource Utilization Prediction Program
+# COVID-19 Epidemiological Scenario and Critical Resource Utilization Prediction Program
 
 This is a collaboration space for SAS and others to understand, model, and mitigate COVID-19 through analytics. The projects here include:
 
@@ -15,6 +15,7 @@ This first entry is a collaboration between the Cleveland Clinic and SAS Institu
 for code and documentation about the model implementation.
 
 ### How to experience this project and learn more
+
 Experts from Cleveland Clinic and SAS will present about this project and its impact during SAS Global Forum (virtual, online) on June 16, 2020.  [Visit the event site to register](https://www.sas.com/en_us/events/sas-global-forum/agenda.html) or to view the on-demand presentation after the event.
 
 This project is also the engine for an [interactive visual interface that is hosted by SAS](https://www.sas.com/en_us/trials/software/epidemiological-scenario-analysis/form.html), available now.  The web-based interface does not require a local SAS environment.
@@ -41,4 +42,5 @@ the SAS programs that are used to retrieve and prepare this data for reporting.
 ---
 
 ## Preferred Reference for Citation
+
 Cleveland Clinic and SAS COVID-19 Development Team. Developer Documentation [Internet]. 2020. Available from: https://github.com/sassoftware/covid-19-sas
