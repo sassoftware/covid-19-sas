@@ -35,5 +35,6 @@
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 				

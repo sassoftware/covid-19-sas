@@ -201,6 +201,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 				
         DATA SCENARIOS;
@@ -315,6 +316,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 						*/
 		/* If this is a new scenario then run it */
@@ -685,6 +687,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 						*/
 		/* If this is a new scenario then run it */
@@ -1050,6 +1053,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 						*/
 		/* If this is a new scenario then run it */
@@ -1433,6 +1437,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 						*/
 		/* If this is a new scenario then run it */
@@ -1809,6 +1814,7 @@ You need to evaluate each parameter for your population of interest.
 				%END;
 				%ELSE %DO;
 					%LET sdchangetitle=No Adjustment to R0 over time;
+					%LET ISOChangeLoop = 0;
 				%END;
 						*/
 		/* If this is a new scenario then run it */
