@@ -44,8 +44,8 @@ Visually interact with this code to investigate your scenarios using a user inte
 
 # Fitting to Actual Case Counts
 The `/examples/` folder contains two example approaches for using `PROC TMODEL` to fit a curve to actual case counts in a data set stored as `STORE.FIT_INPUT`:
-- `Ohio_Data_Intervene_Point.sas` - Fit a curve with a point change in social distancing on a single, estimated date
-- `Ohio_Data_Intervene_Smooth.sas` - Fit a curve with a smooth change in social distancing spread out over an estimated window of dates
+- `Ohio_Data_Intervene_Point.sas` - Fit a curve with a sudden, point change in social distancing on a single, estimated date
+- `Ohio_Data_Intervene_Smooth.sas` - Fit a curve with a smooth, gradual change in social distancing spread out over an estimated window of dates
 
 # Explore the Inputs, Outputs and Details in the Wiki
 [Explore the wiki](https://github.com/sassoftware/covid-19-sas/wiki/CC%3A-Home)
