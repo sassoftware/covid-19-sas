@@ -40,7 +40,12 @@ Visually interact with this code to investigate your scenarios using a user inte
 - **CREATE your data feed for the fitting method**
     - The example code reads input cases from `fit_input.csv`.
     - This file can be replaced with a similar .csv or the section of the code can be updated to read your data feed for case counts.  Search `COVID_19.sas` for `/* START: STORE.FIT_INPUT READ */` and you will find the section that does this import which has helpful commenting on this adaptation.  
-    - An example of tying this section to a data feed from a US State website can be found in `\examples\fit_input_ohio.sas`
+    - An example of tying this section to a data feed from a US State website can be found in `/examples/fit_input_ohio.sas`
+
+# Fitting to Actual Case Counts
+The `/examples/` folder contains two example approaches for using `PROC TMODEL` to fit a curve to actual case counts in a data set stored as `STORE.FIT_INPUT`:
+- `Ohio_Data_Intervene_Point.sas` - Fit a curve with a point change in social distancing on a single, estimated date
+- `Ohio_Data_Intervene_Smooth.sas` - Fit a curve with a smooth change in social distancing spread out over an estimated window of dates
 
 # Explore the Inputs, Outputs and Details in the Wiki
 [Explore the wiki](https://github.com/sassoftware/covid-19-sas/wiki/CC%3A-Home)
