@@ -1,0 +1,28 @@
+@import '../../assets/style/colors';
+
+.bx--side-nav {
+    background-color: white;
+    transition: transform 0.2s;
+    z-index: 5999 !important; //The default value is 6000, for some reason the tolltip doesn't work then but with 5999 it magically works
+}
+
+.bx--side-nav__link:hover {
+    cursor: pointer;
+}
+
+.sideItems {
+    span{
+        font-size: 16px !important;
+    }
+    a {
+        height: 50px;
+    }
+    button{
+        height: 50px !important;
+    }
+}
+
+.sideActions {
+    display: flex;
+    flex-direction: row;
+}

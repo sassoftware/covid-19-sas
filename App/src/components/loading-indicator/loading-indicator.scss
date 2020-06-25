@@ -1,0 +1,93 @@
+.loadingIndicator {
+  position: relative;
+  right: 10px;
+  top: 0px;
+  height: 100%;
+  transition: ease-in-out .2s;
+
+  .arrowUp {
+    height: 0;
+    width: 0;
+    border-right: 10px solid transparent;
+    border-left: 10px solid transparent;
+    border-bottom: 10px solid #fff;
+    right: 23px;
+    top: -10px;
+    position: absolute;
+  }
+  .pulseLoader {
+    //margin-bottom: 30px;
+    position: relative;
+    height:100%;
+    display: flex;
+    .mainSpinner {
+      font-size: 30px;
+      color: rgba(255, 255, 255, 0.7);
+      align-self: center;
+      i {
+        &:hover {
+          color: rgba(255, 255, 255, 0.9);
+        }
+        &:focus, &:active {
+          color: rgba(255, 255, 255, 1);
+        }
+      }
+    }
+    .status {
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      &.success {
+        color: rgba(255, 255, 255, 1);
+        i {
+          &:hover {
+            color: rgba(255, 255, 255, 0.9);
+          }
+          &:active, &:focus{
+            color: rgba(255, 255, 255, 0.8);
+          }
+        }
+      }
+      &.fail {
+        color: rgba(255, 0, 0, 0.8);
+        i {
+          &:hover {
+            color: rgba(255, 0, 0, 0.9)
+          }
+          &:active, &:focus{
+            color: rgba(255,0,0,1)
+          }
+        }
+      }
+    }
+    i {
+      cursor: pointer;
+    }
+  }
+  .dropDownListOff {
+    display: none;
+  }
+}
+
+.dropDownList {
+  position: absolute;
+  top: 60px;
+  right: -16px;
+  width: 250px;
+  transition: ease-in-out .2s;
+  background: #fbfbfb;
+  border: 1px solid #e4e4e4;
+  border-radius: 2px;
+  .item {
+    padding: 7px;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.dot {
+  margin-top: 5px;
+}

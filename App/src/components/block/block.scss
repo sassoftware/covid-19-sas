@@ -1,0 +1,22 @@
+.block {
+  margin: 10px 30px 10px 0px;
+  width: 200px;
+  height: 200px;
+  text-align: center;
+  border-bottom: 4px solid;
+
+  .blockTitle {
+    font-weight: 600;
+    margin: 25px 10px 10px 10px;
+    height: 30px;
+  }
+
+  .number {
+    font-size: 68px;
+    font-weight: 600;
+  }
+
+  .desc {
+    font-size: 12px;
+  }
+}

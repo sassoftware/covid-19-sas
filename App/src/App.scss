@@ -1,0 +1,130 @@
+// To override bootstap set variables from node_modules/bootstrap/scss/_variables.scss
+// before importing bootstrap
+// @import './assets/style/colors.scss';         // example of overriden bootstrap $primary color
+// @import '~bootstrap/scss/bootstrap';
+@import './assets/style/fontawesome.css';
+@import './assets/style/style.scss';
+//@import '~carbon-components/scss/globals/scss/styles'; //imports everything, complies too long
+@import './assets/fonts/montserrat.scss';
+
+$feature-flags: (
+        ui-shell: true,
+        grid-columns-16: true,
+);
+@import './assets/style/carbonComponents.scss';
+
+.test__layout {
+  margin-top: $layout-06;
+}
+
+.noMargin {
+  margin-left: 0 !important;
+  transition: margin 0.2s;
+}
+
+.withMargin {
+  transition: margin 0.2s;
+
+}
+
+.bx--content {
+  background-color: $gray-10;
+  height: 100%;
+}
+
+.App {
+  font-family: Montserrat, "Helvetica Neue", Arial, sans-serif;
+  height: 100%;
+  .main {
+    height: 100%;
+    display: flex;
+    max-height: calc(100vh - 30px);
+    max-width: 100%;
+    padding-top: 48px;
+    position: relative;
+    z-index: 100;
+    .mainContainer {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 2rem 2rem 30px 2rem;
+      position: relative;
+    }
+  }
+  .modal-open.modal {
+    height: calc(100vh - 200px);
+  }
+
+  .bx--tab-content {
+    background: #fff;
+  }
+  .bx--tabs--container .bx--tabs__nav-item--selected:not(.bx--tabs__nav-item--disabled) .bx--tabs__nav-link, .bx--tabs--container .bx--tabs__nav-item--selected:hover:not(.bx--tabs__nav-item--disabled) .bx--tabs__nav-link {
+    background: #fff;
+  }
+  .bx--label {
+    font-size: 0.8rem;
+  }
+  .bx--side-nav__item {
+    margin-bottom: 0;
+  }
+  .bx--btn--primary {
+    background-color: #0378CD;
+  }
+  .bx--btn--primary:hover {
+    background-color: #014a7f;
+  }
+  .bx--btn--primary:focus {
+    border-color: #014a7f;
+    box-shadow: inset 0 0 0 2px #014a7f, inset 0 0 0 3px #ffffff;
+    background-color: #014a7f;
+
+  }
+  .bx--btn--secondary {
+    background-color: rgb(118, 131, 150);
+  }
+  .bx--btn--secondary:hover {
+    background-color: rgb(4, 48, 75);
+  }
+  .bx--btn--secondary:focus {
+    border-color: rgb(4, 48, 75);
+    box-shadow: inset 0 0 0 2px rgb(4, 48, 75), inset 0 0 0 3px #ffffff;
+    background-color: rgb(4, 48, 75);
+  }
+  .bx--btn--tertiary {
+    border-color: #0378CD;
+    color: #0378CD;
+  }
+  .bx--btn--tertiary:hover {
+    background-color: #014a7f;
+  }
+  .bx--btn--tertiary:focus {
+    border-color: #0378CD;
+    box-shadow: inset 0 0 0 2px #0378CD, inset 0 0 0 3px #ffffff;
+    background-color: #0378CD;
+  }
+  .bx--side-nav__submenu:focus {
+    outline: 2px solid #0378CD;
+    outline-offset: -2px;
+  }
+  a.bx--tabs__nav-link, a.bx--tabs__nav-link:focus {
+    width: 12rem;
+  }
+
+  .bx--date-picker__icon {
+    left: 7rem;
+  }
+}
+
+/* Set toastr z-index higher than header */
+#toast-container {
+  position: fixed;
+  z-index: 9999999999999;
+  /*overrides*/
+}
+
+@media (min-width: 42rem) {
+  .bx--modal-container .bx--modal-header, .bx--modal-container .bx--modal-content, .bx--modal-container .bx--modal-content__regular-content {
+    padding-right: 1rem;
+  }
+}
+

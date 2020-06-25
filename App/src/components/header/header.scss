@@ -1,0 +1,72 @@
+@import '../../assets/style/colors.scss';
+@import '../../assets/style/style.scss';
+
+.bx--header {
+  background-color: $darkBlue;
+}
+
+a.bx--header__menu-item {
+  &:hover {
+    background-color: $hoverGray;
+  }
+}
+
+.bx--header__name {
+  &:hover {
+    cursor: pointer;
+  }
+  .bx--header__name--prefix {
+    font-size: 14px;
+    font-weight: bold;
+  }
+}
+
+.bx--tooltip__trigger {
+  background-color: inherit;
+}
+
+.bx--header__global {
+  align-items: center;
+}
+
+.bx--header__action:focus {
+  border: none;
+}
+
+.bx--header__action:hover {
+  background: none;
+}
+
+.title {
+  color: white
+}
+
+.title:hover {
+  cursor: pointer;
+}
+
+.logo {
+  height: inherit;
+  margin-left: $layout-02;
+  padding: 0;
+}
+
+.name {
+  padding: 0 !important;
+}
+
+svg.headerIcon, .panelTrigger > * {
+  fill: white;
+  cursor: pointer;
+}
+
+.info-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 200px;
+}
+
+.info-bar-drop {
+  position: relative;
+}

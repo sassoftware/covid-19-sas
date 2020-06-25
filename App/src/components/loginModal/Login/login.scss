@@ -1,0 +1,33 @@
+@import "../../../../node_modules/carbon-components/scss/globals/scss/spacing";
+@import '../../../assets/style/colors';
+
+.bx--modal-close {
+  display: none;
+}
+
+.bx--modal-container{
+  height: 354px; //This is the default value
+}
+
+@media only screen and (max-width: 672px){
+  .form-container {
+    width: 264px;
+  }
+}
+
+.loginBtn {
+  font-size: 20px;
+  padding-right: $spacing-05;
+}
+
+.loginForm {
+  width: 100%;
+  margin: 0 auto;
+  padding: 15px;
+  .input-group-prepend {
+    padding: 0 10px;
+    i {
+      align-self: center;
+    }
+  }
+}

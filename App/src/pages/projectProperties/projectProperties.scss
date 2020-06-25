@@ -1,0 +1,25 @@
+@import '../../assets/style/colors';
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.qrModal {
+    .bx--modal-container{
+        
+        height: 1000px;
+        width: 1000px;
+    }
+    
+    .bx--modal-content {
+        padding: 50px;
+        text-align: center
+    }
+}
+
+.info {
+    background-color: white;
+    padding: $spacing-01;
+
+    .propertie {
+        margin: $spacing-07
+    }
+
+}

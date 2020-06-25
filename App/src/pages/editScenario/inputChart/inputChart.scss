@@ -1,0 +1,47 @@
+@import "~carbon-components/scss/globals/scss/spacing";
+@import '../../../assets/style/colors.scss';
+
+.handleValue {
+  margin-top: -18px;
+  margin-left: -15px;
+  white-space: nowrap;
+  font-size: 12px;
+
+}
+
+.data__container > * {
+  margin-top: $spacing-05;
+}
+
+.rc-slider {
+  min-height: 24px;
+}
+
+.chartWrapper {
+  padding: 10px 0;
+  margin-bottom: 15px;
+  .rangeWrapper {
+    padding: 0 50px 0 115px;
+  }
+}
+
+.datePreview {
+  font-size: 12px;
+}
+
+.rc-slider-track {
+  background-color: $brand;
+  height: 1px;
+  margin-top: 2px;
+}
+
+.rc-slider-handle {
+  border: solid 2px $brand;
+  background: $brand;
+}
+
+.rc-slider-rail {
+  height: 1px;
+  margin-top: 2px;
+  background-color: $brand;
+}

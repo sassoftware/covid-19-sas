@@ -1,0 +1,25 @@
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.test {
+  margin-top: $layout-06;
+}
+
+.data__container > * {
+  margin-top: $spacing-05;
+}
+
+.rc-slider {
+  min-height: 24px;
+}
+
+.chartWrapper {
+  padding: 15px;
+  margin-bottom: 15px;
+  .rangeWrapper {
+    padding: 0 20px;
+  }
+}
+
+.datePreview {
+  font-size: 12px;
+}

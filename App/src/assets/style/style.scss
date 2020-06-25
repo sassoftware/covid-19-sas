@@ -1,0 +1,196 @@
+// Import Main styles for this application
+@import './colors.scss';
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.flex                { display: flex; }
+.flex-important      { display: flex!important; }
+.flex-row            { flex-direction: row; }
+.flex-column         { flex-direction: column; }
+.flex-row-reverse    { flex-direction: row-reverse; }
+.flex-column-reverse { flex-direction: column-reverse; }
+
+.flex-wrap         { flex-wrap: wrap; }
+.flex-nowrap       { flex-wrap: nowrap; }
+.flex-wrap-reverse { flex-wrap: wrap-reverse; }
+.flex-fill         { flex: 1 1 auto; }
+.flex-grow-0       { flex-grow: 0; }
+.flex-grow-1       { flex-grow: 1; }
+.flex-shrink-0     { flex-shrink: 0; }
+.flex-shrink-1     { flex-shrink: 1; }
+
+.justify-content-start   { justify-content: flex-start; }
+.justify-content-end     { justify-content: flex-end; }
+.justify-content-center  { justify-content: center; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-around  { justify-content: space-around; }
+
+.align-items-start    { align-items: flex-start; }
+.align-items-end      { align-items: flex-end; }
+.align-items-center   { align-items: center; }
+.align-items-baseline { align-items: baseline; }
+.align-items-stretch  { align-items: stretch; }
+
+.align-content-start   { align-content: flex-start; }
+.align-content-end     { align-content: flex-end; }
+.align-content-center  { align-content: center; }
+.align-content-between { align-content: space-between; }
+.align-content-around  { align-content: space-around; }
+.align-content-stretch { align-content: stretch; }
+
+.align-self-auto     { align-self: auto; }
+.align-self-start    { align-self: flex-start; }
+.align-self-end      { align-self: flex-end; }
+.align-self-center   { align-self: center; }
+.align-self-baseline { align-self: baseline; }
+.align-self-stretch  { align-self: stretch; }
+
+.w100 { width: 100%; }
+.mb0  { margin-bottom: 0px}
+.mb10 { margin-bottom: 10px}
+.mb15 { margin-bottom: 15px}
+.mb30 { margin-bottom: 30px}
+.mt10 { margin-top: 10px}
+.mt15 { margin-top: 15px}
+.mt30 { margin-top: 30px}
+
+.sp0 {margin: 0}
+.sp1 { margin: $spacing-01}
+.sp2 { margin: $spacing-02}
+.sp3 { margin: $spacing-03}
+.sp4 { margin: $spacing-04}
+.sp5 { margin: $spacing-05}
+.sp6 { margin: $spacing-06}
+.sp7 { margin: $spacing-07}
+.sp8 { margin: $spacing-08}
+.sp9 { margin: $spacing-09}
+
+.spt1 { margin-top: $spacing-01} // spacing top
+.spt2 { margin-top: $spacing-02}
+.spt3 { margin-top: $spacing-03}
+.spt4 { margin-top: $spacing-04}
+.spt5 { margin-top: $spacing-05}
+.spt6 { margin-top: $spacing-06}
+.spt7 { margin-top: $spacing-07}
+.spt8 { margin-top: $spacing-08}
+.spt9 { margin-top: $spacing-09}
+
+.spb1 { margin-bottom: $spacing-01} // spacing bottom
+.spb2 { margin-bottom: $spacing-02}
+.spb3 { margin-bottom: $spacing-03}
+.spb4 { margin-bottom: $spacing-04}
+.spb5 { margin-bottom: $spacing-05}
+.spb6 { margin-bottom: $spacing-06}
+.spb7 { margin-bottom: $spacing-07}
+.spb8 { margin-bottom: $spacing-08}
+.spb9 { margin-bottom: $spacing-09}
+
+.spl1 { margin-left: $spacing-01} // spacing left
+.spl2 { margin-left: $spacing-02}
+.spl3 { margin-left: $spacing-03}
+.spl4 { margin-left: $spacing-04}
+.spl5 { margin-left: $spacing-05}
+.spl6 { margin-left: $spacing-06}
+.spl7 { margin-left: $spacing-07}
+.spl8 { margin-left: $spacing-08}
+.spl9 { margin-left: $spacing-09}
+
+.spr1 { margin-right: $spacing-01} // spacing right
+.spr2 { margin-right: $spacing-02}
+.spr3 { margin-right: $spacing-03}
+.spr4 { margin-right: $spacing-04}
+.spr5 { margin-right: $spacing-05}
+.spr6 { margin-right: $spacing-06}
+.spr7 { margin-right: $spacing-07}
+.spr8 { margin-right: $spacing-08}
+.spr9 { margin-right: $spacing-09}
+
+
+// Layout spacing
+.ly1 { margin: $layout-01}
+.ly2 { margin: $layout-02}
+.ly3 { margin: $layout-03}
+.ly4 { margin: $layout-04}
+.ly5 { margin: $layout-05}
+.ly6 { margin: $layout-06}
+.ly7 { margin: $layout-07}
+
+.lyt1 { margin-top: $layout-01}
+.lyt2 { margin-top: $layout-02}
+.lyt3 { margin-top: $layout-03}
+.lyt4 { margin-top: $layout-04}
+.lyt5 { margin-top: $layout-05}
+.lyt6 { margin-top: $layout-06}
+.lyt7 { margin-top: $layout-07}
+
+.lyb1 { margin-bottom: $layout-01}
+.lyb2 { margin-bottom: $layout-02}
+.lyb3 { margin-bottom: $layout-03}
+.lyb4 { margin-bottom: $layout-04}
+.lyb5 { margin-bottom: $layout-05}
+.lyb6 { margin-bottom: $layout-06}
+.lyb7 { margin-bottom: $layout-07}
+
+.lyl1 { margin-left: $layout-01}
+.lyl2 { margin-left: $layout-02}
+.lyl3 { margin-left: $layout-03}
+.lyl4 { margin-left: $layout-04}
+.lyl5 { margin-left: $layout-05}
+.lyl6 { margin-left: $layout-06}
+.lyl7 { margin-left: $layout-07}
+
+.lyr1 { margin-right: $layout-01} // spacing right
+.lyr2 { margin-right: $layout-02}
+.lyr3 { margin-right: $layout-03}
+.lyr4 { margin-right: $layout-04}
+.lyr5 { margin-right: $layout-05}
+.lyr6 { margin-right: $layout-06}
+.lyr7 { margin-right: $layout-07}
+
+.mr0 {margin-right: 0}
+.ml0 {margin-left: 0}
+.pr0 {padding-right: 0}
+.pl0 {padding-left: 0}
+
+.h100 {
+  height: calc(100vh - 90px);
+}
+.fullWidth {
+  width: 100%;
+}
+
+.log-item {
+  margin-right: $layout-07;
+  margin-left:  $layout-07;
+  padding: $spacing-05;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  // Maybe its prettier without the border
+  // border-style: solid;
+  // border-width: 2px;
+  // border-color: $primary;
+}
+
+
+.close {
+  text-align: right;
+
+  svg:hover {
+    cursor: pointer;
+  }
+}
+
+@media only screen and (max-width: 950px){
+  .log-item {
+    flex-direction: column;
+    margin: $layout-02
+  }
+}
+
+
+.grayBackground {
+  background-color: $gray-10;
+}
+
+

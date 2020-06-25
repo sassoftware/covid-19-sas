@@ -1,0 +1,18 @@
+.bh-title {
+  font-size: 22px;
+}
+
+.bh-info-container {
+  margin: 4px;
+
+  .bh-info {
+    font-size: 12px;
+    opacity: 0.6;
+  }
+}
+
+.blocks {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}

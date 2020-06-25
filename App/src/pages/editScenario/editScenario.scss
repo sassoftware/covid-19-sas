@@ -1,0 +1,130 @@
+@import '../../assets/style/colors.scss';
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.scenario {
+
+  #socdist__panel {
+    max-width: 1200px;
+  }
+  #hnv__panel {
+    max-width: 1000px;
+  }
+  #model__panel {
+   max-width: 1000px;
+  }
+  .scenarioTitle {
+    font-size: 22px;
+    .project {
+      font-size: 30px;
+    }
+    .sc {
+      font-size: 26px;
+    }
+  }
+  .scenarioSubtitle {
+    font-size: 13px;
+  }
+
+  .bx--data-table {
+    td {
+      width: 16% !important;
+    }
+  }
+  .bx--number input[type='number'] {
+    min-width: 90px;
+    text-align: center;
+  }
+  .numberInput {
+    .bx--number__input-wrapper {
+      max-width: 120px;
+    }
+  }
+
+  .mainTable {
+    .bx--btn--primary {
+      padding: $spacing-04;
+    }
+    .bx--form-item {
+      max-width: 224px !important;
+    }
+  }
+
+  .bx--date-picker.bx--date-picker--single .bx--date-picker__input {
+    width: 8rem;
+  }
+  .inputGroup {
+    .sliderWrapper {
+      width: 100%;
+    }
+    .bx--form-item.bx--text-input-wrapper {
+      max-width: 60px;
+    }
+    .textInput {
+      width: 60px;
+      text-align: center;
+    }
+  }
+
+  //svg {
+  //  fill: white;
+  //}
+  .bx--number__control-btn svg {
+    fill: black;
+    position: relative;
+  }
+
+  // @media only screen and (max-width:1200px){
+  //     .background {
+  //         width: 100%;
+  //     }
+  // }
+
+  // @media only screen and (max-width:1100px){
+  //     .mainTable {
+  //         flex-direction: column;
+  //     }
+  // }
+
+  .ag-header-cell {
+    width: 16%;
+  }
+
+  .error {
+    border-color: red;
+    border-width: 2px;
+    transition: border 0.5;
+    border-style: solid;
+  }
+
+  .hnv {
+    //.bx--form-item {
+    //  display: block;
+    //  max-width: 200px;
+    //}
+    //.sliderGroup {
+    //  max-width: 500px;
+    //}
+    //.numberInput {
+    //  width: 190px;
+    //}
+
+  }
+
+}
+
+.rc-slider-track {
+  background-color: $brand;
+  height: 2px;
+  margin-top: 1px;
+}
+
+.rc-slider-handle {
+  border: solid 2px $brand;
+  background: $brand;
+}
+
+.rc-slider-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
