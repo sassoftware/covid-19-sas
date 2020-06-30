@@ -71,7 +71,6 @@ const OutputChart = () => {
 	const {fetchedProject} = useSelector(state => state.project);
 	const [scenario, setScenario] = useState(fetchedProject ? fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
 	const [options, setOptions] = useState(null)
-	const [charts, setCharts] = useState([])
 	const [tooltip, setTooltip] = useState(initalTooltipState)
 	const tooltipRef = React.useRef(tooltip)
 	const leftPanel = useSelector(state => state.home.leftPanel)
@@ -80,7 +79,7 @@ const OutputChart = () => {
 	useEffect(() => {
 		setTimeout(() => {
 			if (Highcharts.charts.length) {
-				Highcharts.charts.forEach(chart => chart.reflow())
+				Highcharts.charts.forEach(chart => chart && chart.reflow())
 			}
 		}, 250)
 	}, [leftPanel])
@@ -88,7 +87,9 @@ const OutputChart = () => {
 	useEffect(() => {
 		const newScenario = fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName);
 		setScenario(newScenario)
+	}, [fetchedProject, scenarioName])
 
+	useEffect(() => {
 		//Check both conditions because of old projects
 		if (scenario.lastRunModel !== undefined && scenario.lastRunModel !== null) {
 			const rangeValue = [
@@ -119,36 +120,66 @@ const OutputChart = () => {
 		} else {
 			setOptions(null);
 		}
-	}, [fetchedProject, scenarioName, scenario])
+	}, [scenario])
 
 	useEffect(() => {
-		options && Highcharts.charts.length < 5 && options.forEach((opt, i) => {
-			const chartDiv = document.createElement('div');
-			if (i === 0) {
-				chartDiv.className = "spb7";
-			}
-			else {
-				chartDiv.className = "spb5";
-			}
-			chartDiv.id = 'chart' + i;
-			chartDiv.addEventListener('mousemove', handleTooltip)
-			chartDiv.addEventListener('touchmove', handleTooltip)
-			chartDiv.addEventListener('touchstart', handleTooltip)
-			const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
-			document.getElementById(containerElement).appendChild(chartDiv);
-			setCharts(charts.push(new Highcharts.chart(chartDiv, opt)))
-		})
+		if (options) {
+			options.forEach((opt, i) => {
+				const elId = 'chart' + i
+
+				// Check if dom is already craeted
+				let chartElement = document.getElementById(elId)
+
+				// If dom is not created create one and assign a class to it
+				if (!chartElement) {
+					chartElement = document.createElement('div');
+					chartElement.id = elId
+					if (i === 0) {
+						chartElement.className = "spb7";
+					}
+					else {
+						chartElement.className = "spb5";
+					}
+				}
+
+				chartElement.addEventListener('mousemove', handleTooltip)
+				chartElement.addEventListener('touchmove', handleTooltip)
+				chartElement.addEventListener('touchstart', handleTooltip)
+				const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
+				document.getElementById(containerElement).appendChild(chartElement);
+
+				// remove old chart
+				const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
+				if (currentChart) {
+					currentChart.destroy()
+				}
+				new Highcharts.chart(elId, opt)
+			})
+		}
 	}, [options])
 
+	const normalizeChartIndex = chart => {
+		if (!chart) {
+			throw new Error('Chart object is missing')
+			return
+		}
+		let id = chart.renderTo.id
+		if (!id) {
+			return null
+		} else {
+			id = id.split('chart')[1]
+			return id
+		}
+	}
 
 	const handleTooltip = (e) => {
 		let chart, point, range, i, event;
-
+		const hCharts = Highcharts.charts
 		// currentChart - chart where user is currently hovering
-		const currentChart = charts.find(c => c.renderTo.id === e.currentTarget.id)
+		const currentChart = hCharts.find(c => c && c.renderTo.id === e.currentTarget.id)
 
 		// otherCharts - charts in group which points has to be highlighted and
-		const otherCharts = charts.filter(c => c.renderTo.id !== e.currentTarget.id)
+		const otherCharts = hCharts.filter(c => c && c.renderTo.id && c.renderTo.id !== e.currentTarget.id)
 
 		event = currentChart.pointer.normalize(e);
 		point = currentChart.series[0].searchPoint(event, true);
@@ -159,9 +190,11 @@ const OutputChart = () => {
 
 			// create array with values for shared tooltip
 			const newArray = [...tooltipRef.current]
-			newArray[currentChart.index - 1].line = point.y
-			newArray[currentChart.index - 1].low = range.options.low
-			newArray[currentChart.index - 1].high = range.options.high
+			const normalizedIndex = normalizeChartIndex(currentChart)
+
+			newArray[normalizedIndex].line = point.y
+			newArray[normalizedIndex].low = range.options.low
+			newArray[normalizedIndex].high = range.options.high
 
 			// highlight linePoint and get values of points on other charts
 			for (i = 0; i < otherCharts.length; i = i + 1) {
@@ -172,9 +205,10 @@ const OutputChart = () => {
 				let rangePoint = chart.series[1].points[point.index]
 				if (linePoint && rangePoint) {
 					const newArray = [...tooltipRef.current]
-					newArray[chart.index - 1].line = linePoint.y
-					newArray[chart.index - 1].low = rangePoint.options.low
-					newArray[chart.index - 1].high = rangePoint.options.high
+					const normalizedIndex = normalizeChartIndex(chart)
+					newArray[normalizedIndex].line = linePoint.y
+					newArray[normalizedIndex].low = rangePoint.options.low
+					newArray[normalizedIndex].high = rangePoint.options.high
 
 					tooltipRef.current = [...newArray]
 					setTooltip(newArray)
@@ -182,8 +216,6 @@ const OutputChart = () => {
 				}
 			}
 		}
-
-
 	}
 
 	return options ?

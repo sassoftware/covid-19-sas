@@ -135,7 +135,7 @@ const ProjectProperties = (props) => {
 							onClick={deleteProject}
 						/>
 					</OverflowMenu>
-					<h2>{fetchedProject.name}</h2>
+					<h2>{fetchedProject?.name}</h2>
 				</div>
 				{error && <InlineNotification kind={'error'} title={error}/>}
 				<div className={'info'}>
