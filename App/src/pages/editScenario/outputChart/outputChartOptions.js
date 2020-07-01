@@ -27,7 +27,7 @@ export const getOutputChartOptions = (props, scenarioObject, height = null) => {
 	const ecmoRange = []
 
 	props && props.forEach(item => {
-		let timestamp = new Date(adapterService.fromSasDateTime(item.datetime)).getTime()
+		let timestamp = new Date(adapterService.fromSasDateTime(item.datetime || item.DATETIME)).getTime()
 		// HOSP
 		hospLine.push([
 			timestamp,
@@ -1807,15 +1807,15 @@ function getChartOptions(line, range, options) {
 			// Secondary Y axis - axisId = 1
 			secondaryYAxis
 		],
-		"zAxis": [
-			{
-				"title": {
-					"enabled": false
-				},
-				"labels": {
-					"enabled": false
-				}
-			}
-		]
+		// "zAxis": [
+		// 	{
+		// 		"title": {
+		// 			"enabled": false
+		// 		},
+		// 		"labels": {
+		// 			"enabled": false
+		// 		}
+		// 	}
+		// ]
 	}
 }

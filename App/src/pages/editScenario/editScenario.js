@@ -38,7 +38,6 @@ const overflowProps = {
 		// onOpen: action('onOpen'),
 	}),
 	menuItem: () => ({
-		// className: 'some-class',
 		disabled: false,
 		requireTitle: false,
 		// onClick: action('onClick'),

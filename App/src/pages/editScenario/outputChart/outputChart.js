@@ -140,20 +140,23 @@ const OutputChart = () => {
 					else {
 						chartElement.className = "spb5";
 					}
+					chartElement.addEventListener('mousemove', handleTooltip)
+					chartElement.addEventListener('touchmove', handleTooltip)
+					chartElement.addEventListener('touchstart', handleTooltip)
+					const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
+					document.getElementById(containerElement).appendChild(chartElement);
+					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
+					if (currentChart) {
+						currentChart.destroy()
+					}
+					new Highcharts.chart(elId, opt)
+				} else {
+					// Update chart if it already exists
+					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
+					if (currentChart) {
+						currentChart.update(opt)
+					}
 				}
-
-				chartElement.addEventListener('mousemove', handleTooltip)
-				chartElement.addEventListener('touchmove', handleTooltip)
-				chartElement.addEventListener('touchstart', handleTooltip)
-				const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
-				document.getElementById(containerElement).appendChild(chartElement);
-
-				// remove old chart
-				const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
-				if (currentChart) {
-					currentChart.destroy()
-				}
-				new Highcharts.chart(elId, opt)
 			})
 		}
 	}, [options])
