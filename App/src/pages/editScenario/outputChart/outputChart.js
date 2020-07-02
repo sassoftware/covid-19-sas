@@ -143,6 +143,7 @@ const OutputChart = () => {
 					chartElement.addEventListener('mousemove', handleTooltip)
 					chartElement.addEventListener('touchmove', handleTooltip)
 					chartElement.addEventListener('touchstart', handleTooltip)
+					chartElement.addEventListener('mouseleave', cleanupCharts)
 					const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
 					document.getElementById(containerElement).appendChild(chartElement);
 					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
@@ -171,7 +172,7 @@ const OutputChart = () => {
 			return null
 		} else {
 			id = id.split('chart')[1]
-			return id
+			return parseInt(id)
 		}
 	}
 
@@ -192,7 +193,7 @@ const OutputChart = () => {
 			point.highlightPoint(e)
 
 			// create array with values for shared tooltip
-			const newArray = [...tooltipRef.current]
+			const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
 			const normalizedIndex = normalizeChartIndex(currentChart)
 
 			newArray[normalizedIndex].line = point.y
@@ -207,18 +208,30 @@ const OutputChart = () => {
 				let linePoint = chart.series[0].points[point.index]
 				let rangePoint = chart.series[1].points[point.index]
 				if (linePoint && rangePoint) {
-					const newArray = [...tooltipRef.current]
+					// const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
 					const normalizedIndex = normalizeChartIndex(chart)
 					newArray[normalizedIndex].line = linePoint.y
 					newArray[normalizedIndex].low = rangePoint.options.low
 					newArray[normalizedIndex].high = rangePoint.options.high
 
-					tooltipRef.current = [...newArray]
-					setTooltip(newArray)
+
 					linePoint.highlightPoint(e);
 				}
 			}
+			tooltipRef.current = [...newArray]
+			setTooltip(newArray)
 		}
+	}
+
+	const cleanupCharts = () => {
+		for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
+			let chart = Highcharts.charts[i];
+			chart.tooltip.hide()
+			chart.series.forEach(s => {
+				s.points.forEach(p => p.onMouseOut())
+			})
+		}
+		setTooltip(initalTooltipState)
 	}
 
 	return options ?
