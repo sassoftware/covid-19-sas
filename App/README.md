@@ -8,7 +8,7 @@ Frontline ER physician and Co-Creator of the Netflix series Pandemic, Ryan McGar
 
 This project explores a solution to the problem stated by Dr. McGarry. It implements an alternative interface to the same resource optimisation & forecasting code that powers the Visual Analytics-based CCF application in this repository. It is not as full-featured as the VA app, instead focusing on simplicity, minimal load time, and context switching efficiency.
 
-Usability within a clinical setting is a primary consideration. The interface and its components are designed for [stylus-based interaction](https://ieeexplore.ieee.org/document/4588449), to be usable while wearing gloves/PPE, and to run on easy-to-sterilize devices (i.e. tablets). While the design primarily targets iPad and Apple Pencil, the app it will work just as well on similar Android, Windows or ChromeOS stylus-enabled devices. It is shown here running on a 10.5" 2017 iPad Pro.  
+Usability within a clinical setting is a primary consideration. The interface and its components are designed for [stylus-based interaction](https://ieeexplore.ieee.org/document/4588449), to be usable while wearing gloves/PPE, and to run on easy-to-sterilize devices (i.e. tablets). While the design primarily targets iPad and Apple Pencil, the app will work just as well on similar Android, Windows or ChromeOS stylus-enabled devices. It is shown here running on a 10.5" 2017 iPad Pro.  
 
 <p align="center">
 <img src="./covid-app-ipad.gif">
