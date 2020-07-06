@@ -45,7 +45,7 @@ const ProjectProperties = (props) => {
 	const dispatch = useDispatch();
 	const history = useHistory();
 	const {projects} = useSelector(state => state.projectList)
-  const {uri} = useParams()
+  const {uri} = useParams() //This is used for initial render to see if the project should be fetched from the server
   const shareURL = window.location.href;
   const [clipNoification, setClipNotification] = useState(false);
 
