@@ -1,13 +1,14 @@
 import React, {useEffect, useState} from 'react'
 import {useSelector, useDispatch} from 'react-redux'
 import {useParams, useHistory} from 'react-router-dom';
-import {InlineNotification, OverflowMenu, OverflowMenuItem, Modal} from 'carbon-components-react'
+import {InlineNotification, OverflowMenu, OverflowMenuItem, Modal, Button} from 'carbon-components-react'
 import './projectProperties.scss'
 import {fetchSingleProject} from './projectActions'
 import ActionTypes from './ActionTypes'
 import QRcode from 'qrcode.react';
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import adapterService from '../../adapterService/adapterService'
+import { Share32 } from '@carbon/icons-react';
 
 export const QRModal = (props) => {
 	return (
@@ -44,7 +45,9 @@ const ProjectProperties = (props) => {
 	const dispatch = useDispatch();
 	const history = useHistory();
 	const {projects} = useSelector(state => state.projectList)
-	const {uri} = useParams()
+  const {uri} = useParams() //This is used for initial render to see if the project should be fetched from the server
+  const shareURL = window.location.href;
+  const [clipNoification, setClipNotification] = useState(false);
 
 	const {fetchedProject, selectedProject, save} = useSelector(state => state.project);
 	const [error, setError] = useState('')
@@ -88,7 +91,34 @@ const ProjectProperties = (props) => {
 				}
 			}
 		})
-	}
+  }
+  
+  const share = (action) => {
+
+		if (save) {
+			dispatch({
+				type: AlertActionTypes.OPEN_CONFIRMATION,
+				payload: {
+					open: true,
+					action,
+					params: null,
+					message: "Changes to this project have not been saved and will not be seen on any other device, do you still wish to proceed?"
+				}
+			})
+		}
+		else {
+      action();
+		}
+  }
+
+  const copy = () => {
+    navigator.clipboard.writeText(shareURL);
+    setClipNotification(true);
+
+    setTimeout(() => {
+      setClipNotification(false)
+    }, 2000)
+  }
 
 	const openQR = () => {
 
@@ -138,7 +168,7 @@ const ProjectProperties = (props) => {
 					<h2>{fetchedProject?.name}</h2>
 				</div>
 				{error && <InlineNotification kind={'error'} title={error}/>}
-				<div className={'info'}>
+				<div className={'info lyb4'}>
 					<h4 className={'propertie'}>Project Properties</h4>
 
 					<div className={'propertie'}>
@@ -158,6 +188,30 @@ const ProjectProperties = (props) => {
 
 				</div>
 				{/* <NewProject open={openDialog} close={() => setOpenDialog(false)} edit={project.name} /> */}
+
+        {
+          shareURL !== ''?  <div className={'share info flex flex-row lyb4'}>
+
+              <div className={'shareInfo'}>
+                <h4 className={'propertie'}>Share project</h4>
+                <div className={'propertie '}>
+                    <p>Project URL</p>
+                    <p className={'link'}>{shareURL}</p>
+                </div>
+                <Button renderIcon={Share32} className={'propertie'} onClick={() => share(copy)} >Copy URL</Button>
+              </div>
+              <div  className={'propertie'}>
+                <QRcode onClick={() => share(() => props.openQR(shareURL))} 
+                        className={'qr'} 
+                        value={shareURL} 
+                        size={220} />
+              </div>
+            </div>: null
+        }
+
+        {
+          clipNoification? <InlineNotification kind="info" title="URL copied to clipboard"/> :null
+        }
 
 			</div> : <h1>Project is not loaded</h1>}
 		</div>

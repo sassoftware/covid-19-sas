@@ -23,3 +23,26 @@
     }
 
 }
+
+.share {
+  .link {
+    color: rgb(140, 140, 140);
+    word-wrap: break-word;
+  }
+
+  .shareInfo{
+    width: 60%;
+  }
+
+  .qr:hover{
+    cursor: pointer;
+
+  }
+
+  @media only screen and (max-width: 1200px){
+    .qr {
+     width: 150px !important;
+     height: 150px !important;
+    }
+  }
+}
