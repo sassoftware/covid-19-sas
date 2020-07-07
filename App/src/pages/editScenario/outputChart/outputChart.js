@@ -144,6 +144,7 @@ const OutputChart = () => {
 					chartElement.addEventListener('touchmove', handleTooltip)
 					chartElement.addEventListener('touchstart', handleTooltip)
 					chartElement.addEventListener('mouseleave', cleanupCharts)
+					chartElement.addEventListener('touchend', cleanupCharts)
 					const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
 					document.getElementById(containerElement).appendChild(chartElement);
 					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
