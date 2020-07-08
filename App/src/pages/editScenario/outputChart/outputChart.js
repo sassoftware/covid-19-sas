@@ -251,11 +251,11 @@ const OutputChart = () => {
 				<div className={'flex justify-content-end'}>
 					<ContentSwitcher
 						selectionMode="manual"
-						onChange={(e) => console.log('change', e)}
+						onChange={onModelChange}
 					>
-          <Switch name="tmodel_seir" text="SEIR Model" onClick={onModelChange} />
-          <Switch name="tmodel_sir" text="SIR Model" onClick={onModelChange} />
-          <Switch name="tmodel_seir_fit_i" text="SEIR FIT I" onClick={onModelChange} />
+          <Switch name="tmodel_seir" text="SEIR Model" />
+          <Switch name="tmodel_sir" text="SIR Model" />
+          <Switch name="tmodel_seir_fit_i" text="SEIR FIT I" />
         </ContentSwitcher>
 				</div>
 			</div>

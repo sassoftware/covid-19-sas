@@ -15,7 +15,7 @@ let middlewares = []
 
 middlewares.push(thunk)
 
-const showLogs = true
+const showLogs = false
 
 // if (process.env.NODE_ENV !== 'production') {
 // 	if (showLogs) {
