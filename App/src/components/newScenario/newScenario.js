@@ -13,8 +13,8 @@ const NewScenario = (props) => {
 	const [name, setName] = useState('');
 	const [error, setError] = useState({status: false, message: ''});
 
-	const {fetchedProject, selectedProject} = useSelector(state => state.project);
-	const projectUri = selectedProject && selectedProject.uri.split('/').pop()
+	const {projectContent, projectMetadata} = useSelector(state => state.project);
+	const projectUri = projectMetadata && projectMetadata.uri.split('/').pop()
 
 
 	const submit = () => {
@@ -24,17 +24,17 @@ const NewScenario = (props) => {
 			return;
 		}
 
-		if (fetchedProject === null || selectedProject === null) {
+		if (projectContent === null || projectMetadata === null) {
 			setError({status: true, message: "No project selected, select one from the list or create a new one"})
 			return;
 		}
 
-		if (fetchedProject.savedScenarios === undefined) {
+		if (projectContent.savedScenarios === undefined) {
 			setError({status: true, message: "You are trying to use an old project with an outdated structure"})
 			return;
 		}
 
-		if (fetchedProject.savedScenarios.filter(conf => conf.scenario === name).length !== 0) {
+		if (projectContent.savedScenarios.filter(conf => conf.scenario === name).length !== 0) {
 			setError({status: true, message: "A configuration with this name already exists"})
 			return;
 		}
@@ -51,7 +51,7 @@ const NewScenario = (props) => {
 					payload: {
 						configuration: configuration,
 						count: 0, //How much to delete
-						index: fetchedProject.savedScenarios.length
+						index: projectContent.savedScenarios.length
 					}
 				})
 
@@ -59,9 +59,9 @@ const NewScenario = (props) => {
 				history.push(`/project/${projectUri}/scenario/${configuration.scenario}`)
 			}
 			else {
-				const index = fetchedProject.savedScenarios.findIndex(el => el.scenario === props.edit);
+				const index = projectContent.savedScenarios.findIndex(el => el.scenario === props.edit);
                 const configuration = {
-                    ...fetchedProject.savedScenarios.find(el => el.scenario === props.edit),
+                    ...projectContent.savedScenarios.find(el => el.scenario === props.edit),
                     scenario: name
 				}
 
@@ -85,7 +85,7 @@ const NewScenario = (props) => {
 			// let blob = new Blob([forBlob], {type: "octet/stream"});
 			//
 			// debugger
-			// const res = adapterService.updateFile(dispatch, selectedProject.uri, blob, project.lastModified);
+			// const res = adapterService.updateFile(dispatch, projectMetadata.uri, blob, project.lastModified);
 			//
 			// res.then(r => console.log("ADD CONFIGURATION RESULT: ", r))
 			// 	.catch(e => console.log("ADD CONFIGURATION ERROR: ", e))

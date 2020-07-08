@@ -68,8 +68,8 @@ const initalTooltipState = [
 
 const OutputChart = () => {
 	const {scenarioName} = useParams()
-	const {fetchedProject} = useSelector(state => state.project);
-	const [scenario, setScenario] = useState(fetchedProject ? fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
+	const {projectContent} = useSelector(state => state.project);
+	const [scenario, setScenario] = useState(projectContent ? projectContent.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
 	const [options, setOptions] = useState(null)
 	const [tooltip, setTooltip] = useState(initalTooltipState)
 	const tooltipRef = React.useRef(tooltip)
@@ -85,9 +85,9 @@ const OutputChart = () => {
 	}, [leftPanel])
 
 	useEffect(() => {
-		const newScenario = fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName);
+		const newScenario = projectContent.savedScenarios.find(conf => conf.scenario === scenarioName);
 		setScenario(newScenario)
-	}, [fetchedProject, scenarioName])
+	}, [projectContent, scenarioName])
 
 	useEffect(() => {
 		//Check both conditions because of old projects

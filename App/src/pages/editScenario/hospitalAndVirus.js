@@ -27,7 +27,7 @@ const HospitalAndVirus = (props) => {
 	const dispatch = useDispatch();
 	const setScenarioToStore = (conf, index) => _setScenarioToStore(dispatch, Object.assign({}, conf, {oldModel: true}), index)
 	const name = history.location.pathname.split('/').reverse()[0];
-	const project = useSelector(state => state.project.fetchedProject);
+	const project = useSelector(state => state.project.projectContent);
 	const [scenario, setScenario] = useState(project.savedScenarios.find(conf => conf.scenario === name))
 	const scenarioIndex = project.savedScenarios.findIndex(conf => conf.scenario === name)
 

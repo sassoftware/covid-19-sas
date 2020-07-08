@@ -96,7 +96,7 @@ class VariwideChart extends React.Component {
 
 function mapStateToProps(state) {
 	return {
-		project: state.project.fetchedProject
+		project: state.project.projectContent
 	}
 }
 
