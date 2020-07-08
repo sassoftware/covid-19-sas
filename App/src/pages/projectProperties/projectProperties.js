@@ -186,6 +186,12 @@ const ProjectProperties = (props) => {
 
 					</div>
 
+          <div className={'propertie'}>
+						<p>Project last modified on:</p>
+						<p style={{fontWeight: 'bold'}}>{selectedProject.modifiedTimeStamp}</p>
+
+					</div>
+
 				</div>
 				{/* <NewProject open={openDialog} close={() => setOpenDialog(false)} edit={project.name} /> */}
 
