@@ -24,6 +24,8 @@ moment.updateLocale('en', {
 	monthsShort: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
 });
 
+const modelList = ['tmodel_sir', 'tmodel_seir', 'tmodel_seir_fit_i']
+
 const overflowProps = {
 	menu: () => ({
 		direction: 'bottom',
@@ -119,7 +121,9 @@ const EditScenario = (props) => {
 		const data = adapterService.createTable(preparedData, 'INPUT_SCENARIOS');
 		try {
 			const res = await adapterService.call(dispatch, 'getData/runModel', data)
-			const newScenario = Object.assign({}, scenario, {lastRunModel: res.tmodel_seir, oldModel: false});
+			const models = {}
+			modelList.forEach(m => models[m] = res[m])
+			const newScenario = Object.assign({}, scenario, {lastRunModel: models, oldModel: false});
 
 			const index = fetchedProject.savedScenarios.findIndex(el => el.scenario === scenario.scenario);
 

@@ -3,14 +3,16 @@ import Highcharts from 'highcharts'
 import HC_more from 'highcharts/highcharts-more.js'
 //import {tmodel_seir} from '../mock/outputData' 							// used for testing
 import {getOutputChartOptions} from './outputChartOptions'
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {useParams} from 'react-router'
-import {Column, Row} from 'carbon-components-react'
+import {Column, Row, Switch, ContentSwitcher} from 'carbon-components-react'
 import './outputChart.scss'
 import moment from 'moment'
 import constants from '../../../config/constants'
 import HC_patternFill from "highcharts-pattern-fill";
 import highchartsMore from 'highcharts/highcharts-more';
+import ActionTypes from './ActionTypes'
+import {setModel} from './runModelActions'
 
 highchartsMore(Highcharts);
 HC_patternFill(Highcharts);
@@ -67,6 +69,7 @@ const initalTooltipState = [
 ]
 
 const OutputChart = () => {
+	const dispatch = useDispatch();
 	const {scenarioName} = useParams()
 	const {fetchedProject} = useSelector(state => state.project);
 	const [scenario, setScenario] = useState(fetchedProject ? fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
@@ -74,6 +77,7 @@ const OutputChart = () => {
 	const [tooltip, setTooltip] = useState(initalTooltipState)
 	const tooltipRef = React.useRef(tooltip)
 	const leftPanel = useSelector(state => state.home.leftPanel)
+	const activeModel = useSelector(state => state.runModel.model)
 
 
 	useEffect(() => {
@@ -91,7 +95,7 @@ const OutputChart = () => {
 
 	useEffect(() => {
 		//Check both conditions because of old projects
-		if (scenario.lastRunModel !== undefined && scenario.lastRunModel !== null) {
+		if (scenario.lastRunModel !== undefined && scenario.lastRunModel !== null && scenario.lastRunModel[activeModel.name]) {
 			const rangeValue = [
 				Number(new moment(scenario.ISOChangeDate, constants.DATE_FORMAT).format('x')),
 				Number(new moment(scenario.ISOChangeDateTwo, constants.DATE_FORMAT).format('x')),
@@ -115,12 +119,13 @@ const OutputChart = () => {
 				nDays: nDays,
 				day: day
 			}
-			const options = getOutputChartOptions(scenario.lastRunModel, scenarioObject, 300);
+			const model = scenario.lastRunModel[activeModel.name]
+			const options = getOutputChartOptions(model, scenarioObject, 300);
 			setOptions(options);
 		} else {
 			setOptions(null);
 		}
-	}, [scenario])
+	}, [scenario, activeModel])
 
 	useEffect(() => {
 		if (options) {
@@ -235,10 +240,24 @@ const OutputChart = () => {
 		setTooltip(initalTooltipState)
 	}
 
+	const onModelChange = (model) => {
+		setModel(dispatch, model)
+	}
+
 	return options ?
 		<div className={'outputChart'}>
 			<div className={'spb5'}>
 				{/*<BlocksHolder/>*/}
+				<div className={'flex justify-content-end'}>
+					<ContentSwitcher
+						selectionMode="manual"
+						onChange={(e) => console.log('change', e)}
+					>
+          <Switch name="tmodel_seir" text="SEIR Model" onClick={onModelChange} />
+          <Switch name="tmodel_sir" text="SIR Model" onClick={onModelChange} />
+          <Switch name="tmodel_seir_fit_i" text="SEIR FIT I" onClick={onModelChange} />
+        </ContentSwitcher>
+				</div>
 			</div>
 			<div className={'tooltipLegend'}>
 				{tooltip.map((t, i) => <div key={i} className={'spb3'}>

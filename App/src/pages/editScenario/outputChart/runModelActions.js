@@ -1,11 +1,8 @@
 import ActionTypes from './ActionTypes'
 
-export function setRunModel(dispatch, key, data) {
+export function setModel(dispatch, model) {
 	dispatch({
-		type: ActionTypes.SET_RUNMODEL,
-		payload: {
-			key: key,
-			data: data
-		}
+		type: ActionTypes.SET_MODEL,
+		model
 	})
 }
