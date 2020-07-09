@@ -18,8 +18,7 @@ import constants from '../../config/constants'
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import OutputChart from './outputChart/outputChart'
 import ProjectActionTypes from '../projectProperties/ActionTypes'
-import VariwideChart from './headerCharts/variwideChart/variwideChart'
-import HorizontalChart from './headerCharts/horizontalChart/horizontalChart'
+import StickyHeader from './stickyHeader/stickyHeader'
 
 
 moment.updateLocale('en', {
@@ -197,6 +196,7 @@ const EditScenario = (props) => {
 		<div className={'scenario'}>
 			{
 				projectContent && scenario ? <div>
+					<StickyHeader />
 					<div className={'flex align-items-start lyb2'}>
 						<OverflowMenu {...overflowProps.menu()} className={'spr5'}>
 							<OverflowMenuItem
@@ -253,8 +253,6 @@ const EditScenario = (props) => {
 							</Tabs>
 						</div>
 					</div>
-					<VariwideChart/>
-					<HorizontalChart/>
 					<div className={'flex lyb3'}>
 						<Button className={'spt5 spb5 spr5'} kind='primary' onClick={runModel} disabled={running}>Run
 							Model {running &&

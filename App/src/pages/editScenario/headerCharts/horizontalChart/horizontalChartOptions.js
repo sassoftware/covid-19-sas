@@ -3,7 +3,8 @@ export function horizontalChartOptions(marketShareInterest,admissionRate,icuRate
     return ({
         chart: {
             type: 'bar',
-            height:'200px'
+            height: 200,
+					width: 300
         },
         credits: {
             enabled: false

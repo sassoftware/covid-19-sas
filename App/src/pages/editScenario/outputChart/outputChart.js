@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import Highcharts from 'highcharts'
 import HC_more from 'highcharts/highcharts-more.js'
-//import {tmodel_seir} from '../mock/outputData' 							// used for testing
 import {getOutputChartOptions} from './outputChartOptions'
 import {useDispatch, useSelector} from 'react-redux';
 import {useParams} from 'react-router'
@@ -11,7 +10,6 @@ import moment from 'moment'
 import constants from '../../../config/constants'
 import HC_patternFill from "highcharts-pattern-fill";
 import highchartsMore from 'highcharts/highcharts-more';
-import ActionTypes from './ActionTypes'
 import {setModel} from './runModelActions'
 
 highchartsMore(Highcharts);
@@ -80,6 +78,17 @@ const OutputChart = () => {
 	const activeModel = useSelector(state => state.runModel.model)
 
 
+	const cleanupCharts = () => {
+		for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
+			let chart = Highcharts.charts[i];
+			chart.tooltip.hide()
+			chart.series.forEach(s => {
+				s.points.forEach(p => p.onMouseOut())
+			})
+		}
+		setTooltip(initalTooltipState)
+	}
+
 	useEffect(() => {
 		setTimeout(() => {
 			if (Highcharts.charts.length) {
@@ -128,6 +137,66 @@ const OutputChart = () => {
 	}, [scenario, activeModel])
 
 	useEffect(() => {
+		const handleTooltip = (e) => {
+			let chart, point, range, i, event;
+			const hCharts = Highcharts.charts
+			// currentChart - chart where user is currently hovering
+			const currentChart = hCharts.find(c => c && c.renderTo.id === e.currentTarget.id)
+
+			// otherCharts - charts in group which points has to be highlighted and
+			const otherCharts = hCharts.filter(c => c && c.renderTo.id && c.renderTo.id !== e.currentTarget.id)
+
+			event = currentChart.pointer.normalize(e);
+			point = currentChart.series[0].searchPoint(event, true);
+			range = currentChart.series[1].searchPoint(event, true);
+			if (point && range) {
+				// highlight point of current chart
+				point.highlightPoint(e)
+
+				// create array with values for shared tooltip
+				const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
+				const normalizedIndex = normalizeChartIndex(currentChart)
+
+				newArray[normalizedIndex].line = point.y
+				newArray[normalizedIndex].low = range.options.low
+				newArray[normalizedIndex].high = range.options.high
+
+				// highlight linePoint and get values of points on other charts
+				for (i = 0; i < otherCharts.length; i = i + 1) {
+					chart = otherCharts[i];
+
+					//let pointsFind = searchPoints(point, chart);
+					let linePoint = chart.series[0].points[point.index]
+					let rangePoint = chart.series[1].points[point.index]
+					if (linePoint && rangePoint) {
+						// const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
+						const normalizedIndex = normalizeChartIndex(chart)
+						newArray[normalizedIndex].line = linePoint.y
+						newArray[normalizedIndex].low = rangePoint.options.low
+						newArray[normalizedIndex].high = rangePoint.options.high
+
+
+						linePoint.highlightPoint(e);
+					}
+				}
+				tooltipRef.current = [...newArray]
+				setTooltip(newArray)
+			}
+		}
+
+		const normalizeChartIndex = chart => {
+			if (!chart) {
+				throw new Error('Chart object is missing')
+			}
+			let id = chart.renderTo.id
+			if (!id) {
+				return null
+			} else {
+				id = id.split('chart')[1]
+				return parseInt(id)
+			}
+		}
+
 		if (options) {
 			options.forEach((opt, i) => {
 				const elId = 'chart' + i
@@ -166,79 +235,7 @@ const OutputChart = () => {
 				}
 			})
 		}
-	}, [options])
-
-	const normalizeChartIndex = chart => {
-		if (!chart) {
-			throw new Error('Chart object is missing')
-			return
-		}
-		let id = chart.renderTo.id
-		if (!id) {
-			return null
-		} else {
-			id = id.split('chart')[1]
-			return parseInt(id)
-		}
-	}
-
-	const handleTooltip = (e) => {
-		let chart, point, range, i, event;
-		const hCharts = Highcharts.charts
-		// currentChart - chart where user is currently hovering
-		const currentChart = hCharts.find(c => c && c.renderTo.id === e.currentTarget.id)
-
-		// otherCharts - charts in group which points has to be highlighted and
-		const otherCharts = hCharts.filter(c => c && c.renderTo.id && c.renderTo.id !== e.currentTarget.id)
-
-		event = currentChart.pointer.normalize(e);
-		point = currentChart.series[0].searchPoint(event, true);
-		range = currentChart.series[1].searchPoint(event, true);
-		if (point && range) {
-			// highlight point of current chart
-			point.highlightPoint(e)
-
-			// create array with values for shared tooltip
-			const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
-			const normalizedIndex = normalizeChartIndex(currentChart)
-
-			newArray[normalizedIndex].line = point.y
-			newArray[normalizedIndex].low = range.options.low
-			newArray[normalizedIndex].high = range.options.high
-
-			// highlight linePoint and get values of points on other charts
-			for (i = 0; i < otherCharts.length; i = i + 1) {
-				chart = otherCharts[i];
-
-				//let pointsFind = searchPoints(point, chart);
-				let linePoint = chart.series[0].points[point.index]
-				let rangePoint = chart.series[1].points[point.index]
-				if (linePoint && rangePoint) {
-					// const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
-					const normalizedIndex = normalizeChartIndex(chart)
-					newArray[normalizedIndex].line = linePoint.y
-					newArray[normalizedIndex].low = rangePoint.options.low
-					newArray[normalizedIndex].high = rangePoint.options.high
-
-
-					linePoint.highlightPoint(e);
-				}
-			}
-			tooltipRef.current = [...newArray]
-			setTooltip(newArray)
-		}
-	}
-
-	const cleanupCharts = () => {
-		for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
-			let chart = Highcharts.charts[i];
-			chart.tooltip.hide()
-			chart.series.forEach(s => {
-				s.points.forEach(p => p.onMouseOut())
-			})
-		}
-		setTooltip(initalTooltipState)
-	}
+	}, [options]) //asdf
 
 	const onModelChange = (model) => {
 		setModel(dispatch, model)
@@ -253,10 +250,10 @@ const OutputChart = () => {
 						selectionMode="manual"
 						onChange={onModelChange}
 					>
-          <Switch name="tmodel_seir" text="SEIR Model" />
-          <Switch name="tmodel_sir" text="SIR Model" />
-          <Switch name="tmodel_seir_fit_i" text="SEIR FIT I" />
-        </ContentSwitcher>
+						<Switch name="tmodel_seir" text="SEIR Model"/>
+						<Switch name="tmodel_sir" text="SIR Model"/>
+						<Switch name="tmodel_seir_fit_i" text="SEIR FIT I"/>
+					</ContentSwitcher>
 				</div>
 			</div>
 			<div className={'tooltipLegend'}>

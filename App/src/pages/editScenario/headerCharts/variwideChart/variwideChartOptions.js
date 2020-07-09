@@ -10,7 +10,9 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 
 	return ({
 		chart: {
-			type: 'variwide'
+			type: 'variwide',
+			height: 200,
+			width: 300
 		},
 		credits: {
 			enabled: false

@@ -1,22 +1,21 @@
 import React, {useState} from 'react';
-
 import useDocumentScrollThrottled from './useDocumentScrollThrottled';
 import VariwideChart from '../headerCharts/variwideChart/variwideChart'
 import HorizontalChart from '../headerCharts/horizontalChart/horizontalChart'
+import './stickyHeader.scss';
 
 function StickyHeader() {
 	const [shouldHideHeader, setShouldHideHeader] = useState(false);
 
-	const MINIMUM_SCROLL = 120;
-	const TIMEOUT_DELAY = 400;
+	const MINIMUM_SCROLL = 300;
+	const TIMEOUT_DELAY = 10;
 
 	useDocumentScrollThrottled(callbackData => {
 		const {previousScrollTop, currentScrollTop} = callbackData;
-		const isScrolledDown = previousScrollTop < currentScrollTop;
 		const isMinimumScrolled = currentScrollTop > MINIMUM_SCROLL;
 
 		setTimeout(() => {
-			setShouldHideHeader(isScrolledDown && isMinimumScrolled);
+			setShouldHideHeader(isMinimumScrolled);
 		}, TIMEOUT_DELAY);
 	});
 
