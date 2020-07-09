@@ -195,6 +195,8 @@ const EditScenario = (props) => {
 
 	return (
 		<div className={'scenario'}>
+			<VariwideChart/>
+			<HorizontalChart/>
 			{
 				projectContent && scenario ? <div>
 					<div className={'flex align-items-start lyb2'}>

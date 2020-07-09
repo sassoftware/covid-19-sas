@@ -27,13 +27,6 @@ class HorizontalChart extends React.Component {
 		}
 	}
 
-
-	resizeCharts = () => {
-		this.state.chart && setTimeout(() => {
-			this.state.chart.chart && this.state.chart.chart.reflow()
-		}, 250)
-	}
-
 	chartRef = (ref) => {
 		this.setState({chart: ref})
 	}
@@ -41,7 +34,7 @@ class HorizontalChart extends React.Component {
 	render() {
 		// this.resizeCharts()
 		const options = horizontalChartOptions(this.scenario.MarketSharePercent,this.scenario.Admission_Rate,this.scenario.ICUPercent,this.scenario.VentPErcent,this.scenario.FatalityRate)
-		return <div onresize={this.resizeCharts()}>
+		return <div >
 			<div className={'chartWrapper'}>
 				{options && <HighchartsReact
 					allowChartUpdate={true}
