@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+@import '../../../assets/style/colors.scss';
 
 .outputChart {
   min-height: 600px;
@@ -7,6 +8,22 @@
     //position: absolute;
     //left: 10px;
     //top: 10px;
+  }
+  .bx--content-switcher {
+    justify-content: flex-end;
+  }
+  .bx--content-switcher-btn {
+    background: #fff;
+    width: 10rem;
+    &.bx--content-switcher--selected {
+      background-color: $brand;
+      color: #fff;
+      z-index: 3;
+      &:hover {color: #000;}
+    }
+    &:hover {
+      background-color: #d2e8f7;
+    }
   }
 }
 

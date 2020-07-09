@@ -1,3 +1,3 @@
 export default {
-	SET_RUNMODEL: 'SET_RUNMODEL',
+	SET_MODEL: 'SET_MODEL'
 }
