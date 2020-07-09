@@ -194,6 +194,8 @@ const EditScenario = (props) => {
 
 	return (
 		<div className={'scenario'}>
+			<VariwideChart/>
+			<HorizontalChart/>
 			{
 				projectContent && scenario ? <div>
 					<StickyHeader />

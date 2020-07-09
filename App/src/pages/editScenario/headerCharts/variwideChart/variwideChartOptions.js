@@ -17,20 +17,31 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 		credits: {
 			enabled: false
 		},
-		title: false,
+		title: {
+			text: "Social Distancing parameters",
+			style: {
+				color: 'rgb(180,180,180)'
+			}
+		},
 		subtitle: false,
 		xAxis: {
 			type: 'datetime',
 			min: zeroDay,
-			max: maxDay
+			max: maxDay,
+			labels: {
+				style: {
+					color: 'rgb(180,180,180)'
+				}
+			}
 		},
 		yAxis: {
 			min: 0,
-			max: 100,
-			floor: 0,
-			ceiling: 100,
+            max: 100,
+			labels: {
+				enabled: false
+			},
 			title: {
-                enabled: false
+				enabled: false
 			},
 			gridLineWidth: 0
 		},

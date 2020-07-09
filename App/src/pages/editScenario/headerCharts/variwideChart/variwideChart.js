@@ -4,9 +4,9 @@ import HighchartsReact from 'highcharts-react-official'
 import variwide from 'highcharts/modules/variwide'
 import moment from 'moment'
 import constants from '../../../../config/constants'
-import {connect} from 'react-redux'
-import {withRouter} from 'react-router'
-import {variwideChartOptions} from './variwideChartOptions'
+import { connect } from 'react-redux'
+import { withRouter } from 'react-router'
+import { variwideChartOptions } from './variwideChartOptions'
 
 variwide(Highcharts)
 
@@ -14,14 +14,14 @@ const day = 1000 * 60 * 60 * 24 // milicecond * minute * hour * day
 
 class VariwideChart extends React.Component {
 	constructor(props) {
-        super(props)
+		super(props)
 		const scenarioName = props.match.params.scenarioName
 		this.scenario = props.project.savedScenarios.find(conf => conf.scenario === scenarioName)
 		this.scenarioIndex = props.project.savedScenarios.findIndex(conf => conf.scenario === scenarioName)
 
 		this.state = {
-            res: '',
-            rangeValue: [
+			res: '',
+			rangeValue: [
 				Number(new moment(this.scenario.ISOChangeDate, constants.DATE_FORMAT).format('x')),
 				Number(new moment(this.scenario.ISOChangeDateTwo, constants.DATE_FORMAT).format('x')),
 				Number(new moment(this.scenario.ISOChangeDate3, constants.DATE_FORMAT).format('x')),
@@ -48,7 +48,7 @@ class VariwideChart extends React.Component {
 			this.scenarioIndex = nextProps.project.savedScenarios.findIndex(conf => conf.scenario === nextProps.match.params.scenarioName)
 
 			this.setState({
-                rangeValue: [
+				rangeValue: [
 					Number(new moment(this.scenario.ISOChangeDate, constants.DATE_FORMAT).format('x')),
 					Number(new moment(this.scenario.ISOChangeDateTwo, constants.DATE_FORMAT).format('x')),
 					Number(new moment(this.scenario.ISOChangeDate3, constants.DATE_FORMAT).format('x')),
@@ -75,13 +75,12 @@ class VariwideChart extends React.Component {
 	}
 
 	chartRef = (ref) => {
-		this.setState({chart: ref})
+		this.setState({ chart: ref })
 	}
 
 	render() {
-		// this.resizeCharts()
 		const options = variwideChartOptions(this.state.zeroDay, this.state.nDays, this.state.rangeValue, this.state.distancing, day)
-		return <div onresize={this.resizeCharts()}>
+		return <div>
 			<div className={'chartWrapper'}>
 				{options && <HighchartsReact
 					allowChartUpdate={true}

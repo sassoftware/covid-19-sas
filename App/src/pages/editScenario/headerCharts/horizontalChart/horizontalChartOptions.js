@@ -1,5 +1,33 @@
 
-export function horizontalChartOptions(marketShareInterest,admissionRate,icuRate,ventRate,fatalityRate) {
+export function horizontalChartOptions(marketShareInterest, admissionRate, icuRate, ventRate, fatalityRate) {
+    const marketShareInterestObj = {
+        y: marketShareInterest,
+        color: '#0378CD',
+        tooltipDescription: 'Anticipated share in region addmitted to hospital of interest'
+    }
+    const admissionRateObj = {
+        y: admissionRate,
+        color: '#FFCC32',
+        tooltipDescription: 'Percentage of Infected in region who will be hospitalized'
+    }
+    const icuRateObj = {
+        y: icuRate,
+        tooltipDescription: 'Percentage of hospitalized patients who will require ICU',
+        color: '#FF8224'
+
+    }
+    const ventRateObj = {
+        tooltipDescription: 'Percentage of hospitalized patients who will require Ventilators',
+        y: ventRate,
+        color: '#DD5757'
+
+    }
+    const fatalityRateObj = {
+        tooltipDescription: 'Percentage of hospitalized patients who will die',
+        y: fatalityRate,
+        color: '#86134F'
+
+    }
     return ({
         chart: {
             type: 'bar',
@@ -9,20 +37,31 @@ export function horizontalChartOptions(marketShareInterest,admissionRate,icuRate
         credits: {
             enabled: false
         },
-        title: false,
+        title: {
+            text: "Hospital and Virus parameters",
+            style: {
+                color: 'rgb(180,180,180)'
+            }
+        },
         subtitle: false,
         xAxis: {
-            categories:['Hospital and Virus'],
+            categories: ['Admitted %', 'Hospitalized %', "ICU %", "Ventilators %", "Die %"],
             title: {
                 enabled: false
             },
             labels: {
-                enabled: false
+                enabled: true,
+                style: {
+                    color: 'rgb(180,180,180)'
+                }
             }
         },
         yAxis: {
             min: 0,
             max: 100,
+            labels: {
+                enabled: false
+            },
             title: {
                 enabled: false
             },
@@ -32,40 +71,15 @@ export function horizontalChartOptions(marketShareInterest,admissionRate,icuRate
             enabled: false
         },
         tooltip: {
-			enabled: true,
-			formatter: function () {
-				let tooltipMessage = `${this.series.name}: <b>${this.y}%</b>`
-				return tooltipMessage;
-			}
-		},
+            enabled: true,
+            formatter: function () {
+                let tooltipMessage = `${this.point.tooltipDescription}: <b>${this.y}%</b>`
+                return tooltipMessage;
+            }
+        },
         series: [
             {
-                name: 'Anticipated share in region addmitted to hospital of interest',
-                data: [marketShareInterest],
-                color: '#0378CD'
-
-            },
-            {
-                name: 'Percentage of Infected in region who will be hospitalized',
-                data: [admissionRate],
-                color: '#FFCC32'
-            },
-            {
-                name: 'Percentage of hospitalized patients who will require ICU',
-                data: [icuRate],
-                color: '#FF8224'
-
-            },
-            {
-                name: 'Percentage of hospitalized patients who will require Ventilators',
-                data: [ventRate],
-                color: '#DD5757'
-
-            },
-            {
-                name: 'Percentage of hospitalized patients who will die',
-                data: [fatalityRate],
-                color: '#86134F'
+                data: [marketShareInterestObj, admissionRateObj, icuRateObj, ventRateObj, fatalityRateObj]
 
             }]
     })
