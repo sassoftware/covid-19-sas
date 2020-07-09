@@ -19,8 +19,8 @@ const logs = ['/applicationLogs', '/errorLogs', '/failedRequests', '/debugLogs']
 export const LeftPanel = (props) => {
 	const history = useHistory();
 	const [showActions, setShowActions] = useState(false);
-	const {fetchedProject, selectedProject} = useSelector(state => state.project)
-	const projectUri = selectedProject && selectedProject.uri.split('/').pop()
+	const {projectContent, projectMetadata} = useSelector(state => state.project)
+	const projectUri = projectMetadata && projectMetadata.uri.split('/').pop()
 	const scenarioName = history.location.pathname.split('/').pop()
 
 	const resizeHandle = () => {
@@ -80,7 +80,7 @@ export const LeftPanel = (props) => {
 					title="Saved Scenarios"
 					defaultExpanded={true}
 				>
-					{fetchedProject !== null && fetchedProject.savedScenarios.map((configuration, i) =>
+					{projectContent !== null && projectContent.savedScenarios.map((configuration, i) =>
 						<SideNavLink
 							isActive={configuration.scenario === scenarioName}
 							key={i + configuration.scenario}

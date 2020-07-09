@@ -49,11 +49,11 @@ const ProjectProperties = (props) => {
   const shareURL = window.location.href;
   const [clipNoification, setClipNotification] = useState(false);
 
-	const {fetchedProject, selectedProject, save} = useSelector(state => state.project);
+	const {projectContent, projectMetadata, save} = useSelector(state => state.project);
 	const [error, setError] = useState('')
 
 	useEffect(() => {
-		if (uri !== null && uri !== "noProject" && (!selectedProject || (selectedProject && selectedProject.uri.split('/').pop() !== uri))) {
+		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const project = projects.find(p => (p.uri === '/files/files/' + uri))
 			if (project) {
 				dispatch({
@@ -80,7 +80,7 @@ const ProjectProperties = (props) => {
 				action: () => {
 					// TODO remove project
 					setError('')
-					adapterService.deleteItem(dispatch, selectedProject.uri)
+					adapterService.deleteItem(dispatch, projectMetadata.uri)
 						.then(() => {
 							history.push('/projectList')
 						})
@@ -141,14 +141,14 @@ const ProjectProperties = (props) => {
 
 	return (
 		<div>
-			{selectedProject ? <div>
+			{projectMetadata ? <div>
 				<div className={'lyb2 flex align-items-center'}>
 					<OverflowMenu {...overflowProps.menu()} className={'spr5'}>
 						<OverflowMenuItem
 							{...overflowProps.menuItem()}
 							itemText="Rename project"
 							primaryFocus
-							onClick={() => props.openDialog(selectedProject.name)}
+							onClick={() => props.openDialog(projectMetadata.name)}
 						/>
 						<OverflowMenuItem
 							{...overflowProps.menuItem()}
@@ -165,24 +165,30 @@ const ProjectProperties = (props) => {
 							onClick={deleteProject}
 						/>
 					</OverflowMenu>
-					<h2>{fetchedProject?.name}</h2>
+					<h2>{projectContent?.name}</h2>
 				</div>
 				{error && <InlineNotification kind={'error'} title={error}/>}
 				<div className={'info lyb4'}>
-					<h4 className={'propertie'}>Project Properties</h4>
+					<h4 className={'property'}>Project Properties</h4>
 
-					<div className={'propertie'}>
+					<div className={'property'}>
 						<p>Folder Location</p>
-						<p style={{fontWeight: 'bold'}}>{selectedProject.parentFolderUri}</p>
+						<p style={{fontWeight: 'bold'}}>{projectMetadata.parentFolderUri}</p>
 					</div>
-					<div className={'propertie'}>
+					<div className={'property'}>
 						<p>Created by</p>
-						<p style={{fontWeight: 'bold'}}>{selectedProject.createdBy}</p>
+						<p style={{fontWeight: 'bold'}}>{projectMetadata.createdBy}</p>
 
 					</div>
-					<div className={'propertie'}>
+					<div className={'property'}>
 						<p>Project file URI</p>
-						<p style={{fontWeight: 'bold'}}>{selectedProject.uri}</p>
+						<p style={{fontWeight: 'bold'}}>{projectMetadata.uri}</p>
+
+					</div>
+
+          <div className={'property'}>
+						<p>Project last modified on:</p>
+						<p style={{fontWeight: 'bold'}}>{projectMetadata.modifiedTimeStamp}</p>
 
 					</div>
 
@@ -193,14 +199,14 @@ const ProjectProperties = (props) => {
           shareURL !== ''?  <div className={'share info flex flex-row lyb4'}>
 
               <div className={'shareInfo'}>
-                <h4 className={'propertie'}>Share project</h4>
-                <div className={'propertie '}>
+                <h4 className={'property'}>Share project</h4>
+                <div className={'property '}>
                     <p>Project URL</p>
                     <p className={'link'}>{shareURL}</p>
                 </div>
-                <Button renderIcon={Share32} className={'propertie'} onClick={() => share(copy)} >Copy URL</Button>
+                <Button renderIcon={Share32} className={'property'} onClick={() => share(copy)} >Copy URL</Button>
               </div>
-              <div  className={'propertie'}>
+              <div  className={'property'}>
                 <QRcode onClick={() => share(() => props.openQR(shareURL))} 
                         className={'qr'} 
                         value={shareURL} 

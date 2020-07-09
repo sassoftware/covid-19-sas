@@ -25,22 +25,22 @@ const ErrorModal = (props) => {
 
 const Save = (props) => {
     const dispatch = useDispatch();
-    const {fetchedProject,  selectedProject, save } = useSelector(state => state.project);
+    const {projectContent,  projectMetadata, save } = useSelector(state => state.project);
     const [error, setError] = useState({
         status: false,
         message: '',
     })
     const submit = () => {
-        const forBlob = JSON.stringify(fetchedProject);
+        const forBlob = JSON.stringify(projectContent);
         let blob = new Blob([forBlob], {type: "octet/stream"});
-        let fileName = fetchedProject.name
+        let fileName = projectContent.name
 				if (!fileName.endsWith(PROJECT_EXTENTION)) {
 					fileName += PROJECT_EXTENTION
 				}
         const dataObj = {
         	file:[blob, fileName]
         }
-        const res = updateFile(dispatch, selectedProject.uri, dataObj, fetchedProject.lastModified);
+        const res = updateFile(dispatch, projectMetadata.uri, dataObj, new Date(projectMetadata.modifiedTimeStamp));
         res.then( result => {
             console.log("SAVE RESULT: " , result);
             dispatch({

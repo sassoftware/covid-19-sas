@@ -1,8 +1,8 @@
 import ActionTypes from './ActionTypes';
 
 const initialState = {
-	selectedProject: JSON.parse(localStorage.getItem("selectedProject")),
-	fetchedProject: JSON.parse(localStorage.getItem("fetchedProject")),
+	projectMetadata: JSON.parse(localStorage.getItem("projectMetadata")),
+	projectContent: JSON.parse(localStorage.getItem("projectContent")),
 	save: JSON.parse(localStorage.getItem('save'))
 }
 
@@ -11,44 +11,44 @@ export function projectReducer(state = initialState, action) {
 	switch (action.type) {
 
 		case ActionTypes.SELECT_PROJECT: {
-			localStorage.setItem("selectedProject", JSON.stringify(action.payload));
-			return Object.assign({}, state, {selectedProject: action.payload})
+			localStorage.setItem("projectMetadata", JSON.stringify(action.payload));
+			return Object.assign({}, state, {projectMetadata: action.payload})
 		}
 
 		case ActionTypes.FETCH_SINGLE_PROJECT: {
-			localStorage.setItem("fetchedProject", JSON.stringify(action.payload))
+			localStorage.setItem("projectContent", JSON.stringify(action.payload))
 			localStorage.setItem("save", JSON.stringify(false))
 			return Object.assign({}, state, {
-				fetchedProject: action.payload,
+				projectContent: action.payload,
 				save: false
 			})
 		}
 
 		case ActionTypes.SET_SCENARIO: {
-			const array = JSON.parse(JSON.stringify(state.fetchedProject.savedScenarios))
+			const array = JSON.parse(JSON.stringify(state.projectContent.savedScenarios))
 			array.splice(action.payload.index, action.payload.count, action.payload.configuration)
 			const newProject = {
-				...state.fetchedProject,
+				...state.projectContent,
 				savedScenarios: array
 			}
-			localStorage.setItem("fetchedProject", JSON.stringify(newProject));
+			localStorage.setItem("projectContent", JSON.stringify(newProject));
 			localStorage.setItem("save", JSON.stringify(true))
 			return Object.assign({}, state, {
-				fetchedProject: newProject,
+				projectContent: newProject,
 				save: true
 			})
 		}
 
 		case ActionTypes.REMOVE_SCENARIO: {
-			const array = JSON.parse(JSON.stringify(state.fetchedProject.savedScenarios))
+			const array = JSON.parse(JSON.stringify(state.projectContent.savedScenarios))
 			array.splice(action.payload, 1)
-			const newProject = Object.assign({}, state.fetchedProject, {
+			const newProject = Object.assign({}, state.projectContent, {
 				savedScenarios: array
 			})
-			localStorage.setItem("fetchedProject", JSON.stringify(newProject));
+			localStorage.setItem("projectContent", JSON.stringify(newProject));
 			localStorage.setItem("save", JSON.stringify(true))
 			return Object.assign({}, state, {
-				fetchedProject: newProject,
+				projectContent: newProject,
 				save: true
 			})
 		}
@@ -57,7 +57,7 @@ export function projectReducer(state = initialState, action) {
 		case ActionTypes.UPDATE_PROJECT: {
 			localStorage.setItem("save", JSON.stringify(true))
 			return Object.assign({}, state, {
-				fetchedProject: action.payload,
+				projectContent: action.payload,
 				save: true
 			})
 		}
@@ -65,12 +65,13 @@ export function projectReducer(state = initialState, action) {
 		case ActionTypes.CHANGES_SAVED: {
 			localStorage.setItem('save', JSON.stringify(false));
 			const newProject = {
-				...state.fetchedProject,
-				lastModified: action.payload
-			}
+				...state.projectMetadata,
+				modifiedTimeStamp: action.payload
+      }
+      localStorage.setItem('projectMetadata', JSON.stringify(newProject));
 			return Object.assign({}, state, {
 				save: false,
-				fetchedProject: newProject
+				projectMetadata: newProject
 			})
 		}
 
@@ -81,13 +82,13 @@ export function projectReducer(state = initialState, action) {
 
 		case ActionTypes.CLONE_SCENARIO: {
 			localStorage.setItem("save", JSON.stringify(true))
-			const array = JSON.parse(JSON.stringify(state.fetchedProject.savedScenarios))
+			const array = JSON.parse(JSON.stringify(state.projectContent.savedScenarios))
 			array.push(action.payload);
-			const newProject = Object.assign({}, state.fetchedProject, {
+			const newProject = Object.assign({}, state.projectContent, {
 				savedScenarios: array
 			})
 			return Object.assign({}, state, {
-				fetchedProject: newProject,
+				projectContent: newProject,
 				save: true
 			})
 		}

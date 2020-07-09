@@ -20,7 +20,7 @@ const NewProject = (props) => {
 		name: '',
 		description: ''
 	});
-	const {fetchedProject} = useSelector(state => state.project);
+	const {projectContent} = useSelector(state => state.project);
 	// const [error, setError] = useState(false);
 	const user = useSelector(state => state.home.userData)
 
@@ -44,7 +44,7 @@ const NewProject = (props) => {
 			})
 		} else {
 			const newProject = {
-				...fetchedProject,
+				...projectContent,
 				name: project.name,
 				description: project.description
 			}

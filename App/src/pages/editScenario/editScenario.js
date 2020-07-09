@@ -51,20 +51,20 @@ const EditScenario = (props) => {
 	const history = useHistory();
 	const {uri, scenarioName} = useParams()
 	const projects = useSelector(state => state.projectList.projects)
-	const {fetchedProject, selectedProject} = useSelector(state => state.project);
-	const projectUri = selectedProject && selectedProject.uri.split('/').pop()
+	const {projectContent, projectMetadata} = useSelector(state => state.project);
+	const projectUri = projectMetadata && projectMetadata.uri.split('/').pop()
 	const {save} = useSelector(state => state.project);
-	const [scenario, setScenario] = useState(fetchedProject ? fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
-	const scenarioIndex = fetchedProject && fetchedProject.savedScenarios.findIndex(conf => conf.scenario === scenarioName)
+	const [scenario, setScenario] = useState(projectContent ? projectContent.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
+	const scenarioIndex = projectContent && projectContent.savedScenarios.findIndex(conf => conf.scenario === scenarioName)
 	const [error, setError] = useState('')
 	const [running, setRunning] = useState(false)
 
 	useEffect(() => {
-		fetchedProject && setScenario(fetchedProject.savedScenarios.find(conf => conf.scenario === scenarioName))
-	}, [scenarioName, fetchedProject])
+		projectContent && setScenario(projectContent.savedScenarios.find(conf => conf.scenario === scenarioName))
+	}, [scenarioName, projectContent])
 
 	useEffect(() => {
-		if (uri !== null && uri !== "noProject" && (!selectedProject || (selectedProject && selectedProject.uri.split('/').pop() !== uri))) {
+		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const newProject = projects.find(el => el.uri === '/files/files/' + uri)
 			if (newProject) {
 				dispatch({
@@ -125,7 +125,7 @@ const EditScenario = (props) => {
 			modelList.forEach(m => models[m] = res[m])
 			const newScenario = Object.assign({}, scenario, {lastRunModel: models, oldModel: false});
 
-			const index = fetchedProject.savedScenarios.findIndex(el => el.scenario === scenario.scenario);
+			const index = projectContent.savedScenarios.findIndex(el => el.scenario === scenario.scenario);
 
 			dispatch({
 				type: ProjectActionTypes.SET_SCENARIO,
@@ -162,7 +162,7 @@ const EditScenario = (props) => {
 
 	const generateName = (scenario) => {
 		let numOfCopy = 0;
-		let savedScenarios = fetchedProject.savedScenarios;
+		let savedScenarios = projectContent.savedScenarios;
 		for (let i = 0; i < savedScenarios.length; i++) {
 			if (savedScenarios[i].scenario.slice(0, scenario.length) === scenario) {
 				numOfCopy += 1;
@@ -194,7 +194,7 @@ const EditScenario = (props) => {
 	return (
 		<div className={'scenario'}>
 			{
-				fetchedProject && scenario ? <div>
+				projectContent && scenario ? <div>
 					<div className={'flex align-items-start lyb2'}>
 						<OverflowMenu {...overflowProps.menu()} className={'spr5'}>
 							<OverflowMenuItem
