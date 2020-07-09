@@ -18,6 +18,8 @@ import constants from '../../config/constants'
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import OutputChart from './outputChart/outputChart'
 import ProjectActionTypes from '../projectProperties/ActionTypes'
+import VariwideChart from './headerCharts/variwideChart/variwideChart'
+import HorizontalChart from './headerCharts/horizontalChart/horizontalChart'
 
 
 moment.updateLocale('en', {
@@ -112,7 +114,7 @@ const EditScenario = (props) => {
 				"VentPErcent": Number(scenario.VentPErcent / 100),
 				"ISOChangeDate": ISOChangeDate,
 				"ISOChangeEvent": "Social Distance:Essential Businesses:Shelter In Place:Reopen",
-				"ISOChangeWindow" : "1:1:1:1",
+				"ISOChangeWindow": "1:1:1:1",
 				"SocialDistancingChange": SocialDistancingChange,
 				"FatalityRate": Number(scenario.FatalityRate / 100),
 				"plots": "NO"
@@ -251,11 +253,12 @@ const EditScenario = (props) => {
 							</Tabs>
 						</div>
 					</div>
-					<div >
-					</div>
+					<VariwideChart/>
+					<HorizontalChart/>
 					<div className={'flex lyb3'}>
-						<Button className={'spt5 spb5 spr5'} kind='primary' onClick={runModel} disabled={running}>Run Model {running &&
-						<Loading description="Active loading indicator" withOverlay={false} small={true}/>}</Button>
+						<Button className={'spt5 spb5 spr5'} kind='primary' onClick={runModel} disabled={running}>Run
+							Model {running &&
+							<Loading description="Active loading indicator" withOverlay={false} small={true}/>}</Button>
 						{error && <InlineNotification
 							kind={'error'}
 							title={error}
