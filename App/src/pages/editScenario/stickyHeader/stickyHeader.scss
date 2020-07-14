@@ -1,0 +1,20 @@
+.bx--content {
+  transform: unset;
+}
+.stickyHeader {
+  z-index: 5;
+  display: flex;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #fff;
+  color: #333;
+  transform: translateY(-440px);
+  transition: all 0.3s ease-out;
+  box-shadow: 0 9px 9px -9px rgba(0, 0, 0, 0.13);
+  &.show {
+    transform: translateY(47px);
+  }
+}
