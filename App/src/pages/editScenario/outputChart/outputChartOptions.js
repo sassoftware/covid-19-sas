@@ -14,6 +14,9 @@ const colorMap = [
 
 export const getOutputChartOptions = (props, scenarioObject, height = null) => {
 
+	// Create map of columns data
+	const columnsMap = props.length === 2 && adapterService.getObjOfTable(props[0], 'NAME')
+
 	const hospLine = []
 	const dialLine = []
 	const ventLine = []
@@ -26,61 +29,62 @@ export const getOutputChartOptions = (props, scenarioObject, height = null) => {
 	const icuRange = []
 	const ecmoRange = []
 
-	props && props.forEach(item => {
-		let timestamp = new Date(adapterService.fromSasDateTime(item.datetime || item.DATETIME)).getTime()
+	// This condition is set because of previus structure of chart data
+	props.length === 2 && props[1].forEach(item => {
+		let timestamp = new Date(adapterService.fromSasDateTime(item[columnsMap.DATETIME.VARNUM])).getTime()
 		// HOSP
 		hospLine.push([
 			timestamp,
-			item.HOSPITAL_OCCUPANCY
+			item[columnsMap.HOSPITAL_OCCUPANCY.VARNUM]
 		])
 		hospRange.push({
 			x: timestamp,
-			low: item.LOWER_HOSPITAL_OCCUPANCY,
-			high: item.UPPER_HOSPITAL_OCCUPANCY
+			low: item[columnsMap.LOWER_HOSPITAL_OCCUPANCY.VARNUM],
+			high: item[columnsMap.UPPER_HOSPITAL_OCCUPANCY.VARNUM]
 		})
 
 		// DIAL
 		dialLine.push([
 			timestamp,
-			item.DIAL_OCCUPANCY
+			item[columnsMap.DIAL_OCCUPANCY.VARNUM]
 		])
 		dialRange.push({
 			x: timestamp,
-			low: item.LOWER_DIAL_OCCUPANCY,
-			high: item.UPPER_DIAL_OCCUPANCY
+			low: item[columnsMap.LOWER_DIAL_OCCUPANCY.VARNUM],
+			high: item[columnsMap.UPPER_DIAL_OCCUPANCY.VARNUM]
 		})
 
 		// VENT
 		ventLine.push([
 			timestamp,
-			item.VENT_OCCUPANCY
+			item[columnsMap.VENT_OCCUPANCY.VARNUM]
 		])
 		ventRange.push({
 			x: timestamp,
-			low: item.LOWER_VENT_OCCUPANCY,
-			high: item.UPPER_VENT_OCCUPANCY
+			low: item[columnsMap.LOWER_VENT_OCCUPANCY.VARNUM],
+			high: item[columnsMap.UPPER_VENT_OCCUPANCY.VARNUM]
 		})
 
 		// ICU
 		icuLine.push([
 			timestamp,
-			item.ICU_OCCUPANCY
+			item[columnsMap.ICU_OCCUPANCY.VARNUM]
 		])
 		icuRange.push({
 			x: timestamp,
-			low: item.LOWER_ICU_OCCUPANCY,
-			high: item.UPPER_ICU_OCCUPANCY
+			low: item[columnsMap.LOWER_ICU_OCCUPANCY.VARNUM],
+			high: item[columnsMap.UPPER_ICU_OCCUPANCY.VARNUM]
 		})
 
 		// ECMO
 		ecmoLine.push([
 			timestamp,
-			item.ECMO_OCCUPANCY
+			item[columnsMap.ECMO_OCCUPANCY.VARNUM]
 		])
 		ecmoRange.push({
 			x: timestamp,
-			low: item.LOWER_ECMO_OCCUPANCY,
-			high: item.UPPER_ECMO_OCCUPANCY
+			low: item[columnsMap.LOWER_ECMO_OCCUPANCY.VARNUM],
+			high: item[columnsMap.UPPER_ECMO_OCCUPANCY.VARNUM]
 		})
 	})
 
