@@ -94,10 +94,12 @@ export const getOutputChartOptions = (props, scenarioObject, height = null) => {
 	let options = {
 		height: height,
 		color: colorMap,
-		index:0,
+		index: 0,
 		isXaxisVisible: false,
 		fontSize: bigChartFontSize,
-		scenario: scenarioObject
+		scenario: scenarioObject,
+		xMin: scenarioObject.zeroDay,
+		xMax: scenarioObject.maxDay
 	}
 	optionsArray[0] = getChartOptions(
 		{ name: 'Hospital Census Line', data: hospLine },
@@ -159,7 +161,7 @@ function syncExtremes(e) {
 
 function getChartOptions(line, range, options) {
 	const height = options.height;
-	const index=options.index
+	const index = options.index
 	const colors = options.color[index]
 	const isXaxisVisible = options.isXaxisVisible
 	const fontSize = options.fontSize
@@ -178,15 +180,15 @@ function getChartOptions(line, range, options) {
 		isX: true,
 		labels: {
 			enabled: isXaxisVisible
-		}
+		},
+		min: options.xMin,
+		max: options.xMax
 	}
 	if (!!scenarioObject) {
 		const [change1, change2, change3, change4] = scenarioObject.rangeValue
 		const [d1, d2, d3, d4, d5] = scenarioObject.distancing
 		const maxDay = scenarioObject.zeroDay + scenarioObject.nDays * scenarioObject.day
 		const zeroDay = scenarioObject.zeroDay
-		xAxis.min = zeroDay
-		xAxis.max = maxDay
 		variwideSeries =
 		{
 			name: 'Distancing',
@@ -248,7 +250,7 @@ function getChartOptions(line, range, options) {
 			ceiling: 100
 		}
 	}
-	const pattern=`url(#custom-pattern-${index})`
+	const pattern = `url(#custom-pattern-${index})`
 	return {
 		// MyChartData
 		"series": [

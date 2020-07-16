@@ -2,6 +2,7 @@ import { dateFormat } from "highcharts"
 
 const seriesColor = '#0378CD'
 const borderColor = '#f4f4f4'
+const labelColor = 'rgb(180,180,180)'
 
 export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day) {
 	const [change1, change2, change3, change4] = rangeValue
@@ -20,7 +21,7 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 		title: {
 			text: "Social Distancing parameters",
 			style: {
-				color: 'rgb(180,180,180)'
+				color: labelColor
 			}
 		},
 		subtitle: false,
@@ -30,13 +31,13 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 			max: maxDay,
 			labels: {
 				style: {
-					color: 'rgb(180,180,180)'
+					color: labelColor
 				}
 			}
 		},
 		yAxis: {
 			min: 0,
-            max: 100,
+			max: 100,
 			labels: {
 				enabled: false
 			},

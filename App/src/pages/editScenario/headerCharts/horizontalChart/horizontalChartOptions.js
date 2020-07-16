@@ -1,3 +1,4 @@
+const labelColor = 'rgb(180,180,180)'
 
 export function horizontalChartOptions(marketShareInterest, admissionRate, icuRate, ventRate, fatalityRate) {
     const marketShareInterestObj = {
@@ -32,7 +33,7 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
         chart: {
             type: 'bar',
             height: 200,
-					width: 300
+            width: 300
         },
         credits: {
             enabled: false
@@ -40,7 +41,7 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
         title: {
             text: "Hospital and Virus parameters",
             style: {
-                color: 'rgb(180,180,180)'
+                color: labelColor
             }
         },
         subtitle: false,
@@ -52,7 +53,7 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
             labels: {
                 enabled: true,
                 style: {
-                    color: 'rgb(180,180,180)'
+                    color: labelColor
                 }
             }
         },
