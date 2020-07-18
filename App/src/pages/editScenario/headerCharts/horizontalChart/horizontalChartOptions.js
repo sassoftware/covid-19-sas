@@ -39,10 +39,10 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
 			enabled: false
 		},
 		title: {
-			text: "Hospital and Virus",
+			text: null,
 			style: {
 				color: labelColor,
-				fontSize: 12
+				fontSize: 1
 			}
 		},
 		subtitle: false,

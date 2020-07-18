@@ -19,10 +19,10 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 			enabled: false
 		},
 		title: {
-			text: "Social Distancing",
+			text: null,
 			style: {
 				color: labelColor,
-				fontSize: 12
+				fontSize: 1
 			}
 		},
 		subtitle: false,
