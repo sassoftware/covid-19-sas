@@ -51,7 +51,6 @@ class Login extends Component {
 		this.props.login(this.state.username, this.state.password)
 			.then(res => {
 				this.setState({...this.state, loading: false})
-				console.log('login response', res)
 			})
 			.catch(e => {
 				this.setState({error: e, loading: false})
@@ -85,7 +84,7 @@ class Login extends Component {
 
 	render() {
 		return (
-			<div className="spl5 form-container">
+			<div className="spl6 form-container">
 				<h1>Login</h1>
 				<p>Sign In to your account</p>
 				<Form>

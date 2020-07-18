@@ -46,7 +46,6 @@ export async function managedRequest(dispatch, options) {
 		if (typeof callData === 'string') {
 			callData = JSON.parse(callData)
 		}
-		console.log('ManagedRequest', callData)
 		return callData
 	} catch (e) {
 		console.log('dummycall-catch', e)
@@ -58,7 +57,6 @@ export async function call(dispatch, program) {
 	if (typeof callData === 'string') {
 		callData = JSON.parse(callData)
 	}
-	console.log('OldCall', callData)
 	return callData
 
 }
@@ -66,7 +64,6 @@ export async function call(dispatch, program) {
 export async function startUpService(dispatch) {
 	try{
 		let res = await adapterService.call(dispatch, constants.STARTUP_SERVICE, null);
-		console.log("START UP SERVICE RESULT: ", res);
 		if (res.dataLabels && res.dataLabels[0]) {
 			dispatch({
 				type: ActionTypes.SET_DATA_LABELS,

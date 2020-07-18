@@ -178,7 +178,6 @@ const ForecastRun = () => {
                                 }}
                                 distributionSingleCheck={(id, value, array) => {
                                     const {newArray, checkAll} = handleSingleCheck(id, value, array);
-                                    console.log(checkAll)
                                     setSeverityDistributions(newArray);
                                     setSeverityDisCheck(checkAll)
                                 }}

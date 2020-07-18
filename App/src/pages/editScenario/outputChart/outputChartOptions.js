@@ -102,29 +102,29 @@ export const getOutputChartOptions = (props, scenarioObject, height = null) => {
 		xMax: scenarioObject.maxDay
 	}
 	optionsArray[0] = getChartOptions(
-		{ name: 'Hospital Census Line', data: hospLine },
-		{ name: 'Hospital Census', data: hospRange }, options)
+		{ name: 'Census', data: hospLine },
+		{ name: 'Census range', data: hospRange }, options)
 	options.index = 1
 	options.isXaxisVisible = true
 	optionsArray[1] = getChartOptions(
-		{ name: 'Hospital Census - ICU Line', data: icuLine },
-		{ name: 'Hospital Census - ICU', data: icuRange }, options)
+		{ name: 'ICU ', data: icuLine },
+		{ name: 'ICU range', data: icuRange }, options)
 	options.height = height * 2 / 3
 	options.index = 2
 	options.isXaxisVisible = false
 	options.fontSize = smallChartFontSize
 	options.scenario = null
 	optionsArray[2] = getChartOptions(
-		{ name: 'Hospital Census - Ventilator Line', data: ventLine },
-		{ name: 'Hospital Census - Ventilator', data: ventRange }, options)
+		{ name: 'Ventilator', data: ventLine },
+		{ name: 'Ventilator ramge', data: ventRange }, options)
 	options.index = 3
 	optionsArray[3] = getChartOptions(
-		{ name: 'Hospital Census - ECMO Line', data: ecmoLine },
-		{ name: 'Hospital Census - ECMO', data: ecmoRange }, options)
+		{ name: 'ECMO', data: ecmoLine },
+		{ name: 'ECMO range', data: ecmoRange }, options)
 	options.index = 4
 	optionsArray[4] = getChartOptions(
-		{ name: 'Hospital Census - Dialysis Line', data: dialLine },
-		{ name: 'Hospital Census - Dialysis', data: dialRange }, options)
+		{ name: 'Dialysis', data: dialLine },
+		{ name: 'Dialysis range', data: dialRange }, options)
 
 	return optionsArray
 }

@@ -21,7 +21,6 @@ class Home extends React.Component {
 			dataObj: null,
 			params: null
 		}
-		console.log('home mangedReq')
 		const res = await this.props.managedRequest(options)
 		this.setState({res})
 	}

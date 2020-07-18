@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Highcharts from 'highcharts'
 import HC_more from 'highcharts/highcharts-more.js'
 import {getOutputChartOptions} from './outputChartOptions'
@@ -11,6 +11,9 @@ import constants from '../../../config/constants'
 import HC_patternFill from "highcharts-pattern-fill";
 import highchartsMore from 'highcharts/highcharts-more';
 import {setModel} from './runModelActions'
+import VariwideChart from '../headerCharts/variwideChart/variwideChart'
+import HorizontalChart from '../headerCharts/horizontalChart/horizontalChart'
+import adapterService from '../../../adapterService/adapterService'
 
 highchartsMore(Highcharts);
 HC_patternFill(Highcharts);
@@ -36,35 +39,68 @@ Highcharts.Point.prototype.highlightPoint = function (event) {
 const initalTooltipState = [
 	{
 		title: 'Hospital Census',
+		date: 0,
 		line: 0,
 		low: 0,
 		high: 0
 	},
 	{
 		title: 'ICU',
+		date: 0,
 		line: 0,
 		low: 0,
 		high: 0
 	},
 	{
 		title: 'Ventilator',
+		date: 0,
 		line: 0,
 		low: 0,
 		high: 0
 	},
 	{
 		title: 'ECMO',
+		date: 0,
 		line: 0,
 		low: 0,
 		high: 0
 	},
 	{
 		title: 'Dialysis',
+		date: 0,
 		line: 0,
 		low: 0,
 		high: 0
 	},
 ]
+
+const SharedTooltip = props => {
+	const {tooltip} = props
+	const date = new moment(tooltip[0].date).utc()
+	return <div className={'tooltipLegend'}>
+		<div className={'date'}>
+			<div>{date.format('MMMM')} {date.format('YYYY')}</div>
+			<div>{date.format('D')}</div>
+		</div>
+		<div className={'total'}>
+			<div>total census</div>
+			<div>{tooltip[0].line}</div>
+		</div>
+		<div className={'total'}>
+			<div>ICU patients</div>
+			<div>{tooltip[1].line}</div>
+		</div>
+		<div className={'group'}>
+			<div><span className={'num'}>{tooltip[2].line}</span> on ventilators</div>
+			<div><span className={'num'}>{tooltip[3].line}</span> in ECMO</div>
+			<div><span className={'num'}>{tooltip[4].line}</span> on Dialysis</div>
+		</div>
+		<div className={'additionalCharts'}>
+			<VariwideChart/>
+			<HorizontalChart/>
+		</div>
+	</div>
+}
 
 const OutputChart = () => {
 	const dispatch = useDispatch();
@@ -73,9 +109,11 @@ const OutputChart = () => {
 	const [scenario, setScenario] = useState(projectContent ? projectContent.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
 	const [options, setOptions] = useState(null)
 	const [tooltip, setTooltip] = useState(initalTooltipState)
-	const tooltipRef = React.useRef(tooltip)
+	const tooltipRef = useRef(tooltip)
 	const leftPanel = useSelector(state => state.home.leftPanel)
 	const activeModel = useSelector(state => state.runModel.model)
+	const [peak, setPeak] = useState(initalTooltipState)
+	const peakRef = useRef(peak)
 
 
 	const cleanupCharts = () => {
@@ -86,7 +124,7 @@ const OutputChart = () => {
 				s.points.forEach(p => p.onMouseOut())
 			})
 		}
-		setTooltip(initalTooltipState)
+		setTooltip(peakRef.current)
 	}
 
 	useEffect(() => {
@@ -129,7 +167,7 @@ const OutputChart = () => {
 				day: day
 			}
 			const model = scenario.lastRunModel[activeModel.name]
-			const options = getOutputChartOptions(model, scenarioObject, 300);
+			const options = getOutputChartOptions(model, scenarioObject, 250);
 			setOptions(options);
 		} else {
 			setOptions(null);
@@ -157,6 +195,7 @@ const OutputChart = () => {
 				const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
 				const normalizedIndex = normalizeChartIndex(currentChart)
 
+				newArray[normalizedIndex].date = point.x
 				newArray[normalizedIndex].line = point.y
 				newArray[normalizedIndex].low = range.options.low
 				newArray[normalizedIndex].high = range.options.high
@@ -171,6 +210,7 @@ const OutputChart = () => {
 					if (linePoint && rangePoint) {
 						// const newArray = JSON.parse(JSON.stringify(tooltipRef.current))
 						const normalizedIndex = normalizeChartIndex(chart)
+						newArray[normalizedIndex].date = linePoint.x
 						newArray[normalizedIndex].line = linePoint.y
 						newArray[normalizedIndex].low = rangePoint.options.low
 						newArray[normalizedIndex].high = rangePoint.options.high
@@ -235,7 +275,59 @@ const OutputChart = () => {
 				}
 			})
 		}
-	}, [options]) //asdf
+	}, [options])
+
+
+	// Set peak for current model
+	useEffect(() => {
+		const model = scenario.lastRunModel[activeModel.name]
+		if (model) {
+			const newPeak = getPeak(model)
+			peakRef.current = newPeak
+			setPeak(newPeak)
+		}
+	}, [scenario, activeModel])
+
+	const getPeak = model => {
+		const initState = JSON.parse(JSON.stringify(initalTooltipState))
+		const columnMap = adapterService.getObjOfTable(model[0], 'NAME', 'VARNUM')
+		const newPeak = model[1].reduce((acc, current) => {
+			const newState = acc
+			let timestamp = new Date(adapterService.fromSasDateTime(current[columnMap.DATETIME])).getTime()
+			if (current[columnMap['HOSPITAL_OCCUPANCY']] > acc[0].line) {
+				newState[0].line = current[columnMap['HOSPITAL_OCCUPANCY']]
+				newState[0].date = timestamp
+				newState[0].low = current[columnMap['LOWER_HOSPITAL_OCCUPANCY']]
+				newState[0].height = current[columnMap['UPPER_HOSPITAL_OCCUPANCY']]
+
+				newState[1].line = current[columnMap['DIAL_OCCUPANCY']]
+				newState[1].date = timestamp
+				newState[1].low = current[columnMap['LOWER_DIAL_OCCUPANCY']]
+				newState[1].height = current[columnMap['UPPER_DIAL_OCCUPANCY']]
+
+				newState[2].line = current[columnMap['VENT_OCCUPANCY']]
+				newState[2].date = timestamp
+				newState[2].low = current[columnMap['LOWER_VENT_OCCUPANCY']]
+				newState[2].height = current[columnMap['UPPER_VENT_OCCUPANCY']]
+
+				newState[3].line = current[columnMap['ICU_OCCUPANCY']]
+				newState[3].date = timestamp
+				newState[3].low = current[columnMap['LOWER_ICU_OCCUPANCY']]
+				newState[3].height = current[columnMap['UPPER_ICU_OCCUPANCY']]
+
+				newState[4].line = current[columnMap['ECMO_OCCUPANCY']]
+				newState[4].date = timestamp
+				newState[4].low = current[columnMap['LOWER_ECMO_OCCUPANCY']]
+				newState[4].height = current[columnMap['UPPER_ECMO_OCCUPANCY']]
+			}
+			return newState
+		}, initState)
+		return newPeak
+	}
+
+	useEffect(() => {
+		setTooltip(peak)
+	},[peak])
 
 	const onModelChange = (model) => {
 		setModel(dispatch, model)
@@ -256,12 +348,7 @@ const OutputChart = () => {
 					</ContentSwitcher>
 				</div>
 			</div>
-			<div className={'tooltipLegend'}>
-				{tooltip.map((t, i) => <div key={i} className={'spb3'}>
-					<div>{t.title}</div>
-					<div>Current: {t.line} - low: {t.low} - high: {t.high}</div>
-				</div>)}
-			</div>
+			<SharedTooltip tooltip={tooltip}/>
 			<div id={'chartContainer'}>
 				<Row>
 					<Column id={'leftColumn'} lg={10} md={5}/>

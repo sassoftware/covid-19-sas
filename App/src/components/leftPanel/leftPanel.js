@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react'
+import React from 'react'
 import {SideNav, SideNavItems, SideNavMenu, SideNavLink} from 'carbon-components-react'
 import './leftPanel.scss';
 import {
@@ -18,20 +18,10 @@ const logs = ['/applicationLogs', '/errorLogs', '/failedRequests', '/debugLogs']
 
 export const LeftPanel = (props) => {
 	const history = useHistory();
-	const [showActions, setShowActions] = useState(false);
 	const {projectContent, projectMetadata} = useSelector(state => state.project)
 	const projectUri = projectMetadata && projectMetadata.uri.split('/').pop()
 	const scenarioName = history.location.pathname.split('/').pop()
 
-	const resizeHandle = () => {
-		// At this width carbon hides its navigation bar
-		if (window.window.innerWidth < 1056) {
-			setShowActions(true);
-		}
-		else {
-			setShowActions(false);
-		}
-	}
 
 	const routing = () => {
 		if (logs.includes(history.location.pathname)) {
@@ -43,37 +33,25 @@ export const LeftPanel = (props) => {
 
 	}
 
-	useEffect(() => {
-		resizeHandle();
-		window.addEventListener('resize', resizeHandle)
-		return () => {
-			window.removeEventListener('resize', resizeHandle)
-		}
-	}, [])
 	return (
 		<SideNav isFixedNav aria-label="Side navigation" expanded={props.toglePanel}>
 			<SideNavItems className={'sideItems'}>
-				{
-					showActions ? <SideNavItems className={'sideActions'}>
-							<SideNavLink onClick={props.newProject} title="Add new project">
-								<Edit32/>
-							</SideNavLink>
-							<SideNavLink>
-								<Restart32/>
-							</SideNavLink>
-							<SideNavLink onClick={() => history.push('/projectList')}>
-								<Folder32/>
-							</SideNavLink>
-							<SideNavLink>
-								<Save color={"black"}/>
-							</SideNavLink>
-						</SideNavItems>
-
-
-						: null
-				}
+				<SideNavItems className={'sideActions'}>
+					<SideNavLink onClick={props.newProject} title="Add new project">
+						<Edit32/>
+					</SideNavLink>
+					<SideNavLink>
+						<Restart32/>
+					</SideNavLink>
+					<SideNavLink onClick={() => history.push('/projectList')}>
+						<Folder32/>
+					</SideNavLink>
+					<SideNavLink>
+						<Save color={"black"}/>
+					</SideNavLink>
+				</SideNavItems>
 				<SideNavLink onClick={routing} renderIcon={Home16}>Home</SideNavLink>
-				<SideNavLink renderIcon={Application16} onClick={() => history.push('/project/'+projectUri)}>Project
+				<SideNavLink renderIcon={Application16} onClick={() => history.push('/project/' + projectUri)}>Project
 					properties</SideNavLink>
 				<SideNavMenu
 					renderIcon={Settings16}

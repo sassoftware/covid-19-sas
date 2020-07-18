@@ -47,8 +47,6 @@ export async function createNewProject(dispatch, projectName, projectObjc, overr
         //REST CALL
         const res = await adapterService.createNewFileToFolderPath(dispatch, name, blob, ADAPTER_SETTINGS.metadataRoot, {});
 
-        console.log("CREATE PROJECT RESULT: ", res)
-
         if (res.status === 201) {
             dispatch({
                 type: ProjectActionTypes.OVERRIDE
@@ -60,8 +58,6 @@ export async function createNewProject(dispatch, projectName, projectObjc, overr
         }
     }
     catch(e){
-        console.log("CREATE PROJECT ERROR: ", e)
-
         if (e.status === 409) {
             dispatch({
                 type: ActionTypes.SUBMIT_ERROR,
