@@ -10,6 +10,9 @@
     padding: 1rem 0 0 1rem;
     background: white;
     margin-bottom: 1rem;
+    div:nth-child(1), div:nth-child(2), div:nth-child(3){
+      padding-top: 4px;
+    }
     .date {
       display: flex;
       flex-direction: column;
@@ -50,7 +53,7 @@
     .additionalCharts {
       display: flex;
       margin-left: auto;
-      margin-top: -12px;
+      margin-top: -18px;
       .chartWrapper {
         padding: 0;
         margin-bottom: 0;

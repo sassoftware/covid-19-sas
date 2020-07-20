@@ -32,8 +32,14 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
 	return ({
 		chart: {
 			type: 'bar',
-			height: 150,
-			width: 200
+			height: 100,
+			width: 200,
+		},
+		plotOptions: {
+			series: {
+				pointMargin: -0.5,
+				pointWidth: 10
+			}
 		},
 		credits: {
 			enabled: false
@@ -47,6 +53,7 @@ export function horizontalChartOptions(marketShareInterest, admissionRate, icuRa
 		},
 		subtitle: false,
 		xAxis: {
+			height: 80,
 			categories: ['Admitted', 'Hospitalized', "ICU", "Ventilators", "Die"],
 			title: {
 				enabled: false
