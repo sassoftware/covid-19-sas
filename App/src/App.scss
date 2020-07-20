@@ -24,12 +24,12 @@ $feature-flags: (
 
 .withMargin {
   transition: margin 0.2s;
-
 }
 
 .bx--content {
   background-color: $gray-10;
   height: 100%;
+  padding: 2rem 2rem 0 2rem;
 }
 
 .App {

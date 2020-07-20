@@ -1,5 +1,8 @@
 @import '../../assets/style/colors';
 
+.bx--side-nav__items {
+  padding: 0;
+}
 .bx--side-nav {
     background-color: white;
     transition: transform 0.2s;

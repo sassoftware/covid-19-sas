@@ -30,12 +30,16 @@ const HospitalAndVirus = (props) => {
 	const project = useSelector(state => state.project.projectContent);
 	const [scenario, setScenario] = useState(project.savedScenarios.find(conf => conf.scenario === name))
 	const scenarioIndex = project.savedScenarios.findIndex(conf => conf.scenario === name)
+	const [s, setS] = useState({...scenario})
 
 	useEffect(() => {
 		setScenario(project.savedScenarios.find(conf => conf.scenario === name))
 	}, [name, project])
 
-	const s = {...scenario}
+	useEffect(() => {
+		setS({...scenario})
+	}, [scenario])
+
 	return (
 		<Row className={'hnv'}>
 			<Column sm={4} md={4} lg={8} className={'spb5'}>
@@ -110,7 +114,8 @@ const HospitalAndVirus = (props) => {
 							max={100}
 							step={1}
 							value={s.MarketSharePercent}
-							onChange={v => setScenarioToStore({...s, MarketSharePercent: v}, scenarioIndex)}
+							onChange={v => setS(Object.assign({},s , {MarketSharePercent:v}))}
+							onAfterChange={v => setScenarioToStore({...s, MarketSharePercent: v}, scenarioIndex)}
 						/>
 					</div>
 					<NumberInput
@@ -131,7 +136,8 @@ const HospitalAndVirus = (props) => {
 							max={100}
 							step={1}
 							value={s.Admission_Rate}
-							onChange={v => setScenarioToStore({...s, Admission_Rate: v}, scenarioIndex)}
+							onChange={v => setS(Object.assign({},s , {Admission_Rate:v}))}
+							onAfterChange={v => setScenarioToStore({...s, Admission_Rate: v}, scenarioIndex)}
 						/>
 					</div>
 					<NumberInput
@@ -152,7 +158,8 @@ const HospitalAndVirus = (props) => {
 							max={100}
 							step={1}
 							value={s.ICUPercent}
-							onChange={v => setScenarioToStore({...s, ICUPercent: v}, scenarioIndex)}
+							onChange={v => setS(Object.assign({},s , {ICUPercent:v}))}
+							onAfterChange={v => setScenarioToStore({...s, ICUPercent: v}, scenarioIndex)}
 						/>
 					</div>
 					<NumberInput
@@ -172,7 +179,8 @@ const HospitalAndVirus = (props) => {
 							max={100}
 							step={1}
 							value={s.VentPErcent}
-							onChange={v => setScenarioToStore({...s, VentPErcent: v}, scenarioIndex)}
+							onChange={v => setS(Object.assign({},s , {VentPErcent:v}))}
+							onAfterChange={v => setScenarioToStore({...s, VentPErcent: v}, scenarioIndex)}
 						/>
 					</div>
 					<NumberInput
@@ -192,7 +200,8 @@ const HospitalAndVirus = (props) => {
 							max={100}
 							step={1}
 							value={s.FatalityRate}
-							onChange={v => setScenarioToStore({...s, FatalityRate: v}, scenarioIndex)}
+							onChange={v => setS(Object.assign({},s , {FatalityRate:v}))}
+							onAfterChange={v => setScenarioToStore({...s, FatalityRate: v}, scenarioIndex)}
 						/>
 					</div>
 					<NumberInput

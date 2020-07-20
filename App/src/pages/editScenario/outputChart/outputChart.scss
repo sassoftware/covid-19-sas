@@ -2,12 +2,60 @@
 @import '../../../assets/style/colors.scss';
 
 .outputChart {
-  min-height: 600px;
+  min-height: 400px;
   position: relative;
   .tooltipLegend {
-    //position: absolute;
-    //left: 10px;
-    //top: 10px;
+    display: flex;
+    color: #565656;
+    padding: 1rem 0 0 1rem;
+    background: white;
+    margin-bottom: 1rem;
+    .date {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1rem;
+      font-size: 14px;
+      min-width: 124px;
+      div:nth-child(1) {
+        font-weight: bold;
+      }
+      div:nth-child(2) {
+        font-size: 40px;
+      }
+    }
+
+    .total {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1rem;
+      div:nth-child(2) {
+        //margin-right: 1rem;
+        font-size: 40px;
+        font-weight: bold;
+      }
+    }
+
+    .group {
+      display: flex;
+      flex-direction: column;
+      div {
+        margin-bottom: 0.5rem;
+        .num {
+          font-size: 22px;
+        }
+      }
+    }
+    .additionalCharts {
+      display: flex;
+      margin-left: auto;
+      margin-top: -12px;
+      .chartWrapper {
+        padding: 0;
+        margin-bottom: 0;
+      }
+    }
   }
   .bx--content-switcher {
     justify-content: flex-start;
@@ -19,7 +67,9 @@
       background-color: $brand;
       color: #fff;
       z-index: 3;
-      &:hover {color: #000;}
+      &:hover {
+        color: #000;
+      }
     }
     &:hover {
       background-color: #d2e8f7;

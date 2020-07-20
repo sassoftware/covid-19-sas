@@ -11,13 +11,9 @@ import {
 	Header as CarbonHeader,
 	HeaderGlobalBar,
 	HeaderPanel,
-	HeaderNavigation,
-	HeaderMenuItem,
 	HeaderName
 } from "carbon-components-react/lib/components/UIShell";
-import {Close32, Menu32, Restart32, Folder32, Edit32, UserAvatarFilled32, Warning32, Information32} from '@carbon/icons-react';
-import ReactTooltip from "react-tooltip";
-import Save from '../save/save'
+import {Close32, Menu32, UserAvatarFilled32, Warning32, Information32} from '@carbon/icons-react';
 import { Button } from 'carbon-components-react'
 
 const logs = ['/applicationLogs', '/errorLogs', '/failedRequests', '/debugLogs'];
@@ -77,25 +73,7 @@ class Header extends React.PureComponent {
 				{/* <HeaderName className={'name'} onClick={() => this.routing()} prefix="">
 							<img src={LogoImg} alt={'logo'} className={'logo'} />
 						</HeaderName> */}
-				<HeaderName children="" prefix="SAS CoV App">
-
-				</HeaderName>
-				<HeaderNavigation aria-label="Actions">
-
-					<HeaderMenuItem onClick={() => this.props.openDialog()} data-tip="Add new project">
-						<Edit32 className={'headerIcon'}/>
-					</HeaderMenuItem>
-					<HeaderMenuItem data-tip="Refresh">
-						<Restart32 className={'headerIcon'}/>
-					</HeaderMenuItem>
-					<HeaderMenuItem data-tip="Project list" onClick={() => this.props.history.push('/projectList')}>
-						<Folder32 className={'headerIcon'}/>
-					</HeaderMenuItem>
-					<HeaderMenuItem data-tip="Save">
-						<Save color={"white"}/>
-					</HeaderMenuItem>
-					<ReactTooltip className="tolltip" delayShow={500}/>
-				</HeaderNavigation>
+				<HeaderName children="" prefix="SAS CoV App"></HeaderName>
 				<HeaderGlobalBar>
 					{
 						this.props.update?
@@ -108,7 +86,7 @@ class Header extends React.PureComponent {
 
 					<LoadingIndicator/>
 
-					<div>
+					<div className={'avatarHolder'}>
 						{this.props.userData ? <img src={avatar} className="user-avatar" alt="avatar"/> : <UserAvatarFilled32 className="avatar"/>}
 					</div>
 					<div onClick={() => this.setState({...this.state, toogleSidenav: !this.state.toogleSidenav})}>

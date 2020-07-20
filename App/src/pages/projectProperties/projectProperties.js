@@ -92,7 +92,7 @@ const ProjectProperties = (props) => {
 			}
 		})
   }
-  
+
   const share = (action) => {
 
 		if (save) {
@@ -147,7 +147,6 @@ const ProjectProperties = (props) => {
 						<OverflowMenuItem
 							{...overflowProps.menuItem()}
 							itemText="Rename project"
-							primaryFocus
 							onClick={() => props.openDialog(projectMetadata.name)}
 						/>
 						<OverflowMenuItem
@@ -207,9 +206,9 @@ const ProjectProperties = (props) => {
                 <Button renderIcon={Share32} className={'property'} onClick={() => share(copy)} >Copy URL</Button>
               </div>
               <div  className={'property'}>
-                <QRcode onClick={() => share(() => props.openQR(shareURL))} 
-                        className={'qr'} 
-                        value={shareURL} 
+                <QRcode onClick={() => share(() => props.openQR(shareURL))}
+                        className={'qr'}
+                        value={shareURL}
                         size={220} />
               </div>
             </div>: null

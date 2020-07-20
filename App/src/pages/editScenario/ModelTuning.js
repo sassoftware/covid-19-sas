@@ -35,11 +35,14 @@ const ModelTuning = (props) => {
 	const project = useSelector(state => state.project.projectContent);
 	const [scenario, setScenario] = useState(project.savedScenarios.find(conf => conf.scenario === name))
 	const scenarioIndex = project.savedScenarios.findIndex(conf => conf.scenario === name)
-
+	const [s, setS] = useState({...scenario})
 	useEffect(() => {
 		setScenario(project.savedScenarios.find(conf => conf.scenario === name))
 	}, [name, project])
 
+	useEffect(() => {
+		setS({...scenario})
+	}, [scenario])
 
 	const handleDatePickerChange = e => {
 		const v = e.target.value
@@ -50,7 +53,6 @@ const ModelTuning = (props) => {
 		}
 	}
 
-	const s = {...scenario}
 	return (
 		<div>
 			<Row>
@@ -151,7 +153,8 @@ const ModelTuning = (props) => {
 								max={100}
 								step={1}
 								value={s.SIGMA}
-								onChange={v => setScenarioToStore({...s, SIGMA: v}, scenarioIndex)}
+								onChange={v => setS(Object.assign({},s , {SIGMA:v}))}
+								onAfterChange={v => setScenarioToStore({...s, SIGMA: v}, scenarioIndex)}
 							/>
 						</div>
 						<NumberInput
@@ -173,7 +176,8 @@ const ModelTuning = (props) => {
 								max={100}
 								step={1}
 								value={s.ECMO_RATE}
-								onChange={v => setScenarioToStore({...s, ECMO_RATE: v}, scenarioIndex)}
+								onChange={v => setS(Object.assign({},s , {ECMO_RATE:v}))}
+								onAfterChange={v => setScenarioToStore({...s, ECMO_RATE: v}, scenarioIndex)}
 							/>
 						</div>
 						<NumberInput
@@ -197,7 +201,8 @@ const ModelTuning = (props) => {
 								max={100}
 								step={1}
 								value={s.BETA_DECAY}
-								onChange={v => setScenarioToStore({...s, BETA_DECAY: v}, scenarioIndex)}
+								onChange={v => setS(Object.assign({},s , {BETA_DECAY:v}))}
+								onAfterChange={v => setScenarioToStore({...s, BETA_DECAY: v}, scenarioIndex)}
 							/>
 						</div>
 						<NumberInput
@@ -219,7 +224,8 @@ const ModelTuning = (props) => {
 								max={100}
 								step={1}
 								value={s.DIAL_RATE}
-								onChange={v => setScenarioToStore({...s, DIAL_RATE: v}, scenarioIndex)}
+								onChange={v => setS(Object.assign({},s , {DIAL_RATE:v}))}
+								onAfterChange={v => setScenarioToStore({...s, DIAL_RATE: v}, scenarioIndex)}
 							/>
 						</div>
 						<NumberInput

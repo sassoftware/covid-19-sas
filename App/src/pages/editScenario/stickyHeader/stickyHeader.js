@@ -11,7 +11,7 @@ function StickyHeader() {
 	const TIMEOUT_DELAY = 10;
 
 	useDocumentScrollThrottled(callbackData => {
-		const {previousScrollTop, currentScrollTop} = callbackData;
+		const {currentScrollTop} = callbackData;
 		const isMinimumScrolled = currentScrollTop > MINIMUM_SCROLL;
 
 		setTimeout(() => {

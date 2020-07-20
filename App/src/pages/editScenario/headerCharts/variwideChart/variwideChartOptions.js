@@ -12,16 +12,17 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 	return ({
 		chart: {
 			type: 'variwide',
-			height: 200,
-			width: 300
+			height: 150,
+			width: 200
 		},
 		credits: {
 			enabled: false
 		},
 		title: {
-			text: "Social Distancing parameters",
+			text: null,
 			style: {
-				color: labelColor
+				color: labelColor,
+				fontSize: 1
 			}
 		},
 		subtitle: false,

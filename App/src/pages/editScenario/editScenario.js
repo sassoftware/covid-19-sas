@@ -196,13 +196,11 @@ const EditScenario = (props) => {
 		<div className={'scenario'}>
 			{
 				projectContent && scenario ? <div>
-					<StickyHeader />
 					<div className={'flex align-items-start lyb2'}>
 						<OverflowMenu {...overflowProps.menu()} className={'spr5'}>
 							<OverflowMenuItem
 								{...overflowProps.menuItem()}
 								itemText="Rename Scenario"
-								primaryFocus
 								onClick={() => props.openDialog(scenarioName)}
 							/>
 							<OverflowMenuItem

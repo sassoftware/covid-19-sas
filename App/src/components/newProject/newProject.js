@@ -38,7 +38,6 @@ const NewProject = (props) => {
 			const res = createNewProject(dispatch, project.name, forSubmit, override);
 
 			res.then((res) => {
-				console.log('response', res)
 				props.close();
 				history.push('/project/' + res);
 			})

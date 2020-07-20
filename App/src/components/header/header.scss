@@ -1,6 +1,21 @@
 @import '../../assets/style/colors.scss';
 @import '../../assets/style/style.scss';
 
+.avatarHolder {
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+}
+
+svg.avatar {
+  fill: white;
+}
+
+.user-avatar{
+  max-height: 38px;
+  width:auto;
+}
+
 .bx--header {
   background-color: $darkBlue;
 }
