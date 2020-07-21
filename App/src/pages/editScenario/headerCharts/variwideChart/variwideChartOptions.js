@@ -99,7 +99,7 @@ export function variwideChartOptions(zeroDay, nDays, rangeValue, distancing, day
 				formatter: function () {
 					let tooltipMessage = `Start date: <b>${dateFormat('%e - %b - %Y', new Date(this.x))}</b><br/>
 										End date: <b>${dateFormat('%e - %b - %Y', new Date(this.point.z + this.x))}</b><br/>
-										Distanicng: <b>${this.y}%</b><br>`;
+										Distancing: <b>${this.y}%</b><br>`;
 					return tooltipMessage;
 				}
 			}

@@ -118,7 +118,7 @@ export function inputChartOptions(zeroDay, nDays, rangeValue, distancing, day, d
 						format: '{point.y:.0f} %'
 					},
 					tooltip: {
-						pointFormat: 'Distanicng: <b>{point.y}</b><br>',
+						pointFormat: 'Distancing: <b>{point.y}</b><br>',
 						valueSuffix: '%'
 						// pointFormat: (point) => { console.log(point)}
 					},
