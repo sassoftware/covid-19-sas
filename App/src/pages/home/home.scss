@@ -1,5 +1,11 @@
 @import "~carbon-components/scss/globals/scss/spacing";
 
+.home {
+  padding-bottom: 3rem;
+  .text-bold {
+    font-weight: bold;
+  }
+}
 .test {
   margin-top: $layout-06;
 }
