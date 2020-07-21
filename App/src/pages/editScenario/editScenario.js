@@ -266,7 +266,7 @@ const EditScenario = (props) => {
 						/> : null}
 					</div>
 
-					<OutputChart/>
+					<OutputChart loading={running}/>
 				</div> : <Loading description="Active loading indicator" withOverlay={false}/>
 			}
 		</div>

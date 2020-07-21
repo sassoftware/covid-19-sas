@@ -4,6 +4,9 @@
 .outputChart {
   min-height: 400px;
   position: relative;
+  &.hidden {
+    display: none;
+  }
   .tooltipLegend {
     display: flex;
     color: #565656;
@@ -75,5 +78,21 @@
       background-color: #d2e8f7;
     }
   }
+}
+.skeletonTooltip {
+  height: 155px;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+.skeletonBig {
+  height: 250px;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.skeletonSmall {
+  height: 167px;
+  margin-bottom: 1rem;
+  width: 100%;
 }
 
