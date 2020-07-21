@@ -90,10 +90,8 @@
   }
 
   .error {
-    border-color: red;
-    border-width: 2px;
-    transition: border 0.5;
-    border-style: solid;
+    transition: border 0.5s;
+    border: 2px solid red;
   }
 
   .hnv {
@@ -110,6 +108,17 @@
 
   }
 
+}
+
+.runModelSpinner {
+  position: absolute;
+  right: 10px;
+  .bx--loading__background {
+    stroke: $brand;
+  }
+  .bx--loading__stroke {
+    stroke: white;
+  }
 }
 
 .rc-slider-track {
