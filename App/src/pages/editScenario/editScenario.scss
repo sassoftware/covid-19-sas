@@ -110,8 +110,13 @@
 
 }
 
+#runModel {
+  position: relative;
+}
+
 .runModelSpinner {
   position: absolute;
+  top: 6px;
   right: 10px;
   .bx--loading__background {
     stroke: $brand;
