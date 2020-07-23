@@ -127,7 +127,9 @@ X_IMPORT: postprocess.sas
             QUIT;
 
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-			PROC SQL; drop table DS_SIR; QUIT;
+			%IF &ScenarioSource ne BOEMSKA %THEN %DO;
+				PROC SQL; drop table DS_SIR; QUIT;
+			%END;
 
 		%END;
 

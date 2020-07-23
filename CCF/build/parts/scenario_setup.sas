@@ -92,6 +92,7 @@ P_IMPORT: fit_recall_pull.sas
 D_IMPORT: fit_recall_pull.sas
 T_IMPORT: fit_recall_pull.sas
 U_IMPORT: fit_recall_pull.sas
+B_IMPORT: fit_recall_boemska.sas
 
             %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;

@@ -6,12 +6,14 @@ Input values for this type of model are very dynamic and may need to be evaluate
 This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.
 You need to evaluate each parameter for your population of interest.
 */
+B_IMPORT: header_boemska.sas
 
 P_IMPORT: header_store.sas
 C_IMPORT: header_store.sas
 D_IMPORT: header_store.sas
 T_IMPORT: header_store.sas
 U_IMPORT: header_store.sas
+B_IMPORT: header_store.sas
 
 
 /* Depending on which SAS products you have and which releases you have these options will turn components of this code on/off */
