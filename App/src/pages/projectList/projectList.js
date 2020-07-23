@@ -16,6 +16,7 @@ import "./projectList.scss";
 import {fetchProjects, setMainSpinner} from './projectListActions';
 import {useDispatch, useSelector} from 'react-redux';
 import {useHistory} from 'react-router';
+import moment from 'moment'
 
 const headerData = [
 	{
@@ -127,8 +128,8 @@ export const ProjectList = () => {
 										{currentPageRows.map(row => {
 											return (
 												<TableRow key={row.id} onClick={() => submitRequest(row.id)}>
-													{row.cells.map(cell => (
-														<TableCell key={cell.id}>{cell.value}</TableCell>
+													{row.cells.map((cell, i) => (
+														<TableCell key={cell.id}>{i !== 2 ? cell.value : moment(cell.value).format('MMM DD YYYY HH:mm')}</TableCell>
 													))}
 												</TableRow>
 											)

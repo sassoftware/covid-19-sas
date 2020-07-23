@@ -4,7 +4,7 @@ import HC_more from 'highcharts/highcharts-more.js'
 import {getOutputChartOptions} from './outputChartOptions'
 import {useDispatch, useSelector} from 'react-redux';
 import {useParams} from 'react-router'
-import {Column, Row, Switch, ContentSwitcher} from 'carbon-components-react'
+import {Column, Row, Switch, ContentSwitcher, SkeletonPlaceholder} from 'carbon-components-react'
 import './outputChart.scss'
 import moment from 'moment'
 import constants from '../../../config/constants'
@@ -102,10 +102,11 @@ const SharedTooltip = props => {
 	</div>
 }
 
-const OutputChart = () => {
-	const dispatch = useDispatch();
+const OutputChart = (props) => {
+	const {loading} = props
+	const dispatch = useDispatch()
 	const {scenarioName} = useParams()
-	const {projectContent} = useSelector(state => state.project);
+	const {projectContent} = useSelector(state => state.project)
 	const [scenario, setScenario] = useState(projectContent ? projectContent.savedScenarios.find(conf => conf.scenario === scenarioName) : {})
 	const [options, setOptions] = useState(null)
 	const [tooltip, setTooltip] = useState(initalTooltipState)
@@ -260,12 +261,15 @@ const OutputChart = () => {
 					chartElement.addEventListener('mouseleave', cleanupCharts)
 					chartElement.addEventListener('touchend', cleanupCharts)
 					const containerElement = i < 2 ? 'leftColumn' : 'rightColumn'
-					document.getElementById(containerElement).appendChild(chartElement);
-					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
-					if (currentChart) {
-						currentChart.destroy()
+					const element = document.getElementById(containerElement)
+					if (element) {
+						element.appendChild(chartElement);
+						const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
+						if (currentChart) {
+							currentChart.destroy()
+						}
+						new Highcharts.chart(elId, opt)
 					}
-					new Highcharts.chart(elId, opt)
 				} else {
 					// Update chart if it already exists
 					const currentChart = Highcharts.charts.find(chart => chart && chart.renderTo.id === elId)
@@ -327,14 +331,14 @@ const OutputChart = () => {
 
 	useEffect(() => {
 		setTooltip(peak)
-	},[peak])
+	}, [peak])
 
 	const onModelChange = (model) => {
 		setModel(dispatch, model)
 	}
 
-	return options ?
-		<div className={'outputChart'}>
+	return <div> {options &&
+		<div className={`outputChart ${loading ? 'hidden' : ''}`}>
 			<div className={'spb5'}>
 				{/*<BlocksHolder/>*/}
 				<div className={'flex justify-content-end'}>
@@ -355,9 +359,22 @@ const OutputChart = () => {
 					<Column id={'rightColumn'} lg={6} md={3}/>
 				</Row>
 			</div>
-		</div>
-		:
-		null
+		</div>}
+		{loading && <div id={'skeletonContainer'}>
+			<SkeletonPlaceholder className={'skeletonTooltip'}/>
+			<Row>
+				<Column lg={10} md={5}>
+					<SkeletonPlaceholder className={'skeletonBig'}/>
+					<SkeletonPlaceholder className={'skeletonBig'}/>
+				</Column>
+				<Column lg={6} md={3}>
+					<SkeletonPlaceholder className={'skeletonSmall'}/>
+					<SkeletonPlaceholder className={'skeletonSmall'}/>
+					<SkeletonPlaceholder className={'skeletonSmall'}/>
+				</Column>
+			</Row>
+		</div>}
+	</div>
 }
 
 export default OutputChart

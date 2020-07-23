@@ -48,7 +48,9 @@ class Home extends React.Component {
 			<div className={'home'} ref={e => {
 				this.mainContainer = e
 			}}>
-				<h1>SAS CoV App</h1>
+				<h1 className={'lyb3'}>CoV-19 App</h1>
+				<h4 className={'spb3'}>A CSA PWA front end to <span className={'text-bold'}>github.com/sassoftware/covid-19-sas</span></h4>
+				<p>This page is a placeholder for instructions and documentation.</p>
 			</div>
 		</Content>
 	}

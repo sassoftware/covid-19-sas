@@ -18,8 +18,6 @@ import constants from '../../config/constants'
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import OutputChart from './outputChart/outputChart'
 import ProjectActionTypes from '../projectProperties/ActionTypes'
-import StickyHeader from './stickyHeader/stickyHeader'
-
 
 moment.updateLocale('en', {
 	monthsShort: ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
@@ -252,9 +250,10 @@ const EditScenario = (props) => {
 						</div>
 					</div>
 					<div className={'flex lyb3'}>
-						<Button className={'spt5 spb5 spr5'} kind='primary' onClick={runModel} disabled={running}>Run
-							Model {running &&
-							<Loading description="Active loading indicator" withOverlay={false} small={true}/>}</Button>
+						<Button id={'runModel'} className={'spt5 spb5 spr5'} kind='primary' onClick={runModel} disabled={running}>Run Model
+							{running &&
+							<Loading className={'runModelSpinner'} description="Active loading indicator" withOverlay={false} small={true}/>}
+						</Button>
 						{error && <InlineNotification
 							kind={'error'}
 							title={error}
@@ -265,7 +264,7 @@ const EditScenario = (props) => {
 						/> : null}
 					</div>
 
-					<OutputChart/>
+					<OutputChart loading={running}/>
 				</div> : <Loading description="Active loading indicator" withOverlay={false}/>
 			}
 		</div>
