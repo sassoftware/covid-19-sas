@@ -120,10 +120,12 @@ const OutputChart = (props) => {
 	const cleanupCharts = () => {
 		for (let i = 0; i < Highcharts.charts.length; i = i + 1) {
 			let chart = Highcharts.charts[i];
-			chart.tooltip.hide()
-			chart.series.forEach(s => {
-				s.points.forEach(p => p.onMouseOut())
-			})
+			if (chart) {
+				chart.tooltip.hide()
+				chart.series.forEach(s => {
+					s.points.forEach(p => p.onMouseOut())
+				})
+			}
 		}
 		setTooltip(peakRef.current)
 	}
@@ -338,28 +340,28 @@ const OutputChart = (props) => {
 	}
 
 	return <div> {options &&
-		<div className={`outputChart ${loading ? 'hidden' : ''}`}>
-			<div className={'spb5'}>
-				{/*<BlocksHolder/>*/}
-				<div className={'flex justify-content-end'}>
-					<ContentSwitcher
-						selectionMode="manual"
-						onChange={onModelChange}
-					>
-						<Switch name="tmodel_seir" text="SEIR Model"/>
-						<Switch name="tmodel_sir" text="SIR Model"/>
-						<Switch name="tmodel_seir_fit_i" text="SEIR FIT I"/>
-					</ContentSwitcher>
-				</div>
+	<div className={`outputChart ${loading ? 'hidden' : ''}`}>
+		<div className={'spb5'}>
+			{/*<BlocksHolder/>*/}
+			<div className={'flex justify-content-end'}>
+				<ContentSwitcher
+					selectionMode="manual"
+					onChange={onModelChange}
+				>
+					<Switch name="tmodel_seir" text="SEIR Model"/>
+					<Switch name="tmodel_sir" text="SIR Model"/>
+					<Switch name="tmodel_seir_fit_i" text="SEIR FIT I"/>
+				</ContentSwitcher>
 			</div>
-			<SharedTooltip tooltip={tooltip}/>
-			<div id={'chartContainer'}>
-				<Row>
-					<Column id={'leftColumn'} lg={10} md={5}/>
-					<Column id={'rightColumn'} lg={6} md={3}/>
-				</Row>
-			</div>
-		</div>}
+		</div>
+		<SharedTooltip tooltip={tooltip}/>
+		<div id={'chartContainer'}>
+			<Row>
+				<Column id={'leftColumn'} lg={10} md={5}/>
+				<Column id={'rightColumn'} lg={6} md={3}/>
+			</Row>
+		</div>
+	</div>}
 		{loading && <div id={'skeletonContainer'}>
 			<SkeletonPlaceholder className={'skeletonTooltip'}/>
 			<Row>
