@@ -35,6 +35,6 @@ export default {
 	doublingtime: 1, 								//"Baseline Infection Doubling Time without social distancing",
 	plots: "NO", 										//"YES/NO display plots in output" // string
 	created_at: 1590492100022,				//"Timestamp when scenario has been created"
-	lastRunModel: undefined,
+	lastRunModel: {},
 	oldModel: false,
 }
