@@ -6,7 +6,15 @@ Input values for this type of model are very dynamic and may need to be evaluate
 This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.
 You need to evaluate each parameter for your population of interest.
 */
+/*  User Interface Switches
+  - BATCH: Default mode 
+  - UI: Used when using SAS Visual Analytics
+  - BOEMSKA: Used when using the Boemska App 
+*/
+    %bafGetDatasets; /* get all input tables */
+    resetline; /* for error reconciliation */
 
+    %LET ScenarioSource = BOEMSKA;
 /* directory path for files: COVID_19.sas (this file), libname store */
     %let homedir = /Local_Files/covid-19-sas/ccf;
 
@@ -17,56 +25,7 @@ You need to evaluate each parameter for your population of interest.
     %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
     %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
-/* User Interface Switches - these are used if you using the code within SAS Visual Analytics UI */
-    %LET ScenarioSource = BATCH;
-/* the following is specific to CCF coding and included prior to the %EasyRun Macro */
-	libname DL_RA teradata server=tdprod1 database=DL_RiskAnalytics;
-	libname DL_COV teradata server=tdprod1 database=DL_COVID;
-	libname CovData '/sas/data/ccf_preprod/finance/sas/EA_COVID_19/CovidData';
-	proc datasets lib=work kill;run;quit;
 
-	proc sql; 
-	connect to teradata(Server=tdprod1);
-	create table CovData.PullRealCovid as select * from connection to teradata 
-
-	(
-	Select COVID_RESULT_V.*, DEP_STATE from DL_COVID.COVID_RESULT_V
-	LEFT JOIN (SELECT DISTINCT COVID_FACT_V.patient_identifier,COVID_FACT_V.DEP_STATE from DL_COVID.COVID_FACT_V) dep_st
-	on dep_st.patient_identifier = COVID_RESULT_V.patient_identifier
-	WHERE COVIDYN = 'YES' and DEP_STATE='OH'and discharge_Cat in ('Inpatient','Discharged To Home');
-	)
-
-	;quit;
-	PROC SQL;
-	CREATE TABLE CovData.PullRealAdmitCovid AS 
-	SELECT /* AdmitDate */
-				(datepart(t1.HSP_ADMIT_DTTM)) FORMAT=Date9. AS AdmitDate, 
-			/* COUNT_DISTINCT_of_patient_identi */
-				(COUNT(DISTINCT(t1.patient_identifier))) AS TrueDailyAdmits, 
-			/* SumICUNum_1 */
-				(SUM(input(t1.ICU, 3.))) AS SumICUNum_1, 
-			/* SumICUNum */
-				(SUM(case when t1.ICU='YES' then 1
-				else case when t1.ICU='1' then 1 else 0
-				end end)) AS SumICUNum
-		FROM CovData.PULLREALCOVID t1
-		GROUP BY (CALCULATED AdmitDate);
-	QUIT;
-	PROC SQL;
-	CREATE TABLE CovData.RealCovid_DischargeDt AS 
-	SELECT /* COUNT_of_patient_identifier */
-				(COUNT(t1.patient_identifier)) AS TrueDailyDischarges, 
-			/* DischargDate */
-				(datepart(t1.HSP_DISCH_DTTM)) FORMAT=Date9. AS DischargDate, 
-			/* SUMICUDISCHARGE */
-				(SUM(Case when t1.DISCHARGEICUYN ='YES' then 1
-				else case when t1.DISCHARGEICUYN ='1' then 1
-				else 0
-				end end)) AS SUMICUDISCHARGE
-		FROM CovData.PULLREALCOVID t1
-		WHERE (CALCULATED DischargDate) NOT = .
-		GROUP BY (CALCULATED DischargDate);
-	QUIT;
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,ISOChangeEvent,ISOChangeWindow,SocialDistancingChange,
@@ -314,10 +273,32 @@ You need to evaluate each parameter for your population of interest.
             QUIT;
             /* pull the current scenario data to work for plots below */
             data work.MODEL_FINAL; set &PULLLIB..MODEL_FINAL; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
-                data work.FIT_PRED; set &PULLLIB..FIT_PRED; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-                data work.FIT_PARMS; set &PULLLIB..FIT_PARMS; where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall."; run;
-            %END;
+            data work.ds_seir;
+                set &PULLLIB..MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with Data Step"; 
+            run;
+
+
+            data work.ds_sir;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SIR with Data Step"; 
+            run;
+
+            data work.tmodel_seir;
+                set &PULLLIB..MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with PROC (T)MODEL"; 
+            run;
+
+
+            data work.tmodel_sir;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SIR with PROC (T)MODEL"; 
+            run;
+
+            data work.tmodel_seir_fit_i;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with PROC (T)MODEL-Fit R0"; 
+            run;
             %LET ScenarioIndex = &ScenarioIndex_recall.;
         %END;
 
@@ -1891,60 +1872,28 @@ You need to evaluate each parameter for your population of interest.
 
 /* START: STORE.FIT_INPUT READ */
 
-						/* pull data for US State of Ohio */
-							/* the file appears to be updated throughout the day but partial data for today could cause issues with fit - this code only updates when data is stale by 2 days */
-							FILENAME OHIO URL "https://coronavirus.ohio.gov/static/COVIDSummaryData.csv";
-							OPTION VALIDVARNAME=V7;
-							PROC IMPORT file=OHIO OUT=WORK.FIT_IMPORT DBMS=CSV REPLACE;
-								GETNAMES=YES;
+						/* import data feed from fit_import.csv in libname store */
+							PROC IMPORT FILE="&homedir./fit_input.csv" OUT=STORE.FIT_INPUT DBMS=CSV REPLACE;
+								GETNAMES = YES;
 								DATAROW=2;
-								GUESSINGROWS=20000000;
-							RUN;
+								GUESSINGROWS=200;
+							RUN; 
 
-						/* check to make sure column 1 is county and not VAR1 - sometime the URL is pulled quickly and this gets mislabeled*/
-							%let dsid=%sysfunc(open(WORK.FIT_IMPORT));
-							%let countnum=%sysfunc(varnum(&dsid.,var1));
-							%let rc=%sysfunc(close(&dsid.));
-							%IF &countnum. > 0 %THEN %DO;
-								data WORK.FIT_IMPORT; set WORK.FIT_IMPORT; rename VAR1=COUNTY; run;
-							%END;
-
-						/* Prepare Ohio Data - subset to region (county list) and put date range in macro variables */
 							PROC SQL NOPRINT;
-								CREATE TABLE WORK.FIT_INPUT AS 
-									SELECT INPUT(ONSET_DATE,ANYDTDTE9.) AS DATE FORMAT=DATE9., SUM(INPUT(CASE_COUNT,COMMA5.)) AS NEW_CASE_COUNT
-									FROM WORK.FIT_IMPORT
-									WHERE STRIP(UPCASE(COUNTY)) IN ('ASHLAND','ASHTABULA','CARROLL','COLUMBIANA','CRAWFORD',
-										'CUYAHOGA','ERIE','GEAUGA','HOLMES','HURON','LAKE','LORAIN','MAHONING','MEDINA',
-										'PORTAGE','RICHLAND','STARK','SUMMIT','TRUMBULL','TUSCARAWAS','WAYNE')
-									GROUP BY CALCULATED DATE
-									ORDER BY CALCULATED DATE;
-								SELECT MIN(DATE) INTO :FIRST_CASE FROM WORK.FIT_INPUT;
-								SELECT MAX(DATE) INTO :LATEST_CASE FROM WORK.FIT_INPUT;
+								SELECT MIN(DATE) INTO :FIRST_CASE FROM STORE.FIT_INPUT;
+								SELECT MAX(DATE) INTO :LATEST_CASE FROM STORE.FIT_INPUT;
 							QUIT;
 
-						/* Rows for full date range - 1 per day */
-							DATA ALLDATES;
-								FORMAT DATE DATE9.;
-								DO DATE = &FIRST_CASE. TO &LATEST_CASE.;
-									TIME = DATE - &FIRST_CASE. + 1;
-									OUTPUT;
-								END;
-							RUN;
+						/* This section, from START: to END:, can be adapted to read case data from your data feed of choice
 
-						/* merge full date range with input data - create empty rows for days with no activity */
-							DATA STORE.FIT_INPUT;
-								MERGE ALLDATES WORK.FIT_INPUT;
-								BY DATE;
-								CUMULATIVE_CASE_COUNT + NEW_CASE_COUNT;
-							RUN;
+							If you have data in a database or a sas dataset you can use this section to read it and store it in STORE.FIT_INPUT
 
-						/* cleanup */
-							PROC SQL NOPRINT;
-								drop table ALLDATES;
-								drop table WORK.FIT_INPUT;
-							QUIT;
-							 
+							Note: the condition before START: will only run a data refresh when the current source has no data for the last 2 days
+						
+							for an example of importing data from a source feed check out /examples/fit_import_ohio.sas
+								the contents can be used to replace this section of the code from START: to END:
+						*/
+ 
 /* END: STORE.FIT_INPUT READ */
 
 					%END;
@@ -2660,107 +2609,22 @@ You need to evaluate each parameter for your population of interest.
 								ScenarioNameUnique = "Unique Scenario Name"
 								Scenarioname = "Scenario Name Short"
 								;
-							%IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
-								MODIFY FIT_PRED;
-								LABEL
-									ScenarioIndex = "Scenario ID: Order"
-									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-									ScenarioUser = "Scenario ID: User who created Scenario"
-									ScenarioNameUnique = "Unique Scenario Name"
-									Scenarioname = "Scenario Name Short"
-									;
-								MODIFY FIT_PARMS;
-								LABEL
-									ScenarioIndex = "Scenario ID: Order"
-									ScenarioSource = "Scenario ID: Source (BATCH or UI)"
-									ScenarioUser = "Scenario ID: User who created Scenario"
-									ScenarioNameUnique = "Unique Scenario Name"
-									Scenarioname = "Scenario Name Short"
-									;
-							%END;
+
 					QUIT;
 					RUN;
-            /* CCF specific post-processing of MODEL_FINAL */
-            /*pull real COVID admits and ICU*/
-                proc sql; 
-                    create table work.MODEL_FINAL as select t1.*,t2.TrueDailyAdmits, t2.SumICUNum
-                        from work.MODEL_FINAL t1 left join CovData.PullRealAdmitCovid t2 on (t1.Date=t2.AdmitDate);
-                    create table work.MODEL_FINAL as select t1.*,t2.TrueDailyDischarges, t2.SumICUDISCHARGE as SumICUNum_Discharge
-                        from work.MODEL_FINAL t1 left join CovData.RealCovid_DischargeDt t2 on (t1.Date=t2.DischargDate);
-                quit;
-
-                data work.MODEL_FINAL;
-                    set work.MODEL_FINAL;
-                    *format Scenarioname $550.;
-                    format INPUT_Social_DistancingCombo $90.;
-                    *ScenarioName="&Scenario";
-                    CumSumTrueAdmits + TrueDailyAdmits;
-                    CumSumTrueDischarges + TrueDailyDischarges;
-                    CumSumICU + SumICUNum;
-                    CumSumICUDischarge + SumICUNum_Discharge;
-
-
-                    True_CCF_Occupancy=CumSumTrueAdmits-CumSumTrueDischarges;
-
-                    TrueCCF_ICU_Occupancy=CumSumICU-CumSumICUDischarge;
-                    /*day logic for tableau views*/
-                    if date>(today()-3) then Hospital_Occupancy_PP=Hospital_Occupancy; else Hospital_Occupancy_PP=.;
-                    if date>(today()-3) then ICU_Occupancy_PP=ICU_Occupancy; else ICU_Occupancy_PP=.;
-                    if date>(today()-3) then Vent_Occupancy_PP=Vent_Occupancy; else Vent_Occupancy_PP=.;
-                    if date>(today()-3) then ECMO_Occupancy_PP=ECMO_Occupancy; else ECMO_Occupancy_PP=.;
-                    if date>(today()-3) then DIAL_Occupancy_PP=DIAL_Occupancy; else DIAL_Occupancy_PP=.;
-
-                    if date>today() then True_CCF_Occupancy=.;
-                    if date>today() then TrueCCF_ICU_Occupancy=.;
-
-                    /*
-                        INPUT_Geography="&GeographyInput";
-
-                        INPUT_Recovery_Time				=&RecoveryDays;
-                        INPUT_Doubling_Time				=&doublingtime;
-                        INPUT_Starting_Admits			=&KnownAdmits;
-
-                        INPUT_Population				=&Population;
-                        INPUT_Social_DistancingCombo	="&SocialDistancing"||"/"||"&SocialDistancingChange"||"/"||"&SocialDistancingChangeTwo"||"/"||"&SocialDistancingChange3"||"/"||"&SocialDistancingChange4";
-                        INPUT_Social_Distancing_Date	=Put(&dayZero,date9.) ||" - "|| put(&iso_change_date,date9.) ||" - "|| put(&iso_change_date_two,date9.) ||" - "|| put(&iso_change_date_3,date9.) ||" - "|| put(&iso_change_date_4,date9.);
-                        INPUT_Market_Share				=&MarketSharePercent;
-                        INPUT_Admit_Percent_of_Infected	=&Admission_Rate;
-                        INPUT_ICU_Percent_of_Admits		=&ICUPercent;
-                        INPUT_Vent_Percent_of_Admits	=&VentPErcent;
-                    */
-                    /*paste overarching scenario variables*/
-                    /*
-                        INPUT_Mortality_RateInput		=&DeathRt;
-
-                        INPUT_Length_of_Stay			=&LOS; 
-                        INPUT_ICU_LOS					=&ICULOS; 
-                        INPUT_Vent_LOS					=&VENTLOS; 
-                        INPUT_Ecmo_Percent_of_Admits	=&ecmoPercent; 
-                        INPUT_Ecmo_LOS_Input			=&ecmolos;
-                        INPUT_Dialysis_PErcent			=&DialysisPercent; 
-                        INPUT_Dialysis_LOS				=&DialysisLOS;
-                        INPUT_Time_Zero					=&day_Zero;
-                    */
-                run;
 
                 %IF &ScenarioSource = BATCH or &ScenarioSource = BOEMSKA %THEN %DO;
                 
                     PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                     PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
                     PROC APPEND base=store.INPUTS data=work.INPUTS; run;
-                    %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
-                        PROC APPEND base=store.FIT_PRED data=work.FIT_PRED; run;
-                        PROC APPEND base=store.FIT_PARMS data=work.FIT_PARMS; run;
-                    %END;
+
 
                     PROC SQL;
                         drop table work.MODEL_FINAL;
                         drop table work.SCENARIOS;
                         drop table work.INPUTS;
-                        %IF &HAVE_SASETS = YES AND %SYMEXIST(ISOChangeDate1) %THEN %DO;
-                            drop table work.FIT_PRED;
-                            drop table work.FIT_PARMS;
-                        %END;
+
                     QUIT;
 
                 %END;
@@ -2777,11 +2641,37 @@ You need to evaluate each parameter for your population of interest.
                             drop table work.FIT_PRED;
                             drop table work.FIT_PARMS;
                         %END;
+            data work.ds_seir;
+                set &PULLLIB..MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with Data Step"; 
+            run;
 
+
+            data work.ds_sir;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SIR with Data Step"; 
+            run;
+
+            data work.tmodel_seir;
+                set &PULLLIB..MODEL_FINAL;
+                where ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with PROC (T)MODEL"; 
+            run;
+
+
+            data work.tmodel_sir;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SIR with PROC (T)MODEL"; 
+            run;
+
+            data work.tmodel_seir_fit_i;
+                set &PULLLIB..MODEL_FINAL;
+                where  ScenarioIndex=&ScenarioIndex_recall. and ScenarioSource="&ScenarioSource_recall." and ScenarioUser="&ScenarioUser_recall." and ModelType = "SEIR with PROC (T)MODEL-Fit R0"; 
+            run;
                 QUIT;
             %END;
         %END;
 %mend;
+
 
 
 
@@ -2801,76 +2691,13 @@ You need to evaluate each parameter for your population of interest.
 
 	You could also use other files as input sources.  For example, with an excel file you could use libname XLSX.
 */
-%macro run_scenarios(ds);
-	/* import file */
-	/* proc import changes ISOChangeDate to a date format and only pulls first date in list - switch to manual data step with infile
-	PROC IMPORT DATAFILE="&homedir./&ds."
-		DBMS=CSV
-		OUT=run_scenarios
-		REPLACE;
-		GETNAMES=YES;
-	RUN;
-	*/
-	/* manual data step import with infile - note this will miss new columns added to the run_scenarios.csv unless it is updated */
+%macro run_scenarios();
+
+
 	data WORK.RUN_SCENARIOS;
-		infile "&homedir./run_scenarios.csv" delimiter = ',' MISSOVER DSD lrecl=32767 firstobs=2 ;
-		informat scenario $25. ;
-		informat IncubationPeriod best32. ;
-		informat InitRecovered best32. ;
-		informat RecoveryDays best32. ;
-		informat doublingtime best32. ;
-		informat KnownAdmits best32. ;
-		informat Population best32. ;
-		informat SocialDistancing best32. ;
-		informat MarketSharePercent best32. ;
-		informat Admission_Rate best32. ;
-		informat ICUPercent best32. ;
-		informat VentPErcent best32. ;
-		informat ISOChangeDate $200. ;
-		informat ISOChangeEvent $200. ;
-		informat ISOChangeWindow $50. ;
-		informat SocialDistancingChange $50. ;
-		informat FatalityRate best32. ;
-		informat plots $3. ;
-		format scenario $25. ;
-		format IncubationPeriod best12. ;
-		format InitRecovered best12. ;
-		format RecoveryDays best12. ;
-		format doublingtime best12. ;
-		format KnownAdmits best12. ;
-		format Population best12. ;
-		format SocialDistancing best12. ;
-		format MarketSharePercent best12. ;
-		format Admission_Rate best12. ;
-		format ICUPercent best12. ;
-		format VentPErcent best12. ;
-		format ISOChangeDate $200. ;
-		format ISOChangeEvent $200. ;
-		format ISOChangeWindow $50. ;
-		format SocialDistancingChange $50. ;
-		format FatalityRate best12. ;
-		format plots $3. ;
-		input
-					scenario  $
-					IncubationPeriod
-					InitRecovered
-					RecoveryDays
-					doublingtime
-					KnownAdmits
-					Population
-					SocialDistancing
-					MarketSharePercent
-					Admission_Rate
-					ICUPercent
-					VentPErcent
-					ISOChangeDate $
-					ISOChangeEvent $
-					ISOChangeWindow $
-					SocialDistancingChange  $
-					FatalityRate
-					plots  $
-		;
+		set WORK.input_scenarios;
 	run;
+
 	/* extract column names into space delimited string stored in macro variable &names */
 	PROC SQL noprint;
 		select name into :names separated by ' '
@@ -2901,13 +2728,130 @@ You need to evaluate each parameter for your population of interest.
 	%END;
 %mend;
 
-%run_scenarios(run_scenarios.csv);
-	/* use the &cexecute variable and the run_scenario dataset to run all the scenarios with call execute */
-	data _null_;
-		set run_scenarios;
-		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
+%run_scenarios();
+
+/* use the &cexecute variable and the run_scenario dataset to run all the scenarios with call execute */
+data _null_;
+  set run_scenarios;
+  call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
+run;
+
+
+%if %sysfunc(exist(ds_seir)) %then %do;
+	data ds_seir;
+		set ds_seir;
+		datetime=dhms(date,0,0,0);
+		drop
+			ModelType
+			ScenarioName
+			ScenarioNameUnique
+			ScenarioSource
+			ScenarioUser
+			ScenarioIndex
+			;
 	run;
+%end;
+
+%if %sysfunc(exist(ds_sir)) %then %do;
+	data ds_sir;
+		set ds_sir;
+		datetime=dhms(date,0,0,0);
+		drop
+			ModelType
+			ScenarioName
+			ScenarioNameUnique
+			ScenarioSource
+			ScenarioUser
+			ScenarioIndex
+			;
+	run;
+%end;
 
 
+%if %sysfunc(exist(tmodel_seir)) %then %do;
+	data tmodel_seir;
+		set tmodel_seir;
+		datetime=dhms(date,0,0,0);
+		drop
+			ModelType
+			ScenarioName
+			ScenarioNameUnique
+			ScenarioSource
+			ScenarioUser
+			ScenarioIndex
+			;
+	run;
+%end;
+
+%if %sysfunc(exist(tmodel_seir_fit_i)) %then %do;
+	data tmodel_seir_fit_i;
+		set tmodel_seir_fit_i;
+		datetime=dhms(date,0,0,0);
+		drop
+			ModelType
+			ScenarioName
+			ScenarioNameUnique
+			ScenarioSource
+			ScenarioUser
+			ScenarioIndex
+			;
+	run;
+%end;
+
+%if %sysfunc(exist(tmodel_sir)) %then %do;
+	data tmodel_sir;
+	set tmodel_sir;
+	datetime=dhms(date,0,0,0);
+	drop
+		ModelType
+		ScenarioName
+		ScenarioNameUnique
+		ScenarioSource
+		ScenarioUser
+		ScenarioIndex
+		;
+	run;
+%end;
 
 
+%macro bafCheckoutputs;
+* this if sysfunc exist happens for each outtable ;
+
+* --out table 0-- ;
+  %if %sysfunc(exist(ds_seir)) = 0 %then %do;
+    data ds_seir;
+  length DATE $80. ADMIT_DATE $80. S_N 8. I_N 8. E_N 8. R_N 8. DAY 8. NEWINFECTED 8. HOSP 8. ICU 8. VENT 8. ECMO 8. DIAL 8. Fatality 8. Deceased_Today 8. Total_Deaths 8. MARKET_HOSP 8. MARKET_ICU 8. MARKET_VENT 8. MARKET_ECMO 8. MARKET_DIAL 8. Market_Fatality 8. Market_Deceased_Today 8. Market_Total_Deaths 8. HOSPITAL_OCCUPANCY 8. ICU_OCCUPANCY 8. VENT_OCCUPANCY 8. ECMO_OCCUPANCY 8. DIAL_OCCUPANCY 8. MARKET_HOSPITAL_OCCUPANCY 8. MARKET_ICU_OCCUPANCY 8. MARKET_VENT_OCCUPANCY 8. MARKET_ECMO_OCCUPANCY 8. MARKET_DIAL_OCCUPANCY 8. MedSurgOccupancy 8. Market_MEdSurg_Occupancy 8. ISOChangeEvent $80. LOWER_HOSPITAL_OCCUPANCY 8. LOWER_ICU_OCCUPANCY 8. LOWER_VENT_OCCUPANCY 8. LOWER_ECMO_OCCUPANCY 8. LOWER_DIAL_OCCUPANCY 8. UPPER_HOSPITAL_OCCUPANCY 8. UPPER_ICU_OCCUPANCY 8. UPPER_VENT_OCCUPANCY 8. UPPER_ECMO_OCCUPANCY 8. UPPER_DIAL_OCCUPANCY 8. BETA 8. SocialDistancing 8. N 8. SCALE 8. RT 8. EventY_Multiplier 8. datetime 8.;
+    run;
+  %end;
+* --out table 1-- ;
+  %if %sysfunc(exist(ds_sir)) = 0 %then %do;
+    data ds_sir;
+  length DATE $80. ADMIT_DATE $80. S_N 8. I_N 8. E_N 8. R_N 8. DAY 8. NEWINFECTED 8. HOSP 8. ICU 8. VENT 8. ECMO 8. DIAL 8. Fatality 8. Deceased_Today 8. Total_Deaths 8. MARKET_HOSP 8. MARKET_ICU 8. MARKET_VENT 8. MARKET_ECMO 8. MARKET_DIAL 8. Market_Fatality 8. Market_Deceased_Today 8. Market_Total_Deaths 8. HOSPITAL_OCCUPANCY 8. ICU_OCCUPANCY 8. VENT_OCCUPANCY 8. ECMO_OCCUPANCY 8. DIAL_OCCUPANCY 8. MARKET_HOSPITAL_OCCUPANCY 8. MARKET_ICU_OCCUPANCY 8. MARKET_VENT_OCCUPANCY 8. MARKET_ECMO_OCCUPANCY 8. MARKET_DIAL_OCCUPANCY 8. MedSurgOccupancy 8. Market_MEdSurg_Occupancy 8. ISOChangeEvent $80. LOWER_HOSPITAL_OCCUPANCY 8. LOWER_ICU_OCCUPANCY 8. LOWER_VENT_OCCUPANCY 8. LOWER_ECMO_OCCUPANCY 8. LOWER_DIAL_OCCUPANCY 8. UPPER_HOSPITAL_OCCUPANCY 8. UPPER_ICU_OCCUPANCY 8. UPPER_VENT_OCCUPANCY 8. UPPER_ECMO_OCCUPANCY 8. UPPER_DIAL_OCCUPANCY 8. BETA 8. SocialDistancing 8. N 8. SCALE 8. RT 8. EventY_Multiplier 8. datetime 8.;
+    run;
+  %end;
+* --out table 2-- ;
+  %if %sysfunc(exist(tmodel_seir)) = 0 %then %do;
+    data tmodel_seir;
+  length ModelType $80. DATE $80. ADMIT_DATE $80. ScenarioName $80. ScenarioNameUnique $80. ScenarioSource $80. ScenarioUser $80. ScenarioIndex 8. S_N 8. I_N 8. E_N 8. R_N 8. DAY 8. NEWINFECTED 8. HOSP 8. ICU 8. VENT 8. ECMO 8. DIAL 8. Fatality 8. Deceased_Today 8. Total_Deaths 8. MARKET_HOSP 8. MARKET_ICU 8. MARKET_VENT 8. MARKET_ECMO 8. MARKET_DIAL 8. Market_Fatality 8. Market_Deceased_Today 8. Market_Total_Deaths 8. HOSPITAL_OCCUPANCY 8. ICU_OCCUPANCY 8. VENT_OCCUPANCY 8. ECMO_OCCUPANCY 8. DIAL_OCCUPANCY 8. MARKET_HOSPITAL_OCCUPANCY 8. MARKET_ICU_OCCUPANCY 8. MARKET_VENT_OCCUPANCY 8. MARKET_ECMO_OCCUPANCY 8. MARKET_DIAL_OCCUPANCY 8. MedSurgOccupancy 8. Market_MEdSurg_Occupancy 8. ISOChangeEvent $80. LOWER_HOSPITAL_OCCUPANCY 8. LOWER_ICU_OCCUPANCY 8. LOWER_VENT_OCCUPANCY 8. LOWER_ECMO_OCCUPANCY 8. LOWER_DIAL_OCCUPANCY 8. UPPER_HOSPITAL_OCCUPANCY 8. UPPER_ICU_OCCUPANCY 8. UPPER_VENT_OCCUPANCY 8. UPPER_ECMO_OCCUPANCY 8. UPPER_DIAL_OCCUPANCY 8. SocialDistancing 8. BETA 8. RT 8. EventY_Multiplier 8.;
+    run;
+  %end;
+* --out table 3-- ;
+  %if %sysfunc(exist(tmodel_seir_fit_i)) = 0 %then %do;
+    data tmodel_seir_fit_i;
+  length ModelType $80. DATE $80. ADMIT_DATE $80. ScenarioName $80. ScenarioNameUnique $80. ScenarioSource $80. ScenarioUser $80. ScenarioIndex 8. S_N 8. I_N 8. E_N 8. R_N 8. DAY 8. NEWINFECTED 8. HOSP 8. ICU 8. VENT 8. ECMO 8. DIAL 8. Fatality 8. Deceased_Today 8. Total_Deaths 8. MARKET_HOSP 8. MARKET_ICU 8. MARKET_VENT 8. MARKET_ECMO 8. MARKET_DIAL 8. Market_Fatality 8. Market_Deceased_Today 8. Market_Total_Deaths 8. HOSPITAL_OCCUPANCY 8. ICU_OCCUPANCY 8. VENT_OCCUPANCY 8. ECMO_OCCUPANCY 8. DIAL_OCCUPANCY 8. MARKET_HOSPITAL_OCCUPANCY 8. MARKET_ICU_OCCUPANCY 8. MARKET_VENT_OCCUPANCY 8. MARKET_ECMO_OCCUPANCY 8. MARKET_DIAL_OCCUPANCY 8. MedSurgOccupancy 8. Market_MEdSurg_Occupancy 8. ISOChangeEvent $80. LOWER_HOSPITAL_OCCUPANCY 8. LOWER_ICU_OCCUPANCY 8. LOWER_VENT_OCCUPANCY 8. LOWER_ECMO_OCCUPANCY 8. LOWER_DIAL_OCCUPANCY 8. UPPER_HOSPITAL_OCCUPANCY 8. UPPER_ICU_OCCUPANCY 8. UPPER_VENT_OCCUPANCY 8. UPPER_ECMO_OCCUPANCY 8. UPPER_DIAL_OCCUPANCY 8. SocialDistancing 8. BETA 8. RT 8. EventY_Multiplier 8.;
+    run;
+  %end;
+* --out table 4-- ;
+  %if %sysfunc(exist(tmodel_sir)) = 0 %then %do;
+    data tmodel_sir;
+  length DATE $80. ADMIT_DATE $80. S_N 8. I_N 8. E_N 8. R_N 8. DAY 8. NEWINFECTED 8. HOSP 8. ICU 8. VENT 8. ECMO 8. DIAL 8. Fatality 8. Deceased_Today 8. Total_Deaths 8. MARKET_HOSP 8. MARKET_ICU 8. MARKET_VENT 8. MARKET_ECMO 8. MARKET_DIAL 8. Market_Fatality 8. Market_Deceased_Today 8. Market_Total_Deaths 8. HOSPITAL_OCCUPANCY 8. ICU_OCCUPANCY 8. VENT_OCCUPANCY 8. ECMO_OCCUPANCY 8. DIAL_OCCUPANCY 8. MARKET_HOSPITAL_OCCUPANCY 8. MARKET_ICU_OCCUPANCY 8. MARKET_VENT_OCCUPANCY 8. MARKET_ECMO_OCCUPANCY 8. MARKET_DIAL_OCCUPANCY 8. MedSurgOccupancy 8. Market_MEdSurg_Occupancy 8. ISOChangeEvent $80. LOWER_HOSPITAL_OCCUPANCY 8. LOWER_ICU_OCCUPANCY 8. LOWER_VENT_OCCUPANCY 8. LOWER_ECMO_OCCUPANCY 8. LOWER_DIAL_OCCUPANCY 8. UPPER_HOSPITAL_OCCUPANCY 8. UPPER_ICU_OCCUPANCY 8. UPPER_VENT_OCCUPANCY 8. UPPER_ECMO_OCCUPANCY 8. UPPER_DIAL_OCCUPANCY 8. SocialDistancing 8. BETA 8. RT 8. EventY_Multiplier 8.;
+    run;
+  %end;
+%mend; %bafCheckoutputs;
+%bafheader;
+    %bafOutDataset(ds_seir, work, ds_seir, h54skeys=nokeys);
+    %bafOutDataset(ds_sir, work, ds_sir, h54skeys=nokeys);
+    %bafOutDataset(tmodel_seir, work, tmodel_seir, h54skeys=nokeys);
+    %bafOutDataset(tmodel_seir_fit_i, work, tmodel_seir_fit_i, h54skeys=nokeys);
+    %bafOutDataset(tmodel_sir, work, tmodel_sir, h54skeys=nokeys);
+%bafFooter;
