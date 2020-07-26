@@ -3,8 +3,7 @@ import ActionTypes from './ActionTypes'
 const initalState = {
 	leftPanel: true,
 	mainSpinner: false,
-	userData: null,
-	dataLabels: null
+	userData: null
 }
 
 export default function homeReducer(state = initalState, action) {
@@ -15,11 +14,6 @@ export default function homeReducer(state = initalState, action) {
 			return Object.assign({}, state, {
 				userData: action.payload
 			})
-		case ActionTypes.SET_DATA_LABELS: {
-			return Object.assign({}, state, {
-				dataLabels: action.payload
-			})
-		}
 		default:
 			return state
 	}
