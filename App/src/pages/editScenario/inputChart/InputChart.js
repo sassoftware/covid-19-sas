@@ -145,6 +145,7 @@ class InputChart extends React.Component {
 		return <div>
 			<div className={'chartWrapper'}>
 				<div className={'rangeWrapper'}>
+					<div className={'blueLine'}></div>
 					<Range
 						// count={3}
 						min={this.state.zeroDay}

@@ -64,7 +64,7 @@ class Header extends React.PureComponent {
 		const avatar = this.props.userData && (this.props.userData.userAvatar || (this.props.userData.userInfo && this.props.userData.userInfo[0].AVATAR_URI))
 		const username = this.props.userData && (this.props.userData.name || (this.props.userData.userInfo && this.props.userData.userInfo[0].USERNAME))
 		return (
-			<CarbonHeader aria-label="Boemska Platform name">
+			<CarbonHeader aria-label="Boemska Platform">
 				<div onClick={() => this.props.triggerPanel()} style={{marginLeft: '10px'}}>
 					{
 						!this.props.toglePanel ? <Menu32 className={'headerIcon'}/> : <Close32 className={'headerIcon'}/>
@@ -73,7 +73,7 @@ class Header extends React.PureComponent {
 				{/* <HeaderName className={'name'} onClick={() => this.routing()} prefix="">
 							<img src={LogoImg} alt={'logo'} className={'logo'} />
 						</HeaderName> */}
-				<HeaderName children="" prefix="SAS CoV App"></HeaderName>
+				<HeaderName children="" prefix="Hospital Scenario Analysis"></HeaderName>
 				<HeaderGlobalBar>
 					{
 						this.props.update?
