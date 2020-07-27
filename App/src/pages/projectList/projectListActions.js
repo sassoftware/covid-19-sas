@@ -15,6 +15,7 @@ export async function fetchProjects(dispatch) {
 
 	let url = "/folders/folders/@item?path=" + ADAPTER_SETTINGS.metadataRoot;
 	try {
+		setMainSpinner(dispatch, true);
 		let res = await adapterService.managedRequest(dispatch, 'get', url, {});
 		const afiUrl = getSelfUriFromLinks(res.body)
 		if (afiUrl !== '') {
@@ -24,11 +25,10 @@ export async function fetchProjects(dispatch) {
 				type: ActionTypes.FETCH_PROJECTS_RECIVED,
 				payload: res.body.items
 			})
-			setMainSpinner(dispatch, false);
 		}
-		return true
 	} catch (e) {
 		console.log("FETCH_PROJECTS_ERROR: ", e);
-		return true
+	} finally {
+		setMainSpinner(dispatch, false);
 	}
 }

@@ -2,7 +2,6 @@ import ActionTypes from './ActionTypes'
 
 const initalState = {
 	leftPanel: true,
-	mainSpinner: false,
 	userData: null
 }
 
