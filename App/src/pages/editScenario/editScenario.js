@@ -207,7 +207,6 @@ const EditScenario = (props) => {
 								requireTitle
 								onClick={() => cloneScenario(scenario)}
 							/>
-							<OverflowMenuItem {...overflowProps.menuItem()} itemText="Add to Comparison"/>
 							<OverflowMenuItem
 								{...overflowProps.menuItem()}
 								itemText="Delete Scenario"

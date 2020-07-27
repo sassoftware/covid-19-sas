@@ -21,7 +21,8 @@
   padding: 10px 0;
   margin-bottom: 15px;
   .rangeWrapper {
-    padding: 0 50px 0 115px;
+    position: relative;
+    padding: 0 7% 0 13%;
   }
 }
 
@@ -30,18 +31,26 @@
 }
 
 .rc-slider-track {
-  background-color: $brand;
-  height: 1px;
-  margin-top: 2px;
+  background-color: $brand !important;
+  height: 1px !important;
+  margin-top: 2px !important;
 }
 
 .rc-slider-handle {
-  border: solid 2px $brand;
-  background: $brand;
+  border: solid 2px $brand !important;
+  background: $brand !important;
 }
 
 .rc-slider-rail {
-  height: 1px;
-  margin-top: 2px;
-  background-color: $brand;
+  height: 1px !important;
+  margin-top: 2px !important;
+  background-color: $brand !important;
+}
+
+.blueLine {
+  border-top: 1px solid $brand;
+  position: absolute;
+  left: 46px;
+  right: 10px;
+  top: 7px;
 }

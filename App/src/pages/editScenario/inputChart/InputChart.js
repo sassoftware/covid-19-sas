@@ -67,9 +67,12 @@ class InputChart extends React.Component {
 		}
 	}
 
-	componentDidMount() {
-		// this.mainContainer && this.mainContainer.addEventListener('resize', this.resizeCharts)
+	componentWillUnmount() {
+		if (this.timeoutResizing) {
+			clearTimeout(this.timeoutResizing)
+		}
 	}
+
 
 	componentWillReceiveProps(nextProps) {
 		if ((this.props.match.params.scenarioName !== nextProps.match.params.scenarioName) ||
@@ -97,17 +100,10 @@ class InputChart extends React.Component {
 				nDays: this.scenario.N_DAYS
 			})
 		}
-	}
 
-
-	resizeCharts = () => {
-		this.state.chart && setTimeout(() => {
-			this.state.chart.chart && this.state.chart.chart.reflow()
-		}, 250)
-	}
-
-	chartRef = (ref) => {
-		this.setState({chart: ref})
+		if (this.props.leftPanel !== nextProps.leftPanel) {
+			this._fireResizeManually()
+		}
 	}
 
 	onRangeChange = (e) => {
@@ -135,12 +131,21 @@ class InputChart extends React.Component {
 		this.props.setScenario(conf, this.scenarioIndex)
 	}
 
+	_fireResizeManually = () => {
+		this.timeoutResizing = setTimeout(() => {
+			const evt = document.createEvent('UIEvents');
+			evt.initUIEvent('resize', true, false, window, 0);
+			window.dispatchEvent(evt);
+		}, 201); // wait just 1 millisecond more than transition open/close
+	}
+
+
 	render() {
-		// this.resizeCharts()
 		const options = inputChartOptions(this.state.zeroDay, this.state.nDays, this.state.rangeValue, this.state.distancing, day, this.dropCb)
-		return <div onresize={this.resizeCharts()}>
+		return <div>
 			<div className={'chartWrapper'}>
 				<div className={'rangeWrapper'}>
+					<div className={'blueLine'}></div>
 					<Range
 						// count={3}
 						min={this.state.zeroDay}
@@ -161,12 +166,8 @@ class InputChart extends React.Component {
 					allowChartUpdate={true}
 					highcharts={Highcharts}
 					options={options}
-					ref={this.chartRef}
 				/>}
 			</div>
-			{/*<div className={'chartWrapper'}>*/}
-				{/*<ReactHighcharts config={chartConfig} ref={this.chart1Ref}/>*/}
-			{/*</div>*/}
 		</div>
 	}
 }
@@ -174,7 +175,8 @@ class InputChart extends React.Component {
 
 function mapStateToProps(state) {
 	return {
-		project: state.project.projectContent
+		project: state.project.projectContent,
+		leftPanel: state.home.leftPanel
 	}
 }
 

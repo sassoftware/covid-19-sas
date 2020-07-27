@@ -18,7 +18,6 @@ import ProjectProperties, {QRModal} from './pages/projectProperties/projectPrope
 import EditScenario from './pages/editScenario/editScenario';
 import ForecastRun from './pages/forecastRun/forecastRun';
 import {useDispatch, useSelector} from 'react-redux';
-import {startUpService} from './pages/home/homeActions';
 import NewScenario from './components/newScenario/newScenario';
 import CustomAlert from './components/customAlert/customAlert'
 import {fetchProjects} from './pages/projectList/projectListActions'
@@ -36,7 +35,6 @@ function App() {
 	const dispatch = useDispatch();
 
 	useEffect(() => {
-		startUpService(dispatch);
 		fetchProjects(dispatch)
 		return () => {
 
