@@ -48,9 +48,14 @@ class Home extends React.Component {
 			<div className={'home'} ref={e => {
 				this.mainContainer = e
 			}}>
-				<h1 className={'lyb3'}>CoV-19 App</h1>
-				<h4 className={'spb3'}>A CSA PWA front end to <span className={'text-bold'}>github.com/sassoftware/covid-19-sas</span></h4>
-				<p>This page is a placeholder for instructions and documentation.</p>
+				<h1 className={'lyb3'}>Hospital Scenario Analysis</h1>
+				<p>This application is a <a href="https://github.com/Boemska/create-sas-app">CSA</a> Progressive Web Application front end to <a href="https://github.com/sassoftware/covid-19-sas">github.com/sassoftware/covid-19-sas</a>. The App is an alternative user interface to the SAS Visual Analytics interface. It is not as full-featured as the Visual Analytics app, instead focusing on simplicity, minimal load time, and context switching efficiency.</p>
+				<br />
+				<h2 className={'lyb3'}>Projects</h2>
+				<p>A 'project' is a collection of one or more scenarios created by different people. Projects allow users to Share work with colleagues, either by copying and pasting a link, or for camera-enabled devices, showing a QR code to a colleague so they can just point their device's camera at it. If they are connected to the network, and are authorised within the Files service to read your project, it will load on an instance of the app on their device.</p>
+				<br />
+				<h2 className={'lyb3'}>Scenarios</h2>
+				<p>Each project can contain multiple 'scenarios'. Each scenarios can be adjusted using the different 'levers' to create the scenario. Each of the components on the scenario generation screen can be used to create the scenario providing an intuitive, and multi-device friendly experience. Once you have configured the scenario, clicking "Run Model" will send your scenario to the SAS Viya server to be run. </p>
 			</div>
 		</Content>
 	}
