@@ -78,7 +78,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Diagnosed Rate adjustment factor'}
-						value={s.DiagnosedRate.toFixed(1)}
+						value={s.DiagnosedRate.toFixed(1) || ''}
 						onChange={e => setScenarioToStore({...s, DiagnosedRate: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -86,7 +86,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Average ECMO length of stay'}
-						value={s.ECMO_LOS}
+						value={s.ECMO_LOS || ''}
 						onChange={e => setScenarioToStore({...s, ECMO_LOS: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -99,7 +99,7 @@ const ModelTuning = (props) => {
 						min={0}
 						max={365}
 						step={1}
-						value={s.N_DAYS}
+						value={s.N_DAYS || ''}
 						onChange={e => setScenarioToStore({...s, N_DAYS: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -107,7 +107,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Initial number of exposed'}
-						value={s.E}
+						value={s.E || ''}
 						onChange={e => setScenarioToStore({...s, E: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -115,7 +115,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Average ICU length of stay'}
-						value={s.ICU_LOS}
+						value={s.ICU_LOS || ''}
 						onChange={e => setScenarioToStore({...s, ICU_LOS: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -125,7 +125,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Average Hospital length of stay'}
-						value={s.HOSP_LOS}
+						value={s.HOSP_LOS || ''}
 						onChange={e => setScenarioToStore({...s, HOSP_LOS: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>
@@ -136,7 +136,7 @@ const ModelTuning = (props) => {
 					<NumberInput
 						{...NumberInputProps}
 						label={'Average dialysis length of stay'}
-						value={s.DIAL_LOS}
+						value={s.DIAL_LOS || ''}
 						onChange={e => setScenarioToStore({...s, DIAL_LOS: e.imaginaryTarget.valueAsNumber}, scenarioIndex)}
 					/>
 				</Column>

@@ -7,7 +7,7 @@ const filesPrefix = '/files/files/'
 async function request(dispatch, file) {
 	let uri = file;
 	// Check if uri has /files/files/ alraady
-	if (! file.includes(filesPrefix)) {
+	if (!file.includes(filesPrefix)) {
 		uri = filesPrefix + file;
 	}
 
@@ -24,6 +24,15 @@ async function request(dispatch, file) {
 	} catch (e) {
 		console.log("SINGLE PROJECT ERROR: ", e);
 	}
+}
+
+export async function fetchProjectMetadata(dispatch, uri) {
+		try {
+			let res = await adapterService.getFileDetails(dispatch, '/files/files/'+uri)
+			return res.body
+		} catch (e) {
+			throw new Error(e.message)
+		}
 }
 
 export async function fetchSingleProject(dispatch, file, dirty) {

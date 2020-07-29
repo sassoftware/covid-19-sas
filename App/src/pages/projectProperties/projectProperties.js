@@ -3,8 +3,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {useParams, useHistory} from 'react-router-dom';
 import {InlineNotification, OverflowMenu, OverflowMenuItem, Modal, Button} from 'carbon-components-react'
 import './projectProperties.scss'
-import {fetchSingleProject} from './projectActions'
-import ActionTypes from './ActionTypes'
+import {fetchProjectMetadata, fetchSingleProject, selectProject} from './projectActions'
 import QRcode from 'qrcode.react';
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import adapterService from '../../adapterService/adapterService'
@@ -52,15 +51,23 @@ const ProjectProperties = (props) => {
 	const {projectContent, projectMetadata, save} = useSelector(state => state.project);
 	const [error, setError] = useState('')
 
+	const fetchMetaAndProjectData = uri => {
+		fetchProjectMetadata(dispatch, uri)
+			.then(projMeta => {
+				projMeta.uri = '/files/files/'+uri
+				selectProject(dispatch, projMeta)
+				fetchSingleProject(dispatch, uri, save);
+			})
+	}
+
 	useEffect(() => {
 		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const project = projects.find(p => (p.uri === '/files/files/' + uri))
 			if (project) {
-				dispatch({
-					type: ActionTypes.SELECT_PROJECT,
-					payload: project
-				})
+				selectProject(dispatch, project)
 				fetchSingleProject(dispatch, project.uri, save);
+			} else {
+				fetchMetaAndProjectData(uri)
 			}
 		}
 		return () => {
