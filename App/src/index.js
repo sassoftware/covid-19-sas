@@ -3,15 +3,17 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import {HashRouter as Router} from 'react-router-dom'
+import {Router} from 'react-router';
+import {createHashHistory} from 'history';
 import {Provider} from 'react-redux'
 import {getStore} from './store'
 import ActionTypes from './components/header/ActionTypes'
 
+export const history = createHashHistory();
 export const store = getStore();
 
 const RootApp = () => (<Provider store={store}>
-	<Router>
+	<Router history={history}>
 		<App/>
 	</Router>
 </Provider>)
@@ -21,21 +23,18 @@ ReactDOM.render(RootApp(), document.getElementById('root'));
 const alert = (state) => {
 	store.dispatch({
 		type: ActionTypes.SET_OFFLINE,
-    payload: state
+		payload: state
 	})
 }
 
 window.addEventListener('load', () => {
-
 	function checkNetworkStatus(event) {
-		
-		if (!navigator.onLine){
+		if (!navigator.onLine) {
 			alert(true);
 		}
 	}
 
 	window.addEventListener('offline', checkNetworkStatus())
-	
 })
 
 //The second addEventListener is for detecting the offline status while using the appliaction, the first one checks only for initial load

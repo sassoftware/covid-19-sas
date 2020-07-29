@@ -24,6 +24,7 @@
     "highcharts": "^8.1.1",
     "highcharts-pattern-fill": "^3.0.3",
     "highcharts-react-official": "^3.0.0",
+    "history": "^5.0.0",
     "http-proxy-middleware": "^1.0.4",
     "inquirer": "^7.1.0",
     "lodash": "^4.17.19",
