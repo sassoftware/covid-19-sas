@@ -40,7 +40,7 @@ const Save = (props) => {
         const dataObj = {
         	file:[blob, fileName]
         }
-        const res = updateFile(dispatch, projectMetadata.uri, dataObj, new Date(projectMetadata.modifiedTimeStamp));
+        const res = updateFile(dispatch, projectMetadata.uri, dataObj, projectContent.lastModified);
         res.then( result => {
             console.log("SAVE RESULT: " , result);
             dispatch({

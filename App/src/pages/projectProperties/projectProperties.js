@@ -3,7 +3,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {useParams, useHistory} from 'react-router-dom';
 import {InlineNotification, OverflowMenu, OverflowMenuItem, Modal, Button} from 'carbon-components-react'
 import './projectProperties.scss'
-import {fetchProjectMetadata, fetchSingleProject, selectProject, getProjectContent} from './projectActions'
+import { fetchSingleProject, selectProject,  getProject} from './projectActions'
 import QRcode from 'qrcode.react';
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import adapterService from '../../adapterService/adapterService'
@@ -59,12 +59,7 @@ const ProjectProperties = (props) => {
 					open: true,
 					message: "You have not saved changes made to this project, opening a new one will override these changes, do you wish to procced?",
 					action: () => {
-						fetchProjectMetadata(dispatch, uri)
-							.then(projMeta => {
-								projMeta.uri = '/files/files/' + uri
-								selectProject(dispatch, projMeta)
-								getProjectContent(dispatch, uri);
-							})
+            getProject(dispatch, uri)
 					},
 					cancelAction: () => {
 						let metadata = localStorage.getItem('projectMetadata')
@@ -77,12 +72,13 @@ const ProjectProperties = (props) => {
 				}
 			})
 		} else {
-			fetchProjectMetadata(dispatch, uri)
-				.then(projMeta => {
-					projMeta.uri = '/files/files/' + uri
-					selectProject(dispatch, projMeta)
-					getProjectContent(dispatch, uri);
-				})
+      getProject(dispatch, uri)
+			// fetchProjectMetadata(dispatch, uri)
+			// 	.then(projMeta => {
+			// 		projMeta.uri = '/files/files/' + uri
+			// 		selectProject(dispatch, projMeta)
+			// 		getProjectContent(dispatch, uri);
+			// 	})
 		}
 	}
 
@@ -90,8 +86,9 @@ const ProjectProperties = (props) => {
 		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const project = projects.find(p => (p.uri === '/files/files/' + uri))
 			if (project && !save) {
+        
 				selectProject(dispatch, project)
-				fetchSingleProject(dispatch, project.uri, save);
+        fetchSingleProject(dispatch, project.uri, save);
 			} else {
 				fetchMetaAndProjectData(uri)
 			}

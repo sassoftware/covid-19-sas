@@ -65,13 +65,13 @@ export function projectReducer(state = initialState, action) {
 		case ActionTypes.CHANGES_SAVED: {
 			localStorage.setItem('save', JSON.stringify(false));
 			const newProject = {
-				...state.projectMetadata,
-				modifiedTimeStamp: action.payload
+				...state.projectContent,
+				lastModified: action.payload
       }
-      localStorage.setItem('projectMetadata', JSON.stringify(newProject));
+      localStorage.setItem('projectContent', JSON.stringify(newProject));
 			return Object.assign({}, state, {
 				save: false,
-				projectMetadata: newProject
+				projectContent: newProject
 			})
 		}
 

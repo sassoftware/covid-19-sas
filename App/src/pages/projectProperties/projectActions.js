@@ -36,6 +36,28 @@ export async function fetchProjectMetadata(dispatch, uri) {
 	}
 }
 
+export async function getProject(dispatch, uri) {
+
+  try{
+    const {projectContent, projectMetadata}=  await adapterService.getProject(dispatch, uri);
+    if (projectMetadata === null) {
+      //TODO: Handle this error on front
+      throw new Error("Project could not be found");
+    }
+    
+    selectProject(dispatch, projectMetadata);
+    dispatch({
+      type: ActionTypes.FETCH_SINGLE_PROJECT,
+      payload: projectContent
+    })
+
+  }
+  catch(e) {
+    console.log("FETCH PROJECT ERROR", e)
+    throw new Error(e.message)
+  }
+}
+
 export async function fetchSingleProject(dispatch, file, dirty) {
 	if (dirty) {
 		dispatch({
