@@ -3,6 +3,7 @@ import ActionTypes from './ActionTypes';
 const initialState = {
   open: false,
   action: null,
+	cancelAction: null,
   params: null,
   message: ''
 }

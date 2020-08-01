@@ -1,13 +1,14 @@
 import ActionTypes from './ActionTypes'
 import adapterService from '../../adapterService/adapterService'
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
+import {history} from '../../index'
 
 const filesPrefix = '/files/files/'
 
-async function request(dispatch, file) {
+export async function getProjectContent(dispatch, file) {
 	let uri = file;
 	// Check if uri has /files/files/ alraady
-	if (! file.includes(filesPrefix)) {
+	if (!file.includes(filesPrefix)) {
 		uri = filesPrefix + file;
 	}
 
@@ -26,19 +27,57 @@ async function request(dispatch, file) {
 	}
 }
 
-export async function fetchSingleProject(dispatch, file, dirty) {
+export async function fetchProjectMetadata(dispatch, uri) {
+	try {
+		let res = await adapterService.getFileDetails(dispatch, '/files/files/' + uri)
+		return res.body
+	} catch (e) {
+		throw new Error(e.message)
+	}
+}
 
+export async function getProject(dispatch, uri) {
+
+  try{
+    const {projectContent, projectMetadata}=  await adapterService.getProject(dispatch, uri);
+    if (projectMetadata === null) {
+      //TODO: Handle this error on front
+      throw new Error("Project could not be found");
+    }
+    
+    selectProject(dispatch, projectMetadata);
+    dispatch({
+      type: ActionTypes.FETCH_SINGLE_PROJECT,
+      payload: projectContent
+    })
+
+  }
+  catch(e) {
+    console.log("FETCH PROJECT ERROR", e)
+    throw new Error(e.message)
+  }
+}
+
+export async function fetchSingleProject(dispatch, file, dirty) {
 	if (dirty) {
 		dispatch({
 			type: AlertActionTypes.OPEN_CONFIRMATION,
 			payload: {
 				open: true,
 				message: "You have not saved changes made to this project, opening a new one will override these changes, do you wish to procced?",
-				action: () => request(dispatch, file)
+				action: () => getProjectContent(dispatch, file),
+				cancelAction: () => {
+					let metadata = localStorage.getItem('projectMetadata')
+					if (metadata) {
+						metadata = JSON.parse(metadata)
+						let uri = metadata.uri.split('/').pop()
+						history.push(`/project/${uri}`);
+					}
+				}
 			}
 		})
 	} else {
-		request(dispatch, file)
+		getProjectContent(dispatch, file)
 	}
 }
 

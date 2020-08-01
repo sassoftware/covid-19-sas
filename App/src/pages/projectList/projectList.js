@@ -13,7 +13,7 @@ import {
 	Pagination
 } from 'carbon-components-react'
 import "./projectList.scss";
-import {fetchProjects, setMainSpinner} from './projectListActions';
+import {fetchProjects} from './projectListActions';
 import {useDispatch, useSelector} from 'react-redux';
 import {useHistory} from 'react-router';
 import moment from 'moment'
@@ -48,7 +48,7 @@ export const ProjectList = () => {
 	const [paginationPageSize, setPaginationPageSize] = useState(10)
 
 	const projects = useSelector(state => state.projectList.projects)
-	const spinner = useSelector(state => state.home.mainSpinner)
+	const spinner = useSelector(state => state.projectList.mainSpinner)
 
 	const filtered = projects.filter(el => {
 		return el.name.toLowerCase().includes(search.toLocaleLowerCase()) || search === ''
@@ -94,9 +94,7 @@ export const ProjectList = () => {
 	};
 
 	useEffect(() => {
-		setMainSpinner(dispatch, true);
 		fetchProjects(dispatch);
-		//singleProjectTest(dispatch, '/files/files/3cbaad8e-1563-4c5a-aa82-201bf775f97b')
 		return () => {
 
 		}

@@ -5,6 +5,8 @@ import ADAPTER_SETTINGS from './config'
 import {setShouldLogin} from '../components/loginModal/loginModalActions'
 import {setRequest} from './adapterActions'
 import toastr from 'toastr'
+import { getSelfUriFromLinks } from '../components/utils'
+import { PROJECT_EXTENTION } from '../components/newProject/newProjectActions'
 
 toastr.options.progressBar = true;
 
@@ -267,8 +269,6 @@ class adapterService {
 		return promise
 	}
 
-
-
 	deleteItem(dispatch, itemUri) {
 		const promise = new Promise((resolve, reject) => {
 			this._adapter.deleteItem(itemUri, {
@@ -287,7 +287,45 @@ class adapterService {
 		});
 		this._handleRequest(dispatch, promise, 'Update ' + itemUri)
 		return promise
-	}
+  }
+
+  async getAllProjects(dispatch) {
+
+    let url = "/folders/folders/@item?path=" + ADAPTER_SETTINGS.metadataRoot;
+    let res = await this.managedRequest(dispatch, 'get', url, {});
+    const afiUrl = getSelfUriFromLinks(res.body)
+    if (afiUrl !== '') {
+      let url = afiUrl + "/members?filter=and(eq('contentType', 'file'),endsWith('name','" + PROJECT_EXTENTION + "'))&limit=10000";
+      res = await this.managedRequest(dispatch, 'get', url, {});
+    }
+
+    return res.body.items;
+  }
+  
+  getProject(dispatch, projectUri) {
+    if (!projectUri.includes('/files/files')) projectUri = '/files/files/' + projectUri;
+
+    const allprojects = this.getAllProjects(dispatch,  projectUri);
+
+    return allprojects.then(projects => {
+
+      const content = this.getFileContent(dispatch, projectUri);
+
+      return content.then(contentRes => {
+        const metadata = projects.find(p => (p.uri === projectUri))
+        if(!metadata) {
+          return {projectContent: null, projectMetadata: null}
+        }
+        const projectContent = Object.assign({}, contentRes.body, 
+          {lastModified: contentRes.headers['last-modified'] || contentRes.headers.get('Last-Modified')});
+        const projectMetadata = Object.assign({}, metadata, 
+          {uri: projectUri})
+        return {
+          projectMetadata, projectContent
+        }
+      })
+    })
+  }
 }
 
 export default new adapterService()

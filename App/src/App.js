@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import './App.scss';
 import {Switch, Route} from 'react-router-dom';
 import Home from './pages/home/home'
@@ -20,7 +20,6 @@ import ForecastRun from './pages/forecastRun/forecastRun';
 import {useDispatch, useSelector} from 'react-redux';
 import NewScenario from './components/newScenario/newScenario';
 import CustomAlert from './components/customAlert/customAlert'
-import {fetchProjects} from './pages/projectList/projectListActions'
 import PWAPrompt from 'react-ios-pwa-prompt'
 import ActionTypes from './pages/home/ActionTypes'
 
@@ -33,13 +32,6 @@ function App() {
 	const update = useSelector(state => state.header.update)
 
 	const dispatch = useDispatch();
-
-	useEffect(() => {
-		fetchProjects(dispatch)
-		return () => {
-
-		}
-	}, [dispatch])
 
 	const setToglePanel = state => {
 		dispatch({
