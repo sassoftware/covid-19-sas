@@ -71,7 +71,7 @@ const EditScenario = (props) => {
 					payload: newProject
 				})
 			}
-			fetchSingleProject(dispatch, uri, save);
+			fetchSingleProject(dispatch, history, uri, save);
 		}
 		return () => {
 
