@@ -1,7 +1,6 @@
 import ActionTypes from './ActionTypes'
 import adapterService from '../../adapterService/adapterService'
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
-import {history} from '../../index'
 
 const filesPrefix = '/files/files/'
 
@@ -44,7 +43,7 @@ export async function getProject(dispatch, uri) {
       //TODO: Handle this error on front
       throw new Error("Project could not be found");
     }
-    
+
     selectProject(dispatch, projectMetadata);
     dispatch({
       type: ActionTypes.FETCH_SINGLE_PROJECT,
@@ -58,7 +57,7 @@ export async function getProject(dispatch, uri) {
   }
 }
 
-export async function fetchSingleProject(dispatch, file, dirty) {
+export async function fetchSingleProject(dispatch, history, file, dirty) {
 	if (dirty) {
 		dispatch({
 			type: AlertActionTypes.OPEN_CONFIRMATION,

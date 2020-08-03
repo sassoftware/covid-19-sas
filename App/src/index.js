@@ -3,19 +3,17 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import {Router} from 'react-router';
-import {createHashHistory} from 'history';
+import {HashRouter} from 'react-router-dom';
 import {Provider} from 'react-redux'
 import {getStore} from './store'
 import ActionTypes from './components/header/ActionTypes'
 
-export const history = createHashHistory();
 export const store = getStore();
 
 const RootApp = () => (<Provider store={store}>
-	<Router history={history}>
+	<HashRouter>
 		<App/>
-	</Router>
+	</HashRouter>
 </Provider>)
 
 ReactDOM.render(RootApp(), document.getElementById('root'));

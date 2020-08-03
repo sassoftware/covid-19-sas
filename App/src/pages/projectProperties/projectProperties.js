@@ -86,9 +86,9 @@ const ProjectProperties = (props) => {
 		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const project = projects.find(p => (p.uri === '/files/files/' + uri))
 			if (project && !save) {
-        
+
 				selectProject(dispatch, project)
-        fetchSingleProject(dispatch, project.uri, save);
+        fetchSingleProject(dispatch, history, project.uri, save);
 			} else {
 				fetchMetaAndProjectData(uri)
 			}
