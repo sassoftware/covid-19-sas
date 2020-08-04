@@ -5,8 +5,8 @@ import ADAPTER_SETTINGS from './config'
 import {setShouldLogin} from '../components/loginModal/loginModalActions'
 import {setRequest} from './adapterActions'
 import toastr from 'toastr'
-import { getSelfUriFromLinks } from '../components/utils'
-import { PROJECT_EXTENTION } from '../components/newProject/newProjectActions'
+import {getSelfUriFromLinks} from '../components/utils'
+import {PROJECT_EXTENTION} from '../components/newProject/newProjectActions'
 
 toastr.options.progressBar = true;
 
@@ -186,7 +186,6 @@ class adapterService {
 	}
 
 
-
 	getFolderDetails(dispatch, folderName, _options = {}) {
 		const promise = new Promise((resolve, reject) => {
 			this._adapter.getFolderDetails(folderName, {
@@ -194,7 +193,7 @@ class adapterService {
 				..._options
 			});
 		});
-		this._handleRequest(dispatch, promise, 'Get details for '+folderName)
+		this._handleRequest(dispatch, promise, 'Get details for ' + folderName)
 		return promise
 	}
 
@@ -205,7 +204,7 @@ class adapterService {
 				..._options
 			});
 		});
-		this._handleRequest(dispatch, promise, 'Get '+fileUri)
+		this._handleRequest(dispatch, promise, 'Get ' + fileUri)
 		return promise
 	}
 
@@ -216,7 +215,7 @@ class adapterService {
 				..._options
 			});
 		});
-		this._handleRequest(dispatch, promise, 'Get conten for '+fileUri)
+		this._handleRequest(dispatch, promise, 'Get conten for ' + fileUri)
 		return promise
 	}
 
@@ -227,9 +226,10 @@ class adapterService {
 				..._options
 			});
 		});
-		this._handleRequest(dispatch, promise, 'Get content of '+folderName)
+		this._handleRequest(dispatch, promise, 'Get content of ' + folderName)
 		return promise
 	}
+
 	createNewFolder(dispatch, parentUri, folderName, _options = {}) {
 		const promise = new Promise((resolve, reject) => {
 			this._adapter.createNewFolder(parentUri, folderName, {
@@ -237,7 +237,7 @@ class adapterService {
 				..._options
 			});
 		});
-		this._handleRequest(dispatch, promise, 'Create '+folderName)
+		this._handleRequest(dispatch, promise, 'Create ' + folderName)
 		return promise
 	}
 
@@ -257,7 +257,7 @@ class adapterService {
 
 		const promise = new Promise(async (resolve, reject) => {
 			const res = await this.getFolderDetails(dispatch, folderName)
-			const parentFolderUri = '/folders/folders/'+res.body.id
+			const parentFolderUri = '/folders/folders/' + res.body.id
 			// debugger
 			// console.log(res)
 			this._adapter.createNewFile(fleName, fileBlob, parentFolderUri, {
@@ -287,45 +287,39 @@ class adapterService {
 		});
 		this._handleRequest(dispatch, promise, 'Update ' + itemUri)
 		return promise
-  }
+	}
 
-  async getAllProjects(dispatch) {
+	async getAllProjects(dispatch) {
 
-    let url = "/folders/folders/@item?path=" + ADAPTER_SETTINGS.metadataRoot;
-    let res = await this.managedRequest(dispatch, 'get', url, {});
-    const afiUrl = getSelfUriFromLinks(res.body)
-    if (afiUrl !== '') {
-      let url = afiUrl + "/members?filter=and(eq('contentType', 'file'),endsWith('name','" + PROJECT_EXTENTION + "'))&limit=10000";
-      res = await this.managedRequest(dispatch, 'get', url, {});
-    }
+		let url = "/folders/folders/@item?path=" + ADAPTER_SETTINGS.metadataRoot;
+		let res = await this.managedRequest(dispatch, 'get', url, {});
+		const afiUrl = getSelfUriFromLinks(res.body)
+		if (afiUrl !== '') {
+			let url = afiUrl + "/members?filter=and(eq('contentType', 'file'),endsWith('name','" + PROJECT_EXTENTION + "'))&limit=10000";
+			res = await this.managedRequest(dispatch, 'get', url, {});
+		}
 
-    return res.body.items;
-  }
-  
-  getProject(dispatch, projectUri) {
-    if (!projectUri.includes('/files/files')) projectUri = '/files/files/' + projectUri;
+		return res.body.items;
+	}
 
-    const allprojects = this.getAllProjects(dispatch,  projectUri);
+	getProject(dispatch, projectUri) {
+		if (!projectUri.includes('/files/files')) projectUri = '/files/files/' + projectUri;
 
-    return allprojects.then(projects => {
+		return this.getFileDetails(dispatch, projectUri).then(res => {
+			let projectMetadata = res.body
 
-      const content = this.getFileContent(dispatch, projectUri);
+			const content = this.getFileContent(dispatch, projectUri);
 
-      return content.then(contentRes => {
-        const metadata = projects.find(p => (p.uri === projectUri))
-        if(!metadata) {
-          return {projectContent: null, projectMetadata: null}
-        }
-        const projectContent = Object.assign({}, contentRes.body, 
-          {lastModified: contentRes.headers['last-modified'] || contentRes.headers.get('Last-Modified')});
-        const projectMetadata = Object.assign({}, metadata, 
-          {uri: projectUri})
-        return {
-          projectMetadata, projectContent
-        }
-      })
-    })
-  }
+			return content.then(contentRes => {
+				const projectContent = Object.assign({}, contentRes.body,
+					{lastModified: contentRes.headers['last-modified'] || contentRes.headers.get('Last-Modified')});
+				projectMetadata.uri = projectUri
+				return {
+					projectMetadata, projectContent
+				}
+			})
+		})
+	}
 }
 
 export default new adapterService()
