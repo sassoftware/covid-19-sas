@@ -3,7 +3,7 @@ import {useSelector, useDispatch} from 'react-redux'
 import {useParams, useHistory} from 'react-router-dom';
 import {InlineNotification, OverflowMenu, OverflowMenuItem, Modal, Button} from 'carbon-components-react'
 import './projectProperties.scss'
-import { fetchSingleProject, selectProject,  getProject} from './projectActions'
+import {fetchSingleProject, selectProject, getProject, fetchProjectMetadata} from './projectActions'
 import QRcode from 'qrcode.react';
 import AlertActionTypes from '../../components/customAlert/ActionTypes'
 import adapterService from '../../adapterService/adapterService'
@@ -86,7 +86,6 @@ const ProjectProperties = (props) => {
 		if (uri !== null && uri !== "noProject" && (!projectMetadata || (projectMetadata && projectMetadata.uri.split('/').pop() !== uri))) {
 			const project = projects.find(p => (p.uri === '/files/files/' + uri))
 			if (project && !save) {
-
 				selectProject(dispatch, project)
         fetchSingleProject(dispatch, history, project.uri, save);
 			} else {
@@ -200,10 +199,10 @@ const ProjectProperties = (props) => {
 				<div className={'info lyb4'}>
 					<h4 className={'property'}>Project Properties</h4>
 
-					<div className={'property'}>
+					{projectMetadata.parentFolderUri && <div className={'property'}>
 						<p>Folder Location</p>
 						<p style={{fontWeight: 'bold'}}>{projectMetadata.parentFolderUri}</p>
-					</div>
+					</div>}
 					<div className={'property'}>
 						<p>Created by</p>
 						<p style={{fontWeight: 'bold'}}>{projectMetadata.createdBy}</p>
