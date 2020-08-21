@@ -1,7 +1,7 @@
 
-%if %sysfunc(exist(ds_seir)) %then %do;
+%if %sysfunc(exist(boemska_ds_seir)) %then %do;
 	data ds_seir;
-		set ds_seir;
+		set boemska_ds_seir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -14,9 +14,9 @@
 	run;
 %end;
 
-%if %sysfunc(exist(ds_sir)) %then %do;
+%if %sysfunc(exist(boemska_ds_sir)) %then %do;
 	data ds_sir;
-		set ds_sir;
+		set boemska_ds_sir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -30,9 +30,9 @@
 %end;
 
 
-%if %sysfunc(exist(tmodel_seir)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_seir)) %then %do;
 	data tmodel_seir;
-		set tmodel_seir;
+		set boemska_tmodel_seir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -45,9 +45,9 @@
 	run;
 %end;
 
-%if %sysfunc(exist(tmodel_seir_fit_i)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_seir_fit_i)) %then %do;
 	data tmodel_seir_fit_i;
-		set tmodel_seir_fit_i;
+		set boemska_tmodel_seir_fit_i;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -60,9 +60,9 @@
 	run;
 %end;
 
-%if %sysfunc(exist(tmodel_sir)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_sir)) %then %do;
 	data tmodel_sir;
-	set tmodel_sir;
+	set boemska_tmodel_sir;
 	datetime=dhms(date,0,0,0);
 	drop
 		ModelType
