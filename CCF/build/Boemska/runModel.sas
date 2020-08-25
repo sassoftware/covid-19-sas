@@ -6,15 +6,7 @@ Input values for this type of model are very dynamic and may need to be evaluate
 This work is currently defaulting to values for the population studied in the Cleveland Clinic and SAS collaboration.
 You need to evaluate each parameter for your population of interest.
 */
-/*  User Interface Switches
-  - BATCH: Default mode 
-  - UI: Used when using SAS Visual Analytics
-  - BOEMSKA: Used when using the Boemska App 
-*/
-    %bafGetDatasets; /* get all input tables */
-    resetline; /* for error reconciliation */
 
-    %LET ScenarioSource = BOEMSKA;
 /* directory path for files: COVID_19.sas (this file), libname store */
     %let homedir = /Local_Files/covid-19-sas/ccf;
 
@@ -25,7 +17,15 @@ You need to evaluate each parameter for your population of interest.
     %LET HAVE_SASETS = YES; /* YES implies you have SAS/ETS software, this enable the PROC MODEL methods in this code.  Without this the Data Step SIR model still runs */
     %LET HAVE_V151 = NO; /* YES implies you have products verison 15.1 (latest) and switches PROC MODEL to PROC TMODEL for faster execution */
 
+/*  User Interface Switches
+  - BATCH: Default mode 
+  - UI: Used when using SAS Visual Analytics
+  - BOEMSKA: Used when using the Boemska App 
+*/
+    %bafGetDatasets; /* get all input tables */
+    resetline; /* for error reconciliation */
 
+    %LET ScenarioSource = BOEMSKA;
 
 %macro EasyRun(Scenario,IncubationPeriod,InitRecovered,RecoveryDays,doublingtime,Population,KnownAdmits,
                 SocialDistancing,ISOChangeDate,ISOChangeEvent,ISOChangeWindow,SocialDistancingChange,
@@ -633,10 +633,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table TMODEL_SEIR_SIM;
             QUIT;
 
+            PROC APPEND base=work.boemska_tmodel_seir data=TMODEL_SEIR; run;
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
-			%IF &ScenarioSource ne BOEMSKA %THEN %DO;
 				PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
-			%END;
 			
 		%END;
 
@@ -1001,10 +1000,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table TMODEL_SIR_SIM;
             QUIT;
 
+            PROC APPEND base=work.boemska_tmodel_sir data=TMODEL_SIR; run;
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
-			%IF &ScenarioSource ne BOEMSKA %THEN %DO;
 				PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
-			%END;
 			
 		%END;
 
@@ -1386,10 +1384,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table DS_SEIR_SIM;
             QUIT;
 
+            PROC APPEND base=work.boemska_ds_seir data=DS_SEIR; run;
 			PROC APPEND base=work.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
-			%IF &ScenarioSource. ne BOEMSKA %THEN %DO;
 				PROC SQL; drop table DS_SEIR; QUIT;
-			%END;
 
 		%END;
 
@@ -1765,10 +1762,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table DS_SIR_SIM;
             QUIT;
 
+            PROC APPEND base=work.boemska_ds_sir data=DS_SIR; run;
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-			%IF &ScenarioSource ne BOEMSKA %THEN %DO;
 				PROC SQL; drop table DS_SIR; QUIT;
-			%END;
 
 		%END;
 
@@ -2230,14 +2226,13 @@ You need to evaluate each parameter for your population of interest.
 					drop table TMODEL_SEIR_SIM_FIT_I;
 				QUIT;
 
+                PROC APPEND base=work.boemska_tmodel_seir_fit_i data=TMODEL_SEIR_FIT_I; run;
 				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
-				%IF &ScenarioSource ne BOEMSKA %THEN %DO;
 					PROC SQL; 
 						drop table TMODEL_SEIR_FIT_I;
 						drop table DINIT;
 						drop table SEIRMOD_I;
 					QUIT;
-				%END;
 
 		%END;
 
@@ -2736,10 +2731,9 @@ data _null_;
   call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 run;
 
-
-%if %sysfunc(exist(ds_seir)) %then %do;
+%if %sysfunc(exist(boemska_ds_seir)) %then %do;
 	data ds_seir;
-		set ds_seir;
+		set boemska_ds_seir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -2752,9 +2746,9 @@ run;
 	run;
 %end;
 
-%if %sysfunc(exist(ds_sir)) %then %do;
+%if %sysfunc(exist(boemska_ds_sir)) %then %do;
 	data ds_sir;
-		set ds_sir;
+		set boemska_ds_sir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -2768,9 +2762,9 @@ run;
 %end;
 
 
-%if %sysfunc(exist(tmodel_seir)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_seir)) %then %do;
 	data tmodel_seir;
-		set tmodel_seir;
+		set boemska_tmodel_seir;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -2783,9 +2777,9 @@ run;
 	run;
 %end;
 
-%if %sysfunc(exist(tmodel_seir_fit_i)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_seir_fit_i)) %then %do;
 	data tmodel_seir_fit_i;
-		set tmodel_seir_fit_i;
+		set boemska_tmodel_seir_fit_i;
 		datetime=dhms(date,0,0,0);
 		drop
 			ModelType
@@ -2798,9 +2792,9 @@ run;
 	run;
 %end;
 
-%if %sysfunc(exist(tmodel_sir)) %then %do;
+%if %sysfunc(exist(boemska_tmodel_sir)) %then %do;
 	data tmodel_sir;
-	set tmodel_sir;
+	set boemska_tmodel_sir;
 	datetime=dhms(date,0,0,0);
 	drop
 		ModelType
