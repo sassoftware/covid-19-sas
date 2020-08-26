@@ -1,0 +1,17 @@
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.align-center {
+  text-align: -webkit-center;
+
+  .bx--search {
+    max-width: 400px !important;
+    margin-right: $spacing-05;
+  }
+
+  .bx--data-table {
+
+    td {
+      width: 25% !important;
+    }
+  }
+}

@@ -1,0 +1,1 @@
+            PROC APPEND base=work.boemska_tmodel_seir data=TMODEL_SEIR; run;

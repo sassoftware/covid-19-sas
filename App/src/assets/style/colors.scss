@@ -1,0 +1,16 @@
+@import "~carbon-components/scss/globals/scss/colors";
+
+$brand: #0378CD;
+$darkBlue: #04304B;
+$background: #fafafa;
+$primary: $gray-100;
+$gray: #f4f4f4;
+$grayLight: rgb(240,240,240);
+$grayDark: rgb(180,180,180);
+$fontColorWhite: #fafafa;
+$hoverGray: #768396;
+
+
+.danger {color: $red-60};
+.background {background-color: white;}
+.darkBackgorund {background-color: $gray-90;}

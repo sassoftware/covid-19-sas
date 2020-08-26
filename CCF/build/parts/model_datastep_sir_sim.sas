@@ -126,8 +126,10 @@ X_IMPORT: postprocess.sas
                 drop table DS_SIR_SIM;
             QUIT;
 
+B_IMPORT: boemska_ds_sir.sas
+
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-			PROC SQL; drop table DS_SIR; QUIT;
+				PROC SQL; drop table DS_SIR; QUIT;
 
 		%END;
 

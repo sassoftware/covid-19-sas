@@ -1,0 +1,48 @@
+@import '../../assets/style/colors';
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.qrModal {
+    .bx--modal-container{
+        
+        height: 1000px;
+        width: 1000px;
+    }
+    
+    .bx--modal-content {
+        padding: 50px;
+        text-align: center
+    }
+}
+
+.info {
+    background-color: white;
+    padding: $spacing-01;
+
+    .property {
+        margin: $spacing-07
+    }
+
+}
+
+.share {
+  .link {
+    color: rgb(140, 140, 140);
+    word-wrap: break-word;
+  }
+
+  .shareInfo{
+    width: 60%;
+  }
+
+  .qr:hover{
+    cursor: pointer;
+
+  }
+
+  @media only screen and (max-width: 1200px){
+    .qr {
+     width: 150px !important;
+     height: 150px !important;
+    }
+  }
+}

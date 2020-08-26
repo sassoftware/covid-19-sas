@@ -1,0 +1,16 @@
+@import '../../assets/style/colors.scss';
+@import "~carbon-components/scss/globals/scss/spacing";
+
+.forecastRun {
+
+    .bx--tab-content {
+        padding: 0 !important;
+        background-color: white;
+    }
+
+
+    .darkBackground {
+        background-color: $gray-10;
+        padding: $spacing-05;
+    }
+}

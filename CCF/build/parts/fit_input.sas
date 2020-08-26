@@ -17,6 +17,7 @@ P_IMPORT: fit_input_file.sas
 D_IMPORT: fit_input_ohio.sas
 T_IMPORT: fit_input_ohio.sas
 U_IMPORT: fit_input_ohio.sas
+B_IMPORT: fit_input_file.sas
  
 /* END: STORE.FIT_INPUT READ */
 

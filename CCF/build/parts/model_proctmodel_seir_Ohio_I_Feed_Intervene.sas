@@ -163,12 +163,14 @@ X_IMPORT: postprocess.sas
 					drop table TMODEL_SEIR_SIM_FIT_I;
 				QUIT;
 
+B_IMPORT: boemska_tmodel_seir_fit_i.sas
+
 				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
-				PROC SQL; 
-					drop table TMODEL_SEIR_FIT_I;
-					drop table DINIT;
-					drop table SEIRMOD_I;
-				QUIT;
+					PROC SQL; 
+						drop table TMODEL_SEIR_FIT_I;
+						drop table DINIT;
+						drop table SEIRMOD_I;
+					QUIT;
 
 		%END;
 

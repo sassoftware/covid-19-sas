@@ -1,0 +1,4 @@
+export default {
+    FETCH_PROJECTS_RECIVED: "FETCH_PROJECTS",
+    MAIN_SPINNER: 'MAIN_SPINNER',
+}

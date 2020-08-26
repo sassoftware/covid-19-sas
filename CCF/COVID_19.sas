@@ -604,8 +604,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table TMODEL_SEIR_SIM;
             QUIT;
 
+
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR; run;
-			PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
+				PROC SQL; drop table TMODEL_SEIR; drop table DINIT; QUIT;
 			
 		%END;
 
@@ -970,8 +971,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table TMODEL_SIR_SIM;
             QUIT;
 
+
 			PROC APPEND base=work.MODEL_FINAL data=TMODEL_SIR NOWARN FORCE; run;
-			PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
+				PROC SQL; drop table TMODEL_SIR; drop table DINIT; QUIT;
 			
 		%END;
 
@@ -1353,8 +1355,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table DS_SEIR_SIM;
             QUIT;
 
+
 			PROC APPEND base=work.MODEL_FINAL data=DS_SEIR NOWARN FORCE; run;
-			PROC SQL; drop table DS_SEIR; QUIT;
+				PROC SQL; drop table DS_SEIR; QUIT;
 
 		%END;
 
@@ -1730,8 +1733,9 @@ You need to evaluate each parameter for your population of interest.
                 drop table DS_SIR_SIM;
             QUIT;
 
+
 			PROC APPEND base=work.MODEL_FINAL data=DS_SIR NOWARN FORCE; run;
-			PROC SQL; drop table DS_SIR; QUIT;
+				PROC SQL; drop table DS_SIR; QUIT;
 
 		%END;
 
@@ -2193,12 +2197,13 @@ You need to evaluate each parameter for your population of interest.
 					drop table TMODEL_SEIR_SIM_FIT_I;
 				QUIT;
 
+
 				PROC APPEND base=work.MODEL_FINAL data=TMODEL_SEIR_FIT_I NOWARN FORCE; run;
-				PROC SQL; 
-					drop table TMODEL_SEIR_FIT_I;
-					drop table DINIT;
-					drop table SEIRMOD_I;
-				QUIT;
+					PROC SQL; 
+						drop table TMODEL_SEIR_FIT_I;
+						drop table DINIT;
+						drop table SEIRMOD_I;
+					QUIT;
 
 		%END;
 
@@ -2591,7 +2596,7 @@ You need to evaluate each parameter for your population of interest.
 					QUIT;
 					RUN;
 
-                %IF &ScenarioSource = BATCH %THEN %DO;
+                %IF &ScenarioSource = BATCH or &ScenarioSource = BOEMSKA %THEN %DO;
                 
                     PROC APPEND base=store.MODEL_FINAL data=work.MODEL_FINAL NOWARN FORCE; run;
                     PROC APPEND base=store.SCENARIOS data=work.SCENARIOS; run;
@@ -2616,7 +2621,7 @@ You need to evaluate each parameter for your population of interest.
         %END;
         /*%ELSE %IF &PLOTS. = YES %THEN %DO;*/
         %ELSE %DO;
-            %IF &ScenarioSource = BATCH %THEN %DO;
+            %IF &ScenarioSource = BATCH or &ScenarioSource = BOEMSKA %THEN %DO;
                 PROC SQL; 
                     drop table work.MODEL_FINAL;
                     drop table work.SCENARIOS;
@@ -2625,6 +2630,7 @@ You need to evaluate each parameter for your population of interest.
                             drop table work.FIT_PRED;
                             drop table work.FIT_PARMS;
                         %END;
+
                 QUIT;
             %END;
         %END;
@@ -2825,5 +2831,6 @@ plots=YES
 		set run_scenarios;
 		call execute(cats('%nrstr(%EasyRun(',&cexecute.,'));'));
 	run;
+
 
 

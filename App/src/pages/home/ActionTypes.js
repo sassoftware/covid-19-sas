@@ -1,0 +1,4 @@
+export default {
+	SET_LEFT_PANEL: 'SET_LEFT_PANEL',
+	SET_USER_DATA: 'SET_USER_DATA'
+}

@@ -24,6 +24,7 @@ fd='./ccf/COVID_19_ALL.sas'
 ft='./COVID_19_test.sas'
 fu='./UI/COVID_19.sas'
 fv='./UI_public/COVID_19.sas'
+fb='./Boemska/runModel.sas'
 
 # open files to write
 p=open(fp,'w')
@@ -32,6 +33,7 @@ d=open(fd,'w')
 t=open(ft,'w')
 u=open(fu,'w')
 v=open(fv,'w')
+b=open(fb,'w')
 
 # recursive function to call parts and write to files
 def subpart(file,type,node):
@@ -65,6 +67,7 @@ def subpart(file,type,node):
                 t.write(piece)
                 u.write(piece)
                 v.write(piece)
+                b.write(piece)
             else:
                 exec(type.lower()+'.write(piece)')
     return order
@@ -80,6 +83,7 @@ d.close()
 t.close()
 u.close()
 v.close()
+b.close()
 
 # move the public version to the main repository folder
 copyfile('./public/COVID_19.sas', '../COVID_19.sas')

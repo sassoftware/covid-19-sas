@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
+@import '../../../assets/style/colors.scss';
+
+.outputChart {
+  min-height: 400px;
+  position: relative;
+  &.hidden {
+    display: none;
+  }
+  .tooltipLegend {
+    display: flex;
+    color: #565656;
+    padding: 1rem 0 0 1rem;
+    background: white;
+    margin-bottom: 1rem;
+    div:nth-child(1), div:nth-child(2), div:nth-child(3){
+      padding-top: 4px;
+    }
+    .date {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1rem;
+      font-size: 14px;
+      min-width: 124px;
+      div:nth-child(1) {
+        font-weight: bold;
+      }
+      div:nth-child(2) {
+        font-size: 40px;
+      }
+    }
+
+    .total {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 1rem;
+      div:nth-child(2) {
+        //margin-right: 1rem;
+        font-size: 40px;
+        font-weight: bold;
+      }
+    }
+
+    .group {
+      display: flex;
+      flex-direction: column;
+      div {
+        margin-bottom: 0.5rem;
+        .num {
+          font-size: 22px;
+        }
+      }
+    }
+    .additionalCharts {
+      display: flex;
+      margin-left: auto;
+      margin-top: -18px;
+      .chartWrapper {
+        padding: 0;
+        margin-bottom: 0;
+      }
+    }
+  }
+  .bx--content-switcher {
+    justify-content: flex-start;
+  }
+  .bx--content-switcher-btn {
+    background: #fff;
+    width: 10rem;
+    &.bx--content-switcher--selected {
+      background-color: $brand;
+      color: #fff;
+      z-index: 3;
+      &:hover {
+        color: #000;
+      }
+    }
+    &:hover {
+      background-color: #d2e8f7;
+    }
+  }
+}
+.skeletonTooltip {
+  height: 155px;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+.skeletonBig {
+  height: 250px;
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.skeletonSmall {
+  height: 167px;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
