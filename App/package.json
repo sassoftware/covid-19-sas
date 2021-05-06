@@ -21,7 +21,7 @@
     "chalk": "^4.0.0",
     "git-repo-info": "^2.1.1",
     "h54s": "^2.1.0",
-    "highcharts": "^8.1.1",
+    "highcharts": "^9.0.0",
     "highcharts-pattern-fill": "^3.0.3",
     "highcharts-react-official": "^3.0.0",
     "history": "^5.0.0",
