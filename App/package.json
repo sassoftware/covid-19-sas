@@ -28,7 +28,7 @@
     "http-proxy-middleware": "^1.0.4",
     "inquirer": "^7.1.0",
     "lodash": "^4.17.19",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "node-sass": "^7.0.0",
     "ora": "^4.0.4",
     "prop-types": "^15.7.2",
