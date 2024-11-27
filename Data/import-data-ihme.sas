@@ -1,5 +1,5 @@
 /* 
-   SAS program code to fetch and import the COVID-19 projection estimates 
+   SAS program to fetch and import the COVID-19 projection estimates 
    created by Institue for Health Metrics and Evaluation (IHME).
    
    Data source: http://www.healthdata.org/covid/data-downloads
